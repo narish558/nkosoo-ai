@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Nkɔsoɔ Admin Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f6f2;color:#1a1a18;}
+.topbar{background:#fff;border-bottom:0.5px solid #d6d4cc;padding:0 1.5rem;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.topbar-left{display:flex;align-items:center;gap:10px;}
+.title{font-size:15px;font-weight:500;}
+.logout{font-size:13px;color:#5F5E5A;text-decoration:none;padding:6px 12px;border:0.5px solid #d6d4cc;border-radius:8px;}
+.container{max-width:900px;margin:0 auto;padding:1.5rem 1rem;}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.5rem;}
+.metric{background:#f1efe8;border-radius:8px;padding:.875rem 1rem;}
+.metric-label{font-size:12px;color:#5F5E5A;margin-bottom:4px;}
+.metric-value{font-size:24px;font-weight:500;}
+.metric-value.green{color:#3B6D11;}.metric-value.blue{color:#185FA5;}
+.metric-sub{font-size:12px;color:#5F5E5A;margin-top:2px;}
+.card{background:#fff;border:0.5px solid #d6d4cc;border-radius:12px;padding:1.25rem;margin-bottom:1rem;}
+.card-title{font-size:12px;font-weight:500;color:#5F5E5A;text-transform:uppercase;letter-spacing:.04em;margin-bottom:1rem;}
+.row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid #d6d4cc;}
+.row:last-child{border-bottom:none;}
+.row-main{font-size:13px;font-weight:500;}
+.row-sub{font-size:11px;color:#5F5E5A;}
+.badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;}
+.b-green{background:#EAF3DE;color:#3B6D11;}.b-blue{background:#E6F1FB;color:#185FA5;}.b-gray{background:#f1efe8;color:#5F5E5A;}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.bar-label{font-size:12px;color:#5F5E5A;width:160px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bar-track{flex:1;height:8px;background:#f1efe8;border-radius:4px;overflow:hidden;}
+.bar-fill{height:8px;border-radius:4px;background:#3B6D11;}
+.bar-count{font-size:11px;color:#5F5E5A;width:28px;text-align:right;}
+.user-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid #d6d4cc;}
+.user-row:last-child{border-bottom:none;}
+.avatar{width:30px;height:30px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:#3B6D11;flex-shrink:0;}
+.empty{font-size:13px;color:#5F5E5A;padding:.5rem 0;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <span style="font-size:20px;">🌿</span>
+    <span class="title">Nkɔsoɔ Admin Dashboard</span>
+  </div>
+  <a href="/admin/logout" class="logout">Sign out</a>
+</div>
+<div class="container">
+
+  <div class="metric-grid">
+    <div class="metric">
+      <div class="metric-label">Total farmers</div>
+      <div class="metric-value green">{{ total_users }}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Pro subscribers</div>
+      <div class="metric-value blue">{{ pro_users }}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Monthly revenue</div>
+      <div class="metric-value green" style="font-size:18px;">GHS {{ total_revenue }}</div>
+      <div class="metric-sub">{{ pro_users }} × GHS 30</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Questions today</div>
+      <div class="metric-value">{{ questions_today }}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Diagnoses today</div>
+      <div class="metric-value">{{ diagnoses_today }}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Top questions asked</div>
+    {% if top_questions %}
+      {% set max_cnt = top_questions[0].cnt %}
+      {% for q in top_questions %}
+      <div class="bar-row">
+        <div class="bar-label" title="{{ q.question }}">{{ q.question }}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:{{ (q.cnt/max_cnt*100)|int }}%"></div></div>
+        <div class="bar-count">{{ q.cnt }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="empty">No questions yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">Recent farmers</div>
+    {% for u in recent_users %}
+    <div class="user-row">
+      <div class="avatar">{{ loop.index }}</div>
+      <div style="flex:1;">
+        <div class="row-main">{{ u.email or 'Anonymous farmer' }}</div>
+        <div class="row-sub">
+          {{ regions[u.region].name if u.region and u.region in regions else 'Unknown region' }} ·
+          Joined {{ u.created_at[:10] if u.created_at else '—' }}
+        </div>
+      </div>
+      <span class="badge {{ 'b-blue' if u.plan=='pro' else 'b-gray' }}">{{ u.plan|capitalize }}</span>
+    </div>
+    {% else %}
+      <p class="empty">No farmers yet.</p>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">Farmers by region</div>
+    {% for r in region_stats %}
+    <div class="row">
+      <div class="row-main">{{ regions[r.region].name if r.region and r.region in regions else r.region or 'Unknown' }}</div>
+      <span class="badge b-green">{{ r.cnt }} farmers</span>
+    </div>
+    {% else %}
+      <p class="empty">No data yet.</p>
+    {% endfor %}
+  </div>
+
+</div>
+</body>
+</html>
