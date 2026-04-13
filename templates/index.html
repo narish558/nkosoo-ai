@@ -158,6 +158,62 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 /* loading */
 .loading{display:inline-block;width:14px;height:14px;border:2px solid var(--g100);border-top-color:var(--g600);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg);}}
+
+.sync-bar{
+  display:flex;align-items:center;gap:10px;padding:.6rem 1rem;
+  font-size:12px;font-weight:500;border-bottom:1px solid var(--bd);
+  background:var(--card);position:sticky;top:56px;z-index:9;
+  transition:background .3s;
+}
+.sync-bar.online  { background:var(--g50); color:var(--g600); }
+.sync-bar.offline { background:var(--a50); color:var(--a600); }
+.sync-bar.syncing { background:#EDF2FF;   color:#3B5BDB;     }
+.sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sync-bar.online  .sync-dot { background:var(--g600); }
+.sync-bar.offline .sync-dot { background:#E24B4A; animation:pulse 1.2s ease-in-out infinite; }
+.sync-bar.syncing .sync-dot { background:#3B5BDB; animation:pulse .7s ease-in-out infinite; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.sync-detail{margin-left:auto;font-size:11px;opacity:.75;}
+.sync-retry{margin-left:6px;padding:2px 8px;border:1px solid currentColor;border-radius:20px;
+            background:transparent;color:inherit;font-size:11px;cursor:pointer;font-weight:600;}
+
+/* ── Voice button ────────────────────────────────────────────── */
+.mic-btn{
+  width:42px;height:42px;border-radius:50%;border:2px solid var(--bd);
+  background:var(--card);color:var(--ts);font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .2s;position:relative;
+}
+.mic-btn:hover { border-color:var(--g600);color:var(--g600); }
+.mic-btn.listening {
+  background:var(--r50);border-color:#E24B4A;color:#E24B4A;
+  animation:mic-pulse 1s ease-in-out infinite;
+}
+.mic-btn.speaking {
+  background:var(--g50);border-color:var(--g600);color:var(--g600);
+  animation:mic-pulse .8s ease-in-out infinite;
+}
+@keyframes mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(226,75,74,.4)}50%{box-shadow:0 0 0 8px rgba(226,75,74,0)}}
+.mic-btn.speaking { animation-name:mic-speak; }
+@keyframes mic-speak{0%,100%{box-shadow:0 0 0 0 rgba(59,109,17,.4)}50%{box-shadow:0 0 0 8px rgba(59,109,17,0)}}
+
+/* voice status strip */
+.voice-status{
+  font-size:12px;color:var(--ts);padding:4px 1rem 0;text-align:center;
+  min-height:20px;transition:opacity .3s;opacity:0;
+}
+.voice-status.visible{opacity:1;}
+
+/* language buttons — extended for 4 langs */
+.lang-toggle{background:var(--muted);border:1px solid var(--bd);border-radius:var(--rm);padding:3px 2px;display:flex;gap:2px;flex-wrap:nowrap;}
+.lang-btn{padding:4px 7px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--ts);}
+.lang-btn.active{background:var(--g600);color:#fff;}
+
+/* offline queued msg indicator */
+.msg-queued{
+  font-size:11px;color:var(--a600);text-align:right;margin-top:2px;
+}
+
 </style>
 </head>
 <body>
@@ -172,6 +228,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <div class="lang-toggle">
       <button class="lang-btn active" onclick="setLang('en')">EN</button>
       <button class="lang-btn" onclick="setLang('tw')">TW</button>
+      <button class="lang-btn" onclick="setLang('dg')">DG</button>
+      <button class="lang-btn" onclick="setLang('ha')">HA</button>
     </div>
     {% if user.plan == 'pro' %}
       <span class="pro-badge">&#10003; Pro</span>
@@ -225,6 +283,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <button class="pay-btn-main" onclick="startPayment()">Pay GHS 30 with MoMo or Card</button>
     <div class="pay-note">&#128274; Secured by Paystack · Cancel anytime</div>
   </div>
+</div>
+
+<!-- Offline / Sync status bar -->
+<div class="sync-bar online" id="syncBar">
+  <div class="sync-dot"></div>
+  <span id="syncMsg">Online — data is live</span>
+  <span class="sync-detail" id="syncDetail"></span>
+  <button class="sync-retry" id="syncRetryBtn" style="display:none" onclick="syncOfflineQueue()">Sync now</button>
 </div>
 
 <div class="container">
@@ -395,13 +461,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
         </div>
       </div>
       <div class="chat-input-row">
+        <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="Speak your question">🎤</button>
         <input type="text" id="chatInput"
           placeholder="Ask a farming question..."
           data-en-ph="Ask a farming question..."
           data-tw-ph="Bisa afuo asɛmmisa..."
+          data-dg-ph="Bisa puuni tiŋ yɛlma..."
+          data-ha-ph="Tambayi tambarin gonaki..."
           onkeydown="if(event.key==='Enter') sendMessage()"/>
-        <button class="send-btn" id="sendBtn" onclick="sendMessage()" data-en="Send" data-tw="Soma">Send</button>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" data-en="Send" data-tw="Soma" data-dg="Tuma" data-ha="Aika">Send</button>
       </div>
+      <div class="voice-status" id="voiceStatus"></div>
     </div>
   </div>
 
@@ -418,26 +488,51 @@ let usedToday     = {{ used_today }};
 let currentLang   = 'en';
 let currentWeather = { advice: WEATHER_ADVICE, risk: WEATHER_RISK, risk_level: '{{ weather.risk_level }}' };
 
-// Language
+// ─────────────────────────────────────────────────────────────
+// LANGUAGE  (now supports EN / TW / DG = Dagbani / HA = Hausa)
+// ─────────────────────────────────────────────────────────────
+const WELCOME_MSG = {
+  en: "👋 Hello! I'm Nkɔsoɔ AI — your Ghana farming assistant. Ask me anything about weather, crops, pests, or market prices.",
+  tw: "👋 Akwaaba! Meyɛ Nkɔsoɔ AI. Bisa me asɛmmisa biara a ɛfa ɔhaw, aba dua, mmoa tia, anaa ɛberɛ a ɛsɛ sɛ wo tɔn wo aba.",
+  dg: "👋 Despa! N yɛ Nkɔsoɔ AI — fo puuni tiŋ sɔŋ mali. Bɔri n yɛlgu puuni yɛla, zaŋ daa, ni zaŋ tiŋa kɔɣim.",
+  ha: "👋 Sannu! Ni ne Nkɔsoɔ AI — mataimakin noma naku. Ka tambaya komai game da yanayi, amfanin gona, kwari, ko farashin kasuwa."
+};
+
+const LANG_CODES = {
+  en: 'en-GH', tw: 'tw',     // Web Speech BCP-47 codes
+  dg: 'dag',   ha: 'ha-GH'   // Dagbani / Hausa
+};
+
 function setLang(lang) {
   currentLang = lang;
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim().toLowerCase()===lang));
-  document.querySelectorAll('[data-en]').forEach(el => { const v=el.getAttribute('data-'+lang); if(v) el.textContent=v; });
-  document.getElementById('weatherAdvice').textContent = currentWeather.advice[lang] || currentWeather.advice.en;
-  document.getElementById('weatherRisk').textContent   = currentWeather.risk[lang]   || currentWeather.risk.en;
+  document.querySelectorAll('.lang-btn').forEach(b =>
+    b.classList.toggle('active', b.textContent.trim().toLowerCase() === lang));
+
+  // swap data-en/tw/dg/ha attributes
+  document.querySelectorAll('[data-en]').forEach(el => {
+    const v = el.getAttribute('data-' + lang) || el.getAttribute('data-en');
+    if (v) el.textContent = v;
+  });
+  document.getElementById('weatherAdvice').textContent =
+    currentWeather.advice[lang] || currentWeather.advice.en;
+  document.getElementById('weatherRisk').textContent =
+    currentWeather.risk[lang] || currentWeather.risk.en;
+
   const inp = document.getElementById('chatInput');
-  inp.placeholder = inp.getAttribute('data-'+lang+'-ph') || inp.placeholder;
-  document.getElementById('welcomeMsg').textContent = lang==='tw'
-    ? '👋 Akwaaba! Meyɛ Nkɔsoɔ AI. Bisa me asɛmmisa biara a ɛfa ɔhaw, aba dua, mmoa tia, anaa ɛberɛ a ɛsɛ sɛ wo tɔn wo aba.'
-    : "👋 Hello! I'm Nkɔsoɔ AI — your Ghana farming assistant. Ask me anything about weather, crops, pests, or market prices.";
-  document.querySelectorAll('#quickGrid .quick-btn').forEach((b,i) => b.textContent = lang==='tw' ? QUICK_TW[i] : QUICK_EN[i]);
+  inp.placeholder = inp.getAttribute('data-' + lang + '-ph') || inp.getAttribute('data-en-ph');
+
+  document.getElementById('welcomeMsg').textContent = WELCOME_MSG[lang] || WELCOME_MSG.en;
+  document.querySelectorAll('#quickGrid .quick-btn').forEach((b, i) => {
+    b.textContent = lang === 'tw' ? QUICK_TW[i] : QUICK_EN[i];
+  });
   const db = document.getElementById('diagnoseBtn');
-  if (db) db.textContent = lang==='tw' ? '🔍 Hwɛ foto ho yareɛ' : '🔍 Analyse photo for disease';
+  if (db) db.textContent = lang === 'tw'
+    ? '🔍 Hwɛ foto ho yareɛ' : '🔍 Analyse photo for disease';
 }
 
 // Tabs
 function showTab(name) {
-  const names=['weather','prices','pests','diagnose','chat'];
+  const names = ['weather','prices','pests','diagnose','chat'];
   document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', names[i]===name));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id==='panel-'+name));
 }
@@ -450,11 +545,11 @@ async function startPayment() {
   const email = document.getElementById('payEmail').value.trim();
   if (!email || !email.includes('@')) { alert('Please enter a valid email.'); return; }
   const btn = document.querySelector('.pay-btn-main');
-  btn.disabled=true; btn.textContent='Loading...';
+  btn.disabled = true; btn.textContent = 'Loading...';
   try {
-    const resp = await fetch('/api/pay/init',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const resp = await fetch('/api/pay/init', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
     const data = await resp.json();
-    if (data.authorization_url) { window.location.href=data.authorization_url; }
+    if (data.authorization_url) { window.location.href = data.authorization_url; }
     else { alert(data.error||'Payment failed.'); btn.disabled=false; btn.textContent='Pay GHS 30 with MoMo or Card'; }
   } catch(e) { alert('Connection error.'); btn.disabled=false; btn.textContent='Pay GHS 30 with MoMo or Card'; }
 }
@@ -464,11 +559,11 @@ function updateUsageBar(used) {
   usedToday = used;
   const el   = document.getElementById('usageCount');
   const fill = document.getElementById('usageFill');
-  if (el)   el.textContent = used+' / '+FREE_LIMIT;
+  if (el)   el.textContent = used + ' / ' + FREE_LIMIT;
   if (fill) {
-    const pct = Math.min(used/FREE_LIMIT*100,100);
-    fill.style.width = pct+'%';
-    fill.className = 'usage-fill '+(used>=FREE_LIMIT?'fill-full':(used>=FREE_LIMIT-1?'fill-warn':'fill-ok'));
+    const pct = Math.min(used / FREE_LIMIT * 100, 100);
+    fill.style.width = pct + '%';
+    fill.className = 'usage-fill ' + (used >= FREE_LIMIT ? 'fill-full' : (used >= FREE_LIMIT - 1 ? 'fill-warn' : 'fill-ok'));
   }
 }
 
@@ -478,32 +573,159 @@ async function loadWeather() {
   const badge = document.getElementById('liveBadge');
   badge.innerHTML = '<span class="loading"></span>';
   try {
-    const w = await (await fetch('/api/weather?region='+key)).json();
-    document.getElementById('wHigh').textContent     = w.today_high+'°C';
-    document.getElementById('wHumidity').textContent = w.humidity+'%';
-    document.getElementById('wRain').textContent     = w.rain_chance+'%';
-    document.getElementById('wWind').textContent     = w.wind_kmh+' km/h';
+    const w = await (await fetch('/api/weather?region=' + key)).json();
+    document.getElementById('wHigh').textContent     = w.today_high + '°C';
+    document.getElementById('wHumidity').textContent = w.humidity + '%';
+    document.getElementById('wRain').textContent     = w.rain_chance + '%';
+    document.getElementById('wWind').textContent     = w.wind_kmh + ' km/h';
     document.getElementById('weatherLoc').textContent =
-      (currentLang==='tw'?w.location_tw:w.location)+' — '+(currentLang==='tw'?'Ɔhaw Nnɛ':'Current conditions');
-    document.getElementById('forecastStrip').innerHTML = w.forecast.map(d=>
+      (currentLang === 'tw' ? w.location_tw : w.location) + ' — ' +
+      (currentLang === 'tw' ? 'Ɔhaw Nnɛ' : 'Current conditions');
+    document.getElementById('forecastStrip').innerHTML = w.forecast.map(d =>
       `<div class="forecast-day"><div class="day-name">${d.day}</div><div class="day-icon">${d.icon}</div><div class="day-temp">${d.high}°</div><div class="day-rain">${d.rain}%</div></div>`
     ).join('');
     currentWeather = { advice:{en:w.advice,tw:w.advice_tw}, risk:{en:w.risk,tw:w.risk_tw}, risk_level:w.risk_level };
-    document.getElementById('weatherAdvice').textContent = currentLang==='tw'?w.advice_tw:w.advice;
+    document.getElementById('weatherAdvice').textContent = currentLang === 'tw' ? w.advice_tw : w.advice;
     const rEl = document.getElementById('weatherRisk');
-    rEl.textContent = currentLang==='tw'?w.risk_tw:w.risk;
-    rEl.className   = 'badge b-'+w.risk_level;
+    rEl.textContent = currentLang === 'tw' ? w.risk_tw : w.risk;
+    rEl.className   = 'badge b-' + w.risk_level;
     badge.textContent = '🟢 Live';
-  } catch(e) { badge.textContent='⚠ Error'; }
+    // refresh offline cache after live fetch
+    cacheDataForOffline();
+  } catch(e) {
+    badge.textContent = '⚠ Offline';
+    loadCachedWeather();
+  }
 }
 
-// Chat
+// ─────────────────────────────────────────────────────────────
+// OFFLINE MODE
+// ─────────────────────────────────────────────────────────────
+const CACHE_KEY       = 'nkosoo_cache_v1';
+const QUEUE_KEY       = 'nkosoo_offline_queue';
+let isOnline          = navigator.onLine;
+let offlineQueue      = [];   // [{messages, lang, timestamp}]
+
+function loadQueue() {
+  try { offlineQueue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { offlineQueue = []; }
+}
+function saveQueue() {
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(offlineQueue)); } catch {}
+}
+function loadCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch { return null; }
+}
+function saveCache(data) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({...data, saved_at: Date.now()})); } catch {}
+}
+
+async function cacheDataForOffline() {
+  try {
+    const resp = await fetch('/api/cache-data');
+    if (resp.ok) saveCache(await resp.json());
+  } catch {}
+}
+
+function loadCachedWeather() {
+  const c = loadCache();
+  if (!c || !c.weather) return;
+  const w = c.weather;
+  document.getElementById('wHigh').textContent     = w.today_high + '°C';
+  document.getElementById('wHumidity').textContent = w.humidity + '%';
+  document.getElementById('wRain').textContent     = w.rain_chance + '%';
+  document.getElementById('wWind').textContent     = w.wind_kmh + ' km/h';
+  document.getElementById('forecastStrip').innerHTML = (w.forecast||[]).map(d =>
+    `<div class="forecast-day"><div class="day-name">${d.day}</div><div class="day-icon">${d.icon}</div><div class="day-temp">${d.high}°</div><div class="day-rain">${d.rain}%</div></div>`
+  ).join('');
+  const cachedAt = c.saved_at ? new Date(c.saved_at).toLocaleTimeString() : '?';
+  document.getElementById('liveBadge').textContent = '📦 Cached';
+  setSyncBar('offline', `Offline — showing data cached at ${cachedAt}`);
+}
+
+function setSyncBar(state, msg, detail='') {
+  const bar = document.getElementById('syncBar');
+  const txt = document.getElementById('syncMsg');
+  const det = document.getElementById('syncDetail');
+  const btn = document.getElementById('syncRetryBtn');
+  bar.className = 'sync-bar ' + state;
+  txt.textContent = msg;
+  det.textContent = detail;
+  btn.style.display = (state === 'offline' && offlineQueue.length > 0) ? 'inline-block' : 'none';
+}
+
+function handleOnline() {
+  isOnline = true;
+  setSyncBar('online', 'Back online');
+  setTimeout(() => setSyncBar('online', 'Online — data is live'), 3000);
+  syncOfflineQueue();
+}
+function handleOffline() {
+  isOnline = false;
+  const q = offlineQueue.length;
+  setSyncBar('offline',
+    'No internet connection — cached data shown',
+    q > 0 ? `${q} message${q>1?'s':''} queued` : '');
+}
+
+async function syncOfflineQueue() {
+  if (!isOnline || offlineQueue.length === 0) return;
+  setSyncBar('syncing', `Syncing ${offlineQueue.length} queued message${offlineQueue.length>1?'s':''}…`);
+  const toSync = [...offlineQueue];
+  offlineQueue = [];
+  saveQueue();
+
+  for (const item of toSync) {
+    try {
+      const resp = await fetch('/api/chat', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({messages: item.messages, lang: item.lang})
+      });
+      if (resp.ok) {
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+        // Show a "synced" message in chat
+        const aiDiv = appendMsg('', 'ai');
+        const label = document.createElement('div');
+        label.className = 'msg-queued';
+        label.textContent = `⏱ Synced (asked at ${new Date(item.timestamp).toLocaleTimeString()})`;
+        aiDiv.parentNode.insertBefore(label, aiDiv.nextSibling);
+        while(true) {
+          const {done, value} = await reader.read(); if(done) break;
+          for (const line of decoder.decode(value, {stream:true}).split('\n')) {
+            if (line.startsWith('data: ')) {
+              const p = line.slice(6).trim(); if (p === '[DONE]') break;
+              try { fullText += JSON.parse(p).text; aiDiv.textContent = fullText; chatMessages.scrollTop = chatMessages.scrollHeight; } catch{}
+            }
+          }
+        }
+        conversationHistory.push({role:'assistant', content: fullText});
+      }
+    } catch(err) {
+      // put it back
+      offlineQueue.unshift(item);
+      saveQueue();
+      setSyncBar('offline', 'Sync failed — will retry when online', `${offlineQueue.length} queued`);
+      return;
+    }
+  }
+  setSyncBar('online', 'Sync complete — all messages sent');
+  setTimeout(() => setSyncBar('online', 'Online — data is live'), 4000);
+}
+
+window.addEventListener('online',  handleOnline);
+window.addEventListener('offline', handleOffline);
+
+// ─────────────────────────────────────────────────────────────
+// CHAT  (with offline queue support)
+// ─────────────────────────────────────────────────────────────
 const chatMessages = document.getElementById('chatMessages');
 let conversationHistory = [];
 
 function appendMsg(text, role) {
   const div = document.createElement('div');
-  div.className = 'msg '+(role==='user'?'msg-user':'msg-ai');
+  div.className = 'msg ' + (role === 'user' ? 'msg-user' : 'msg-ai');
   div.textContent = text;
   chatMessages.appendChild(div);
   chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -511,7 +733,7 @@ function appendMsg(text, role) {
 }
 
 function askAI(idx) {
-  const q = currentLang==='tw' ? QUICK_TW[idx] : QUICK_EN[idx];
+  const q = currentLang === 'tw' ? QUICK_TW[idx] : QUICK_EN[idx];
   showTab('chat');
   document.getElementById('chatInput').value = q;
   setTimeout(sendMessage, 100);
@@ -523,87 +745,276 @@ async function sendMessage() {
   const text      = chatInput.value.trim();
   if (!text || sendBtn.disabled) return;
   chatInput.value = '';
-  appendMsg(text,'user');
-  conversationHistory.push({role:'user',content:text});
+  appendMsg(text, 'user');
+  conversationHistory.push({role:'user', content: text});
   sendBtn.disabled = true;
-  const aiDiv = appendMsg('▌','ai');
+
+  // ── OFFLINE: queue and return ──────────────────────────────
+  if (!isOnline) {
+    offlineQueue.push({
+      messages: [...conversationHistory],
+      lang: currentLang,
+      timestamp: Date.now()
+    });
+    saveQueue();
+    const notice = appendMsg(
+      currentLang === 'tw'
+        ? '📦 Asɛmmisa no wɔ hɔ. Wɔde bɛkɔ AI no bere a internet ba.'
+        : '📦 No internet — your question is saved and will be sent when you\'re back online.',
+      'ai');
+    notice.style.opacity = '0.7';
+    setSyncBar('offline', 'Offline — question queued', `${offlineQueue.length} queued`);
+    sendBtn.disabled = false;
+    return;
+  }
+
+  // ── ONLINE: normal flow ─────────────────────────────────────
+  const aiDiv = appendMsg('▌', 'ai');
   try {
-    const resp = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages:conversationHistory,lang:currentLang})});
+    const resp = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({messages: conversationHistory, lang: currentLang})
+    });
     if (!resp.ok) {
       const err = await resp.json();
-      if (err.error==='limit_reached') {
-        aiDiv.textContent = currentLang==='tw'?(err.message_tw||err.message):err.message;
+      if (err.error === 'limit_reached') {
+        aiDiv.textContent = currentLang === 'tw' ? (err.message_tw || err.message) : err.message;
         updateUsageBar(FREE_LIMIT);
-        setTimeout(openUpgrade,1500);
-      } else { aiDiv.textContent='⚠ '+(err.error||'Error'); }
-      sendBtn.disabled=false; return;
+        setTimeout(openUpgrade, 1500);
+      } else { aiDiv.textContent = '⚠ ' + (err.error || 'Error'); }
+      sendBtn.disabled = false; return;
     }
-    const reader=resp.body.getReader(); const decoder=new TextDecoder();
-    let fullText=''; aiDiv.textContent='';
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = ''; aiDiv.textContent = '';
     while(true) {
-      const {done,value}=await reader.read(); if(done) break;
-      for(const line of decoder.decode(value,{stream:true}).split('\n')) {
-        if(line.startsWith('data: ')) {
-          const p=line.slice(6).trim(); if(p==='[DONE]') break;
-          try { fullText+=JSON.parse(p).text; aiDiv.textContent=fullText; chatMessages.scrollTop=chatMessages.scrollHeight; } catch{}
+      const {done, value} = await reader.read(); if(done) break;
+      for (const line of decoder.decode(value, {stream:true}).split('\n')) {
+        if (line.startsWith('data: ')) {
+          const p = line.slice(6).trim(); if (p === '[DONE]') break;
+          try { fullText += JSON.parse(p).text; aiDiv.textContent = fullText; chatMessages.scrollTop = chatMessages.scrollHeight; } catch{}
         }
       }
     }
-    conversationHistory.push({role:'assistant',content:fullText});
-    if (USER_PLAN!=='pro') updateUsageBar(usedToday+1);
-  } catch(e) { aiDiv.textContent='⚠ Connection error. Please try again.'; }
-  sendBtn.disabled=false; chatInput.focus();
+    conversationHistory.push({role:'assistant', content: fullText});
+    if (USER_PLAN !== 'pro') updateUsageBar(usedToday + 1);
+    // read response aloud if voice mode is active
+    if (voiceAutoSpeak) speakText(fullText);
+  } catch(e) {
+    if (!isOnline) {
+      // fell offline mid-request — queue it
+      aiDiv.textContent = '📦 Connection lost. Your question is saved.';
+      offlineQueue.push({messages:[...conversationHistory], lang:currentLang, timestamp:Date.now()});
+      saveQueue();
+    } else {
+      aiDiv.textContent = '⚠ Connection error. Please try again.';
+    }
+  }
+  sendBtn.disabled = false;
+  chatInput.focus();
 }
 
-// Photo diagnosis
-let selectedImageB64=null, selectedMediaType='image/jpeg';
+// ─────────────────────────────────────────────────────────────
+// VOICE INTERFACE
+// ─────────────────────────────────────────────────────────────
+let recognition    = null;
+let isListening    = false;
+let voiceAutoSpeak = false;   // set true after first successful voice input
+let ttsUtterance   = null;
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function setVoiceStatus(msg, visible=true) {
+  const el = document.getElementById('voiceStatus');
+  el.textContent = msg;
+  el.classList.toggle('visible', visible);
+}
+
+function toggleVoice() {
+  if (isListening) {
+    stopListening();
+  } else {
+    startListening();
+  }
+}
+
+function startListening() {
+  // stop any ongoing speech
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+  if (!SpeechRecognition) {
+    setVoiceStatus('⚠ Your browser does not support voice input. Try Chrome or Edge.');
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+
+  // Choose the best BCP-47 code for selected language
+  const langMap = { en:'en-GH', tw:'en-GH', dg:'en-GH', ha:'ha' };
+  // Web Speech API has limited non-English support; fall back to en-GH for Twi/Dagbani
+  recognition.lang = langMap[currentLang] || 'en-GH';
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+  recognition.continuous = false;
+
+  recognition.onstart = () => {
+    isListening = true;
+    voiceAutoSpeak = true;
+    document.getElementById('micBtn').className = 'mic-btn listening';
+    const prompts = {
+      en: '🎤 Listening… speak your question',
+      tw: '🎤 Tie… ka wo asɛmmisa',
+      dg: '🎤 Gbiri… bɔri fo yɛlgu',
+      ha: '🎤 Ana saurara… faɗa tambayarka'
+    };
+    setVoiceStatus(prompts[currentLang] || prompts.en);
+  };
+
+  recognition.onresult = (e) => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    const chatInput = document.getElementById('chatInput');
+    chatInput.value = (final || interim);
+    if (interim) setVoiceStatus('🎤 ' + interim);
+  };
+
+  recognition.onerror = (e) => {
+    const msgs = {
+      'no-speech':        'No speech detected — tap 🎤 and try again',
+      'audio-capture':    '⚠ Microphone not found',
+      'not-allowed':      '⚠ Microphone blocked — allow access in browser settings',
+      'network':          '⚠ Voice recognition needs a connection',
+    };
+    setVoiceStatus(msgs[e.error] || ('⚠ Voice error: ' + e.error));
+    stopListening(false);
+  };
+
+  recognition.onend = () => {
+    stopListening(false);
+    const text = document.getElementById('chatInput').value.trim();
+    if (text) {
+      setVoiceStatus('✅ Got it! Sending…');
+      setTimeout(sendMessage, 300);
+    } else {
+      setVoiceStatus('');
+    }
+  };
+
+  try { recognition.start(); }
+  catch(e) { setVoiceStatus('⚠ Could not start microphone: ' + e.message); }
+}
+
+function stopListening(manual=true) {
+  isListening = false;
+  document.getElementById('micBtn').className = 'mic-btn';
+  if (recognition) { try { recognition.stop(); } catch{} recognition = null; }
+  if (manual) setVoiceStatus('');
+}
+
+// Text-to-speech
+function speakText(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  // strip markdown-ish symbols for cleaner speech
+  const clean = text.replace(/[*_#`~>]/g, '').replace(/\n+/g, '. ');
+
+  ttsUtterance = new SpeechSynthesisUtterance(clean);
+  ttsUtterance.lang = LANG_CODES[currentLang] || 'en-GH';
+  ttsUtterance.rate = 0.92;
+  ttsUtterance.pitch = 1;
+
+  ttsUtterance.onstart = () => {
+    document.getElementById('micBtn').className = 'mic-btn speaking';
+    setVoiceStatus('🔊 Reading answer aloud — tap 🎤 to stop');
+  };
+  ttsUtterance.onend = () => {
+    document.getElementById('micBtn').className = 'mic-btn';
+    setVoiceStatus('');
+  };
+  ttsUtterance.onerror = () => {
+    document.getElementById('micBtn').className = 'mic-btn';
+  };
+  window.speechSynthesis.speak(ttsUtterance);
+}
+
+// ─────────────────────────────────────────────────────────────
+// PHOTO DIAGNOSIS
+// ─────────────────────────────────────────────────────────────
+let selectedImageB64 = null, selectedMediaType = 'image/jpeg';
 
 function onPhotoSelected(event) {
-  const file=event.target.files[0]; if(!file) return;
-  if(file.size>5*1024*1024){alert(currentLang==='tw'?'Foto no yɛ kɛseɛ.':'Image too large. Max 5MB.');return;}
-  selectedMediaType=file.type||'image/jpeg';
-  const reader=new FileReader();
-  reader.onload=e=>{
-    selectedImageB64=e.target.result.split(',')[1];
-    const prev=document.getElementById('previewImg');
-    prev.src=e.target.result; prev.style.display='block';
-    document.getElementById('diagnoseBtn').disabled=false;
+  const file = event.target.files[0]; if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert(currentLang === 'tw' ? 'Foto no yɛ kɛseɛ.' : 'Image too large. Max 5MB.');
+    return;
+  }
+  selectedMediaType = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = e => {
+    selectedImageB64 = e.target.result.split(',')[1];
+    const prev = document.getElementById('previewImg');
+    prev.src = e.target.result; prev.style.display = 'block';
+    document.getElementById('diagnoseBtn').disabled = false;
     document.getElementById('resultBox').classList.remove('visible');
-    document.getElementById('resultBox').textContent='';
-    document.getElementById('resultTitle').style.display='none';
+    document.getElementById('resultBox').textContent = '';
+    document.getElementById('resultTitle').style.display = 'none';
   };
   reader.readAsDataURL(file);
 }
 
 async function runDiagnosis() {
-  if(!selectedImageB64) return;
-  const btn=document.getElementById('diagnoseBtn');
-  const box=document.getElementById('resultBox');
-  const title=document.getElementById('resultTitle');
-  btn.disabled=true; btn.textContent=currentLang==='tw'?'🔍 Rereka...':'🔍 Analysing...';
-  box.textContent=''; box.classList.add('visible'); title.style.display='block';
+  if (!selectedImageB64) return;
+  const btn   = document.getElementById('diagnoseBtn');
+  const box   = document.getElementById('resultBox');
+  const title = document.getElementById('resultTitle');
+  btn.disabled = true;
+  btn.textContent = currentLang === 'tw' ? '🔍 Rereka...' : '🔍 Analysing...';
+  box.textContent = ''; box.classList.add('visible'); title.style.display = 'block';
   try {
-    const resp=await fetch('/api/diagnose',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({image:selectedImageB64,media_type:selectedMediaType,lang:currentLang})});
-    if(!resp.ok){
-      const err=await resp.json();
-      if(err.error==='limit_reached'){ box.textContent=err.message; setTimeout(openUpgrade,1500); }
-      else { box.textContent='⚠ '+(err.error||'Error'); }
-      btn.disabled=false; btn.textContent=currentLang==='tw'?'🔍 Hwɛ foto ho yareɛ':'🔍 Analyse photo for disease';
+    const resp = await fetch('/api/diagnose', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({image:selectedImageB64, media_type:selectedMediaType, lang:currentLang})
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      if (err.error === 'limit_reached') { box.textContent = err.message; setTimeout(openUpgrade, 1500); }
+      else { box.textContent = '⚠ ' + (err.error || 'Error'); }
+      btn.disabled = false;
+      btn.textContent = currentLang === 'tw' ? '🔍 Hwɛ foto ho yareɛ' : '🔍 Analyse photo for disease';
       return;
     }
-    const reader=resp.body.getReader(); const decoder=new TextDecoder(); let fullText='';
-    while(true){
-      const {done,value}=await reader.read(); if(done) break;
-      for(const line of decoder.decode(value,{stream:true}).split('\n')){
-        if(line.startsWith('data: ')){const p=line.slice(6).trim();if(p==='[DONE]') break;
-          try{fullText+=JSON.parse(p).text;box.textContent=fullText;}catch{}}
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    while(true) {
+      const {done, value} = await reader.read(); if(done) break;
+      for (const line of decoder.decode(value, {stream:true}).split('\n')) {
+        if (line.startsWith('data: ')) {
+          const p = line.slice(6).trim(); if(p === '[DONE]') break;
+          try { fullText += JSON.parse(p).text; box.textContent = fullText; } catch{}
+        }
       }
     }
-  } catch(e){ box.textContent='⚠ Connection error.'; }
-  btn.disabled=false; btn.textContent=currentLang==='tw'?'🔍 Hwɛ foto foforo':'🔍 Analyse another photo';
+    // read diagnosis aloud if voice mode active
+    if (voiceAutoSpeak) speakText(fullText);
+  } catch(e) { box.textContent = '⚠ Connection error.'; }
+  btn.disabled = false;
+  btn.textContent = currentLang === 'tw' ? '🔍 Hwɛ foto foforo' : '🔍 Analyse another photo';
 }
+
+// ─────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────
+loadQueue();
+if (!isOnline) handleOffline();
+else cacheDataForOffline();   // prime offline cache immediately on load
 </script>
+
 </body>
 </html>
