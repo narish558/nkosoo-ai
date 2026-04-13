@@ -507,6 +507,52 @@ def admin_logout():
     session.pop("admin",None); return redirect("/admin")
 
 # ---------------------------------------------------------------------------
+# Offline cache data API — returns JSON snapshot for service worker to cache
+# ---------------------------------------------------------------------------
+@app.route("/api/cache-data")
+def api_cache_data():
+    """Returns a single JSON payload of weather, prices and pests for offline use."""
+    sid = get_sid()
+    with get_db() as db:
+        row = db.execute("SELECT region FROM users WHERE session_id=?", (sid,)).fetchone()
+    region = row["region"] if row else "greater_accra"
+    return jsonify({
+        "weather": get_weather(region),
+        "prices":  PRICE_DATA,
+        "pests":   PEST_DATA,
+        "region":  region,
+        "cached_at": time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime()),
+    })
+
+# Offline queue — farmer's pending messages when offline
+@app.route("/api/offline-queue", methods=["POST"])
+def api_offline_queue():
+    """Receives queued messages that were saved while offline and processes them."""
+    sid  = get_sid()
+    data = request.get_json()
+    messages = data.get("messages", [])
+    lang     = data.get("lang", "en")
+    if not messages:
+        return jsonify({"error": "No messages"}), 400
+    if not client.api_key:
+        return jsonify({"error": "ANTHROPIC_API_KEY not set"}), 500
+    user = get_or_create_user(sid)
+    if not is_pro(user):
+        used = get_usage_today(sid)
+        if used >= FREE_DAILY_LIMIT:
+            return jsonify({"error": "limit_reached",
+                "message": f"Daily limit reached. Upgrade to Pro."}), 429
+    log_usage(sid, "chat", messages[-1].get("content", "") if messages else "")
+    system = SYSTEM_TW if lang == "tw" else SYSTEM_EN
+    def generate():
+        with client.messages.stream(model="claude-sonnet-4-20250514", max_tokens=1024,
+                system=system, messages=messages) as stream:
+            for text in stream.text_stream:
+                yield f"data: {json.dumps({'text': text})}\n\n"
+        yield "data: [DONE]\n\n"
+    return Response(stream_with_context(generate()), mimetype="text/event-stream")
+
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     print("\n🌿 Nkɔsoɔ AI starting...")
     print("   API key set:", bool(client.api_key))
