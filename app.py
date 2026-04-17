@@ -243,11 +243,17 @@ def get_planting_logs(sid):
     return [dict(r) for r in rows]
 
 def build_calendar_prompt(profile, region_name, lang="en"):
-    crops = json.loads(profile.get("crops","[]"))
+    # crops may be a JSON string or already a list
+    raw_crops = profile.get("crops", "[]")
+    if isinstance(raw_crops, str):
+        try: crops = json.loads(raw_crops)
+        except: crops = []
+    else:
+        crops = raw_crops if isinstance(raw_crops, list) else []
     crop_list = ", ".join(crops) if crops else "mixed crops"
-    soil      = profile.get("soil_type","loamy")
-    water     = profile.get("water_source","rain")
-    size      = f"{profile.get('farm_size',1)} {profile.get('size_unit','acres')}"
+    soil  = profile.get("soil_type", "loamy")
+    water = profile.get("water_source", "rain")
+    size  = f"{profile.get('farm_size', 1)} {profile.get('size_unit', 'acres')}"
 
     if lang == "tw":
         return f"""Wo yɛ Nkɔsoɔ AI. Yɛ aba dua kalenda ma farmer yi:
@@ -647,35 +653,69 @@ def api_profile_save():
 @app.route("/api/calendar", methods=["GET"])
 def api_calendar():
     sid     = get_sid()
-    lang    = request.args.get("lang","en")
+    lang    = request.args.get("lang", "en")
+
+    # allow caller to pass updated crops in query string so profile
+    # doesn't need a separate save round-trip before generating
+    crops_param = request.args.get("crops")
     profile = get_farm_profile(sid)
+
     if not profile:
         return jsonify({"error": "no_profile",
-            "message": "Please fill in your farm profile first."}), 400
+            "message": "Please save your farm profile first."}), 400
     if not client.api_key:
         return jsonify({"error": "ANTHROPIC_API_KEY not set"}), 500
-    region_key  = profile.get("region","greater_accra")
-    region_name = GHANA_REGIONS.get(region_key,{}).get("name","Ghana")
+
+    # merge live crops from URL param if provided
+    if crops_param:
+        try:
+            live_crops = json.loads(crops_param)
+            profile["crops"] = live_crops
+        except Exception:
+            pass
+
+    # normalise crops to list
+    raw = profile.get("crops", "[]")
+    if isinstance(raw, str):
+        try: profile["crops"] = json.loads(raw)
+        except: profile["crops"] = []
+
+    region_key  = profile.get("region", "greater_accra")
+    region_name = GHANA_REGIONS.get(region_key, {}).get("name", "Ghana")
     prompt      = build_calendar_prompt(profile, region_name, lang)
+
     try:
         msg = client.messages.create(
-            model="claude-sonnet-4-20250514", max_tokens=2048,
-            messages=[{"role":"user","content": prompt}])
-        raw = msg.content[0].text.strip()
-        # strip any accidental markdown fences
-        if raw.startswith("```"): raw = raw.split("\n",1)[1].rsplit("```",1)[0]
-        calendar = json.loads(raw)
+            model="claude-sonnet-4-20250514",
+            max_tokens=4096,   # more crops need more tokens
+            messages=[{"role": "user", "content": prompt}])
+        raw_text = msg.content[0].text.strip()
+
+        # strip accidental markdown fences
+        if raw_text.startswith("```"):
+            raw_text = raw_text.split("\n", 1)[1]
+            raw_text = raw_text.rsplit("```", 1)[0]
+        raw_text = raw_text.strip()
+
+        calendar = json.loads(raw_text)
+        crops_out = profile.get("crops", [])
+        if isinstance(crops_out, str):
+            try: crops_out = json.loads(crops_out)
+            except: crops_out = []
+
         return jsonify({"calendar": calendar, "profile": {
-            "farmer_name": profile.get("farmer_name",""),
-            "region": region_name,
-            "crops": json.loads(profile.get("crops","[]")) if isinstance(profile.get("crops"),str) else profile.get("crops",[]),
-            "farm_size": profile.get("farm_size"),
-            "size_unit": profile.get("size_unit","acres"),
+            "farmer_name": profile.get("farmer_name", ""),
+            "region":      region_name,
+            "crops":       crops_out,
+            "farm_size":   profile.get("farm_size"),
+            "size_unit":   profile.get("size_unit", "acres"),
         }})
-    except json.JSONDecodeError:
-        return jsonify({"error": "AI returned invalid calendar. Please try again."}), 500
+    except json.JSONDecodeError as e:
+        print(f"[Calendar JSON error] {e}\nRaw: {raw_text[:300]}")
+        return jsonify({"error": "AI returned an invalid calendar format. Please try again."}), 500
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"[Calendar error] {type(e).__name__}: {e}")
+        return jsonify({"error": f"Calendar generation failed: {str(e)}"}), 500
 
 # ---------------------------------------------------------------------------
 # Planting Log API
