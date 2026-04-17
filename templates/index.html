@@ -189,9 +189,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .cal-task-body{flex:1;}
 .cal-task-action{font-size:14px;font-weight:600;color:var(--tp);}
 .cal-task-note{font-size:12px;color:var(--ts);margin-top:2px;line-height:1.4;}
-.cal-task-log-btn{font-size:11px;padding:3px 8px;border:1px solid var(--bd);border-radius:20px;background:transparent;color:var(--ts);cursor:pointer;flex-shrink:0;transition:all .15s;}
-.cal-task-log-btn:hover{background:var(--g50);color:var(--g600);border-color:var(--g100);}
-.calendar-empty{text-align:center;padding:2rem;color:var(--ts);font-size:14px;}
+.cal-crop-card{background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rl);margin-bottom:10px;overflow:hidden;}
+.cal-crop-header{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:var(--g50);border-bottom:0.5px solid var(--g100);}
+.cal-crop-title{font-size:14px;font-weight:500;color:var(--g800);}
+.cal-crop-status{font-size:12px;color:var(--ts);display:flex;align-items:center;gap:5px;}
+.cal-regen-btn{background:none;border:none;color:var(--g600);font-size:12px;cursor:pointer;text-decoration:underline;padding:0;}
+.cal-months-wrap{padding:8px 12px;}
+.cal-no-tasks{font-size:12px;color:var(--ts);padding:6px 0;}
+
 .log-form-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
 .log-form-row .form-input,.log-form-row .form-select{flex:1;min-width:100px;}
 .add-log-btn{padding:10px 16px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
@@ -639,19 +644,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <!-- ── Planting Calendar ─────────────────────────────── -->
     <div class="card">
       <div class="card-title" data-en="📅 My Planting Calendar" data-tw="📅 Me Dua Aba Kalenda">📅 My Planting Calendar</div>
-      <p style="font-size:13px;color:var(--ts);margin-bottom:1rem;"
-         data-en="AI generates a 12-month crop plan based on your farm profile and Ghana's seasons."
-         data-tw="AI bɛyɛ aba dua plan ama wo afuo ne Ghana ɔberɛ so.">
-        AI generates a 12-month crop plan based on your farm profile and Ghana's seasons.
+      <p style="font-size:13px;color:var(--ts);margin-bottom:.875rem;">
+        Select a crop and generate its 12-month plan — one at a time, results appear instantly.
       </p>
-      <button class="gen-calendar-btn" id="genCalBtn" onclick="generateCalendar()">
-        <span>✨ Generate My Planting Calendar</span>
+
+      <!-- Single crop picker -->
+      <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap;">
+        <select class="form-select" id="calCropSelect" style="flex:1;min-width:140px;">
+          <option value="">Select a crop…</option>
+        </select>
+        <button class="gen-calendar-btn" id="genOneBtn" onclick="generateOneCrop()"
+          style="margin:0;flex-shrink:0;width:auto;padding:9px 16px;font-size:13px;">
+          ✨ Generate
+        </button>
+      </div>
+
+      <!-- Generate all button -->
+      <button class="gen-calendar-btn" id="genAllBtn" onclick="generateAllCrops()"
+        style="background:var(--muted);color:var(--g600);border:1px solid var(--g100);margin-bottom:1rem;font-size:13px;">
+        🔄 Generate all my crops one by one
       </button>
-      <div id="calendarContainer">
-        <div class="calendar-empty" id="calendarEmpty">
-          Save your profile above, then tap the button to generate your personalized calendar.
-        </div>
-        <div class="calendar-grid" id="calendarGrid" style="display:none"></div>
+
+      <!-- Status line -->
+      <div id="calStatus" style="font-size:13px;color:var(--ts);min-height:20px;margin-bottom:.75rem;"></div>
+
+      <!-- Per-crop calendar cards render here -->
+      <div id="calendarGrid"></div>
+
+      <div id="calendarEmpty" style="font-size:13px;color:var(--ts);text-align:center;padding:1.5rem 0;">
+        Save your profile and select crops above, then generate your calendar.
       </div>
     </div>
 
@@ -769,7 +790,6 @@ let calendarData = null;
 const SERVER_PROFILE = {{ (profile or {}) | tojson }};
 
 function initFarmTab() {
-  // merge server profile into local state
   farmProfile = Object.assign({}, SERVER_PROFILE);
   if (typeof farmProfile.crops === 'string') {
     try { farmProfile.crops = JSON.parse(farmProfile.crops); } catch { farmProfile.crops = []; }
@@ -779,6 +799,11 @@ function initFarmTab() {
   loadLogs();
   const hasProfile = farmProfile.farmer_name || (farmProfile.crops && farmProfile.crops.length > 0);
   document.getElementById('profileNudge').style.display = hasProfile ? 'none' : 'flex';
+  // populate calendar crop selector from saved profile
+  if (farmProfile.crops && farmProfile.crops.length > 0) {
+    syncCalCropSelect(farmProfile.crops);
+    document.getElementById('calendarEmpty').style.display = 'none';
+  }
 }
 
 function renderProfileForm() {
@@ -833,8 +858,9 @@ async function saveProfile() {
       saved.classList.add('show');
       setTimeout(() => saved.classList.remove('show'), 4000);
       document.getElementById('profileNudge').style.display = 'none';
-      // update log crop selector to match selected crops
       syncLogCropSelect(crops);
+      syncCalCropSelect(crops);  // keep cal dropdown in sync
+      if (crops.length > 0) document.getElementById('calendarEmpty').style.display = 'none';
     } else { alert('Save failed. Please try again.'); }
   } catch(e) { alert('Connection error.'); }
   btn.disabled = false; btn.textContent = '💾 Save My Farm Profile';
@@ -855,74 +881,138 @@ function syncLogCropSelect(crops) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// PLANTING CALENDAR
+// PLANTING CALENDAR — one crop at a time
 // ─────────────────────────────────────────────────────────────
-const MONTHS = ['January','February','March','April','May','June',
-                'July','August','September','October','November','December'];
-const MONTH_EMOJIS = ['❄️','🌱','🌧️','🌧️','☔','🌦️','⛅','🌤️','🌦️','🌧️','🍂','☀️'];
+const MONTHS      = ['January','February','March','April','May','June',
+                     'July','August','September','October','November','December'];
+const MONTH_EMOJIS = ['🌵','🌱','🌧️','🌧️','☔','🌦️','⛅','🌤️','🌦️','🌧️','🍂','☀️'];
 
-async function generateCalendar() {
-  const btn = document.getElementById('genCalBtn');
-  const selectedCrops = getSelectedCrops();
-  const crops = selectedCrops.length > 0 ? selectedCrops : (farmProfile.crops || []);
+let calendarStore  = {};   // { cropName: [month objects] }
+let isGenerating   = false;
 
-  if (crops.length === 0) {
-    alert('Please select at least one crop in your farm profile first.');
-    openProfileSection(); return;
-  }
+// crop emoji map
+const CROP_EMOJI = {
+  'Maize':'🌽','Cassava':'🍠','Tomatoes':'🍅','Plantain':'🍌','Yam':'🥔',
+  'Cocoa':'🍫','Pepper':'🌶','Groundnut':'🥜','Rice':'🌾','Vegetables':'🥦',
+  'Soybean':'🫘','Cowpea':'🫛','Mango':'🥭','Pineapple':'🍍','Watermelon':'🍉',
+  'Pawpaw':'🍈','Orange':'🍊','Banana':'🍌','Avocado':'🥑','Coconut':'🥥',
+  'Guava':'🍏','Passion Fruit':'💛','Soursop':'🍃','Lime':'🍋'
+};
 
-  btn.disabled = true;
-  btn.innerHTML = '<span class="loading"></span> Building your calendar…';
-  const emptyEl = document.getElementById('calendarEmpty');
-  emptyEl.textContent = '⏳ AI is writing your 12-month plan… this takes about 20 seconds.';
-  emptyEl.style.display = 'block';
-  document.getElementById('calendarGrid').style.display = 'none';
+function syncCalCropSelect(crops) {
+  const sel = document.getElementById('calCropSelect');
+  sel.innerHTML = '<option value="">Select a crop…</option>';
+  crops.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = (CROP_EMOJI[c] || '🌿') + ' ' + c;
+    sel.appendChild(opt);
+  });
+}
 
-  // collect full profile from form fields
-  const profilePayload = {
-    farmer_name:  document.getElementById('pName').value.trim(),
-    phone:        document.getElementById('pPhone').value.trim(),
+function setCalStatus(msg, color='var(--ts)') {
+  const el = document.getElementById('calStatus');
+  el.textContent = msg;
+  el.style.color = color;
+}
+
+function getProfilePayload() {
+  return {
+    region:       document.getElementById('pRegion').value,
     farm_size:    parseFloat(document.getElementById('pSize').value) || 1,
     size_unit:    document.getElementById('pUnit').value,
     soil_type:    document.getElementById('pSoil').value,
     water_source: document.getElementById('pWater').value,
-    region:       document.getElementById('pRegion').value,
-    crops,
     lang:         currentLang,
   };
+}
 
-  // save profile silently in background
+async function generateOneCrop() {
+  const crop = document.getElementById('calCropSelect').value;
+  if (!crop) { alert('Please select a crop first.'); return; }
+  if (isGenerating) return;
+  await generateCropCalendar(crop);
+}
+
+async function generateAllCrops() {
+  if (isGenerating) return;
+  const crops = getSelectedCrops().length > 0
+    ? getSelectedCrops()
+    : (farmProfile.crops || []);
+  if (crops.length === 0) {
+    alert('Please select at least one crop in your profile first.');
+    openProfileSection(); return;
+  }
+  // save profile silently first
   fetch('/api/profile', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(profilePayload)
-  }).catch(() => {});
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({...getProfilePayload(), crops,
+      farmer_name: document.getElementById('pName').value.trim(),
+      phone: document.getElementById('pPhone').value.trim()})
+  }).catch(()=>{});
+
+  document.getElementById('calendarEmpty').style.display = 'none';
+  for (let i = 0; i < crops.length; i++) {
+    if (!isGenerating && i > 0) break; // user cancelled
+    setCalStatus(`Generating ${i+1} of ${crops.length}: ${crops[i]}…`, 'var(--g600)');
+    await generateCropCalendar(crops[i]);
+  }
+  setCalStatus(`✅ All ${crops.length} crop${crops.length>1?'s':''} done!`, 'var(--g600)');
+  setTimeout(() => setCalStatus(''), 4000);
+}
+
+async function generateCropCalendar(crop) {
+  isGenerating = true;
+  document.getElementById('calendarEmpty').style.display = 'none';
+
+  // create or reset the card for this crop
+  let card = document.getElementById('cal-card-' + CSS.escape(crop));
+  if (!card) {
+    card = document.createElement('div');
+    card.id = 'cal-card-' + crop.replace(/\s+/g,'-');
+    card.className = 'cal-crop-card';
+    card.innerHTML = `
+      <div class="cal-crop-header">
+        <span class="cal-crop-title">${CROP_EMOJI[crop]||'🌿'} ${crop}</span>
+        <span class="cal-crop-status" id="ccs-${crop.replace(/\s+/g,'-')}">
+          <span class="loading"></span> Generating…
+        </span>
+      </div>
+      <div class="cal-months-wrap" id="cmw-${crop.replace(/\s+/g,'-')}"></div>`;
+    document.getElementById('calendarGrid').appendChild(card);
+  } else {
+    card.querySelector('.cal-crop-status') && (card.querySelector('.cal-crop-status').innerHTML = '<span class="loading"></span> Regenerating…');
+    const wrap = card.querySelector('.cal-months-wrap');
+    if (wrap) wrap.innerHTML = '';
+  }
+  card.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  const statusEl = document.getElementById('ccs-' + crop.replace(/\s+/g,'-'));
+  const wrapEl   = document.getElementById('cmw-' + crop.replace(/\s+/g,'-'));
 
   try {
-    // POST to streaming calendar endpoint
     const resp = await fetch('/api/calendar', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(profilePayload)
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({crop, ...getProfilePayload()})
     });
 
     if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      emptyEl.textContent = '⚠ ' + (err.message || err.error || 'Calendar generation failed. Please try again.');
-      btn.disabled = false; btn.innerHTML = '✨ Generate My Planting Calendar'; return;
+      const err = await resp.json().catch(()=>({}));
+      if (statusEl) statusEl.innerHTML = '⚠ ' + (err.error||'Failed');
+      isGenerating = false; return;
     }
 
-    // read SSE stream — accumulate chunks, wait for done event
     const reader  = resp.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = '';
+    let   buffer  = '';
 
     while (true) {
       const {done, value} = await reader.read();
       if (done) break;
-      buffer += decoder.decode(value, {stream: true});
+      buffer += decoder.decode(value, {stream:true});
       const lines = buffer.split('\n');
-      buffer = lines.pop(); // keep incomplete line
+      buffer = lines.pop();
 
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
@@ -931,28 +1021,55 @@ async function generateCalendar() {
         try {
           const msg = JSON.parse(raw);
           if (msg.error) {
-            emptyEl.textContent = '⚠ ' + msg.error;
-            emptyEl.style.display = 'block';
-            btn.disabled = false; btn.innerHTML = '🔄 Try Again'; return;
+            if (statusEl) statusEl.innerHTML = '⚠ ' + msg.error;
+            isGenerating = false; return;
           }
-          if (msg.chunk) {
-            // show live progress tick so farmer knows it's working
-            const dots = '.'.repeat((emptyEl.textContent.match(/\./g)||[]).length % 5 + 1);
-            emptyEl.textContent = '⏳ AI is writing your plan' + dots;
+          if (msg.done && msg.calendar) {
+            calendarStore[crop] = msg.calendar;
+            renderCropCalendar(crop, msg.calendar, wrapEl, statusEl);
           }
-          if (msg.done && msg.payload) {
-            calendarData = msg.payload.calendar;
-            renderCalendar(calendarData, msg.payload.profile);
-          }
-        } catch(e) { /* ignore malformed chunk */ }
+        } catch(e) {}
       }
     }
   } catch(e) {
-    emptyEl.textContent = '⚠ Connection lost. Please check your internet and try again.';
-    emptyEl.style.display = 'block';
+    if (statusEl) statusEl.innerHTML = '⚠ Connection error';
   }
-  btn.disabled = false; btn.innerHTML = '🔄 Regenerate Calendar';
+  isGenerating = false;
 }
+
+function renderCropCalendar(crop, calendar, wrapEl, statusEl) {
+  if (!wrapEl) return;
+  const now = new Date().getMonth();
+  wrapEl.innerHTML = calendar.map((m, idx) => {
+    const tasks   = m.tasks || [];
+    const isCurrent = MONTHS[now] === m.month;
+    const emoji   = MONTH_EMOJIS[MONTHS.indexOf(m.month)] || '📅';
+    const taskHTML = tasks.length === 0
+      ? '<div class="cal-no-tasks">No major tasks — monitor crop and check for pests.</div>'
+      : tasks.map(t => `
+          <div class="cal-task">
+            <div class="cal-task-body">
+              <div class="cal-task-action">${t.action}</div>
+              ${t.note ? `<div class="cal-task-note">${t.note}</div>` : ''}
+            </div>
+            <button class="cal-task-log-btn"
+              onclick='logFromCalendar(${JSON.stringify(crop)},${JSON.stringify(t.action)})'>
+              + Log
+            </button>
+          </div>`).join('');
+    return `
+      <div class="cal-month ${isCurrent?'open':''}">
+        <div class="cal-month-header" onclick="this.closest('.cal-month').classList.toggle('open')">
+          <span>${emoji} ${m.month}${isCurrent?' <span style=\'font-size:10px;opacity:.7;\'>← now</span>':''}</span>
+          <span class="chevron">▾</span>
+        </div>
+        <div class="cal-tasks">${taskHTML}</div>
+      </div>`;
+  }).join('');
+
+  if (statusEl) statusEl.innerHTML = `✅ Ready · <button class="cal-regen-btn" onclick="generateCropCalendar('${crop}')">↻ Refresh</button>`;
+}
+
 
 function renderCalendar(calendar, profile) {
   const grid = document.getElementById('calendarGrid');
