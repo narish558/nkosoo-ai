@@ -242,53 +242,35 @@ def get_planting_logs(sid):
         ).fetchall()
     return [dict(r) for r in rows]
 
-def build_calendar_prompt(profile, region_name, lang="en"):
-    # crops may be a JSON string or already a list
-    raw_crops = profile.get("crops", "[]")
-    if isinstance(raw_crops, str):
-        try: crops = json.loads(raw_crops)
-        except: crops = []
-    else:
-        crops = raw_crops if isinstance(raw_crops, list) else []
-    crop_list = ", ".join(crops) if crops else "mixed crops"
+def build_calendar_prompt(crop, profile, region_name, lang="en"):
+    """Build a prompt for a SINGLE crop — fast, focused, never times out."""
     soil  = profile.get("soil_type", "loamy")
     water = profile.get("water_source", "rain")
     size  = f"{profile.get('farm_size', 1)} {profile.get('size_unit', 'acres')}"
 
     if lang == "tw":
-        return f"""Wo yɛ Nkɔsoɔ AI. Yɛ aba dua kalenda ma farmer yi:
+        return f"""Wo yɛ Nkɔsoɔ AI. Yɛ aba dua kalenda ma {crop} nko ara:
 
-Farmer tumi: {crop_list}
-Afuo kɛseɛ: {size}
-Asaase: {soil}
-Nsuo: {water}
-Man: {region_name}
+Afuo kɛseɛ: {size} | Asaase: {soil} | Nsuo: {water} | Man: {region_name}
 
-Yɛ calendar a ɛwɔ Ghana ɔberɛ 12 mu. Ka adwuma biara a ɛsɛ sɛ farmer yɛ osram biara mu:
-planting, fertilizing, weeding, spraying, harvesting.
-Fa aba biara ho asɛm ntɛm na boa.
+Yɛ JSON array a ɛwɔ osram 12 mu ma {crop} nko ara.
 Gyina Ghana osu ɔberɛ so: Major rains (Mar-Jun), Minor rains (Sep-Nov), Dry (Nov-Mar) wɔ South;
 Wet (May-Oct), Dry (Nov-Apr) wɔ North.
-Fa JSON array bi na ɛwɔ saa nhyehyɛe yi:
-[{{"month":"January","tasks":[{{"crop":"Maize","action":"Land preparation","note":"..."}}]}}]
-Ka JSON nko ara — mma preamble biara, mma markdown biara."""
+Ka JSON nko ara — mma preamble, mma markdown:
+[{{"month":"January","tasks":[{{"action":"Land preparation","note":"..."}}]}}]"""
     else:
-        return f"""You are Nkɔsoɔ AI. Generate a personalized 12-month planting calendar for this farmer:
+        return f"""You are Nkɔsoɔ AI. Generate a 12-month planting calendar for ONE crop only: {crop}
 
-Crops grown: {crop_list}
-Farm size: {size}
-Soil type: {soil}
-Water source: {water}
-Region: {region_name}
+Farm: {size} | Soil: {soil} | Water: {water} | Region: {region_name}
 
-For each month list the exact farming tasks the farmer should do for each of their crops:
-planting dates, fertilizer application, weeding, pest spraying, harvesting windows.
-Base advice on Ghana's actual seasons: Major rains (Mar–Jun), Minor rains (Sep–Nov), Dry season (Nov–Mar) for South;
+List exact monthly tasks for {crop} only: planting, fertilizing, weeding, pest control, harvesting.
+Use Ghana's seasons: Major rains (Mar–Jun), Minor rains (Sep–Nov), Dry (Nov–Mar) for South;
 Single wet season (May–Oct), Dry (Nov–Apr) for Northern regions.
-Be specific — include quantities, spacing, and local product names where relevant.
+Include specific quantities, product names, and spacing where relevant.
+If {crop} has no major tasks in a month, return an empty tasks array for that month.
 
-Respond ONLY with a valid JSON array — no preamble, no markdown fences:
-[{{"month":"January","tasks":[{{"crop":"Maize","action":"Land preparation","note":"Clear and till. Apply lime if pH below 5.5."}}]}}]"""
+Respond ONLY with valid JSON — no preamble, no markdown fences:
+[{{"month":"January","tasks":[{{"action":"Land preparation","note":"Clear and till to 20cm. Apply lime if pH below 5.5."}}]}}]"""
 
 # ---------------------------------------------------------------------------
 # Ghana regions
@@ -693,86 +675,54 @@ def api_profile_save():
     return jsonify({"ok": True})
 
 # ---------------------------------------------------------------------------
-# Planting Calendar API (AI-generated, streaming to beat Render 30s timeout)
+# Planting Calendar API — ONE crop per request, streams fast
 # ---------------------------------------------------------------------------
 @app.route("/api/calendar", methods=["POST"])
 def api_calendar():
     sid  = get_sid()
     data = request.get_json() or {}
     lang = data.get("lang", "en")
+    crop = (data.get("crop") or "").strip()
 
+    if not crop:
+        return jsonify({"error": "No crop specified"}), 400
     if not client.api_key:
         return jsonify({"error": "ANTHROPIC_API_KEY not set"}), 500
 
-    # use crops sent from frontend directly — most reliable source
-    crops_from_client = data.get("crops", [])
-
-    # also load saved profile for farm details (size, soil, water, region)
+    # load saved profile for farm context; allow client to override fields
     profile = get_farm_profile(sid) or {}
-
-    # merge: client crops take priority, fall back to saved
-    if crops_from_client:
-        profile["crops"] = crops_from_client
-    else:
-        raw = profile.get("crops", "[]")
-        if isinstance(raw, str):
-            try: profile["crops"] = json.loads(raw)
-            except: profile["crops"] = []
-
-    if not profile.get("crops"):
-        return jsonify({"error": "no_crops",
-            "message": "Please select at least one crop first."}), 400
-
-    # override profile fields if sent from client
-    for field in ("region", "farm_size", "size_unit", "soil_type", "water_source", "farmer_name"):
+    for field in ("region","farm_size","size_unit","soil_type","water_source"):
         if data.get(field):
             profile[field] = data[field]
 
     region_key  = profile.get("region", "greater_accra")
     region_name = GHANA_REGIONS.get(region_key, {}).get("name", "Ghana")
-    prompt      = build_calendar_prompt(profile, region_name, lang)
+    prompt      = build_calendar_prompt(crop, profile, region_name, lang)
 
     def generate():
         full_text = ""
         try:
             with client.messages.stream(
                 model="claude-sonnet-4-20250514",
-                max_tokens=4096,
+                max_tokens=2048,          # single crop — much smaller, much faster
                 messages=[{"role": "user", "content": prompt}]
             ) as stream:
                 for text in stream.text_stream:
                     full_text += text
-                    # send a heartbeat every chunk so Render doesn't time out
                     yield f"data: {json.dumps({'chunk': text})}\n\n"
 
-            # after streaming done, parse JSON and send final payload
             clean = full_text.strip()
             if clean.startswith("```"):
                 clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
 
             calendar = json.loads(clean)
-            crops_out = profile.get("crops", [])
-            if isinstance(crops_out, str):
-                try: crops_out = json.loads(crops_out)
-                except: crops_out = []
-
-            payload = {
-                "calendar": calendar,
-                "profile": {
-                    "farmer_name": profile.get("farmer_name", ""),
-                    "region":      region_name,
-                    "crops":       crops_out,
-                    "farm_size":   profile.get("farm_size"),
-                    "size_unit":   profile.get("size_unit", "acres"),
-                }
-            }
-            yield f"data: {json.dumps({'done': True, 'payload': payload})}\n\n"
+            yield f"data: {json.dumps({'done': True, 'crop': crop, 'calendar': calendar})}\n\n"
 
         except json.JSONDecodeError as e:
-            print(f"[Calendar JSON error] {e} | Raw: {full_text[:400]}")
-            yield f"data: {json.dumps({'error': 'AI returned an invalid format. Please try again.'})}\n\n"
+            print(f"[Calendar JSON error] {crop}: {e} | Raw: {full_text[:300]}")
+            yield f"data: {json.dumps({'error': f'Invalid calendar for {crop}. Please try again.'})}\n\n"
         except Exception as e:
-            print(f"[Calendar error] {type(e).__name__}: {e}")
+            print(f"[Calendar error] {crop}: {type(e).__name__}: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return Response(stream_with_context(generate()), mimetype="text/event-stream")
