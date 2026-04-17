@@ -863,17 +863,44 @@ const MONTH_EMOJIS = ['❄️','🌱','🌧️','🌧️','☔','🌦️','⛅',
 
 async function generateCalendar() {
   const btn = document.getElementById('genCalBtn');
-  const crops = getSelectedCrops().length > 0 ? getSelectedCrops() : (farmProfile.crops || []);
+  const selectedCrops = getSelectedCrops();
+  const crops = selectedCrops.length > 0 ? selectedCrops : (farmProfile.crops || []);
+
   if (crops.length === 0) {
     alert('Please select at least one crop in your farm profile first.');
     openProfileSection(); return;
   }
+
   btn.disabled = true;
-  btn.innerHTML = '<span class="loading"></span> AI is building your calendar…';
-  document.getElementById('calendarEmpty').textContent = '⏳ Generating your personalized 12-month plan…';
+  btn.innerHTML = '<span class="loading"></span> Saving profile & building calendar…';
+  document.getElementById('calendarEmpty').textContent = '⏳ Generating your personalised 12-month plan…';
+  document.getElementById('calendarEmpty').style.display = 'block';
   document.getElementById('calendarGrid').style.display = 'none';
+
+  // always save the current profile state (including any chip changes) before generating
   try {
-    const resp = await fetch('/api/calendar?lang=' + currentLang);
+    await fetch('/api/profile', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        farmer_name:  document.getElementById('pName').value.trim(),
+        phone:        document.getElementById('pPhone').value.trim(),
+        farm_size:    parseFloat(document.getElementById('pSize').value) || 1,
+        size_unit:    document.getElementById('pUnit').value,
+        soil_type:    document.getElementById('pSoil').value,
+        water_source: document.getElementById('pWater').value,
+        region:       document.getElementById('pRegion').value,
+        crops,
+      })
+    });
+  } catch(e) { /* non-fatal — profile already saved earlier, continue */ }
+
+  btn.innerHTML = '<span class="loading"></span> AI is building your calendar…';
+
+  try {
+    // pass crops in URL too as a safety net so backend always has latest selection
+    const cropsParam = encodeURIComponent(JSON.stringify(crops));
+    const resp = await fetch(`/api/calendar?lang=${currentLang}&crops=${cropsParam}`);
     const data = await resp.json();
     if (!resp.ok) {
       document.getElementById('calendarEmpty').textContent =
@@ -883,7 +910,9 @@ async function generateCalendar() {
     calendarData = data.calendar;
     renderCalendar(calendarData, data.profile);
   } catch(e) {
-    document.getElementById('calendarEmpty').textContent = '⚠ Connection error. Please try again.';
+    document.getElementById('calendarEmpty').textContent =
+      '⚠ Connection error. This can happen with many crops selected — please try again.';
+    document.getElementById('calendarEmpty').style.display = 'block';
   }
   btn.disabled = false; btn.innerHTML = '🔄 Regenerate Calendar';
 }
