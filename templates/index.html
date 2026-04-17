@@ -159,6 +159,55 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .loading{display:inline-block;width:14px;height:14px;border:2px solid var(--g100);border-top-color:var(--g600);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* ── Farm Profile & Calendar ─────────────────────────────────── */
+.profile-form{display:flex;flex-direction:column;gap:1rem;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:600px){.form-row{grid-template-columns:1fr;}}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-label{font-size:12px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;}
+.form-input,.form-select,.form-textarea{padding:10px 12px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;background:var(--card);color:var(--tp);outline:none;transition:border-color .2s;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--g600);}
+.crop-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+.crop-chip{padding:5px 12px;border:1.5px solid var(--bd);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:var(--card);color:var(--ts);transition:all .15s;user-select:none;}
+.crop-chip.selected{background:var(--g600);color:#fff;border-color:var(--g600);}
+.save-profile-btn{padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:15px;font-weight:600;cursor:pointer;}
+.save-profile-btn:disabled{opacity:.5;cursor:not-allowed;}
+.profile-saved{font-size:13px;color:var(--g600);text-align:center;padding:6px;display:none;}
+.profile-saved.show{display:block;}
+.gen-calendar-btn{width:100%;padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;gap:8px;}
+.gen-calendar-btn:disabled{opacity:.5;cursor:not-allowed;}
+.calendar-grid{display:flex;flex-direction:column;gap:10px;}
+.cal-month{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);overflow:hidden;}
+.cal-month-header{background:var(--g50);padding:10px 16px;font-size:13px;font-weight:700;color:var(--g600);display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.cal-month-header .chevron{transition:transform .2s;font-size:12px;}
+.cal-month.open .chevron{transform:rotate(180deg);}
+.cal-tasks{padding:12px 16px;display:none;flex-direction:column;gap:8px;}
+.cal-month.open .cal-tasks{display:flex;}
+.cal-task{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--bd);}
+.cal-task:last-child{border-bottom:none;}
+.cal-task-crop{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--g50);color:var(--g600);white-space:nowrap;flex-shrink:0;}
+.cal-task-body{flex:1;}
+.cal-task-action{font-size:14px;font-weight:600;color:var(--tp);}
+.cal-task-note{font-size:12px;color:var(--ts);margin-top:2px;line-height:1.4;}
+.cal-task-log-btn{font-size:11px;padding:3px 8px;border:1px solid var(--bd);border-radius:20px;background:transparent;color:var(--ts);cursor:pointer;flex-shrink:0;transition:all .15s;}
+.cal-task-log-btn:hover{background:var(--g50);color:var(--g600);border-color:var(--g100);}
+.calendar-empty{text-align:center;padding:2rem;color:var(--ts);font-size:14px;}
+.log-form-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.log-form-row .form-input,.log-form-row .form-select{flex:1;min-width:100px;}
+.add-log-btn{padding:10px 16px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.log-list{display:flex;flex-direction:column;gap:6px;}
+.log-entry{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--muted);border-radius:var(--rm);}
+.log-entry-date{font-size:11px;color:var(--ts);white-space:nowrap;margin-top:2px;}
+.log-entry-body{flex:1;}
+.log-entry-crop{font-size:12px;font-weight:700;color:var(--g600);}
+.log-entry-action{font-size:13px;color:var(--tp);}
+.log-entry-note{font-size:12px;color:var(--ts);}
+.log-delete-btn{background:none;border:none;color:var(--ts);cursor:pointer;font-size:16px;opacity:.5;padding:0 4px;}
+.log-delete-btn:hover{opacity:1;color:var(--r600);}
+.log-empty{text-align:center;padding:1.5rem;color:var(--ts);font-size:13px;}
+.profile-nudge{background:var(--a50);border:1px solid #f0c88a;border-radius:var(--rm);padding:10px 14px;font-size:13px;color:var(--a600);margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+.nudge-link{margin-left:auto;font-size:12px;font-weight:600;color:var(--a600);text-decoration:underline;cursor:pointer;white-space:nowrap;}
+
 .sync-bar{
   display:flex;align-items:center;gap:10px;padding:.6rem 1rem;
   font-size:12px;font-weight:500;border-bottom:1px solid var(--bd);
@@ -316,6 +365,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <button class="tab-btn"        onclick="showTab('pests')"   data-en="🐛 Pests"     data-tw="🐛 Mmoa">🐛 Pests</button>
     <button class="tab-btn"        onclick="showTab('diagnose')" data-en="📷 Diagnose" data-tw="📷 Hwɛ Aba">📷 Diagnose</button>
     <button class="tab-btn"        onclick="showTab('chat')"    data-en="🤖 Ask AI"    data-tw="🤖 Bisa AI">🤖 Ask AI</button>
+    <button class="tab-btn"        onclick="showTab('farm')"    data-en="🌱 My Farm"   data-tw="🌱 Me Afuo">🌱 My Farm</button>
   </div>
 
   <!-- WEATHER -->
@@ -475,7 +525,157 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     </div>
   </div>
 
-</div>
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- FARM — Profile + Calendar + Diary                       -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="panel-farm" class="panel">
+
+    <!-- ── Profile nudge (shown when profile is empty) ──── -->
+    <div id="profileNudge" class="profile-nudge" style="display:none">
+      🌱 <span>Fill in your farm details to get a personalized planting calendar.</span>
+      <span class="nudge-link" onclick="openProfileSection()">Set up profile →</span>
+    </div>
+
+    <!-- ── Farm Profile ────────────────────────────────── -->
+    <div class="card" id="profileCard">
+      <div class="card-title" data-en="👤 My Farm Profile" data-tw="👤 Me Afuo Ho Nsɛm">👤 My Farm Profile</div>
+
+      <div class="profile-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" data-en="Your name" data-tw="Wo din">Your name</label>
+            <input class="form-input" id="pName" placeholder="e.g. Kofi Mensah"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-en="Phone number" data-tw="Wo fon nɔma">Phone number</label>
+            <input class="form-input" id="pPhone" placeholder="e.g. 0244123456" type="tel"/>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" data-en="Farm size" data-tw="Afuo kɛseɛ">Farm size</label>
+            <input class="form-input" id="pSize" placeholder="e.g. 2.5" type="number" min="0.1" step="0.1"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-en="Unit" data-tw="Nhwɛso">Unit</label>
+            <select class="form-select" id="pUnit">
+              <option value="acres">Acres</option>
+              <option value="hectares">Hectares</option>
+              <option value="plots">Plots</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" data-en="Soil type" data-tw="Asaase su">Soil type</label>
+            <select class="form-select" id="pSoil">
+              <option value="loamy">Loamy (best for most crops)</option>
+              <option value="sandy">Sandy (good drainage)</option>
+              <option value="clay">Clay (holds moisture)</option>
+              <option value="silty">Silty (fertile, river areas)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-en="Water source" data-tw="Nsuo baabi">Water source</label>
+            <select class="form-select" id="pWater">
+              <option value="rain">Rain-fed only</option>
+              <option value="irrigation">Irrigation system</option>
+              <option value="both">Rain + Irrigation</option>
+              <option value="stream">Stream / River nearby</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" data-en="Region" data-tw="Wo man">Region</label>
+          <select class="form-select" id="pRegion">
+            {% for key,r in regions.items() %}
+            <option value="{{ key }}">{{ r.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" data-en="Crops I grow (tap to select)" data-tw="Aba a mɛdua (tia na paw)">Crops I grow (tap to select)</label>
+          <div class="crop-chips" id="cropChips">
+            <span class="crop-chip" data-crop="Maize">🌽 Maize</span>
+            <span class="crop-chip" data-crop="Cassava">🍠 Cassava</span>
+            <span class="crop-chip" data-crop="Tomatoes">🍅 Tomatoes</span>
+            <span class="crop-chip" data-crop="Plantain">🍌 Plantain</span>
+            <span class="crop-chip" data-crop="Yam">🥔 Yam</span>
+            <span class="crop-chip" data-crop="Cocoa">🍫 Cocoa</span>
+            <span class="crop-chip" data-crop="Pepper">🌶 Pepper</span>
+            <span class="crop-chip" data-crop="Groundnut">🥜 Groundnut</span>
+            <span class="crop-chip" data-crop="Rice">🌾 Rice</span>
+            <span class="crop-chip" data-crop="Vegetables">🥦 Vegetables</span>
+            <span class="crop-chip" data-crop="Soybean">🫘 Soybean</span>
+            <span class="crop-chip" data-crop="Cowpea">🫛 Cowpea</span>
+          </div>
+        </div>
+
+        <button class="save-profile-btn" id="saveProfileBtn" onclick="saveProfile()">
+          💾 Save My Farm Profile
+        </button>
+        <div class="profile-saved" id="profileSaved">✅ Profile saved! Now generate your planting calendar below.</div>
+      </div>
+    </div>
+
+    <!-- ── Planting Calendar ─────────────────────────────── -->
+    <div class="card">
+      <div class="card-title" data-en="📅 My Planting Calendar" data-tw="📅 Me Dua Aba Kalenda">📅 My Planting Calendar</div>
+      <p style="font-size:13px;color:var(--ts);margin-bottom:1rem;"
+         data-en="AI generates a 12-month crop plan based on your farm profile and Ghana's seasons."
+         data-tw="AI bɛyɛ aba dua plan ama wo afuo ne Ghana ɔberɛ so.">
+        AI generates a 12-month crop plan based on your farm profile and Ghana's seasons.
+      </p>
+      <button class="gen-calendar-btn" id="genCalBtn" onclick="generateCalendar()">
+        <span>✨ Generate My Planting Calendar</span>
+      </button>
+      <div id="calendarContainer">
+        <div class="calendar-empty" id="calendarEmpty">
+          Save your profile above, then tap the button to generate your personalized calendar.
+        </div>
+        <div class="calendar-grid" id="calendarGrid" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- ── Farm Diary ────────────────────────────────────── -->
+    <div class="card">
+      <div class="card-title" data-en="📓 Farm Diary" data-tw="📓 Afuo Dawurubɔ">📓 Farm Diary</div>
+      <p style="font-size:13px;color:var(--ts);margin-bottom:.75rem;"
+         data-en="Log what you do on your farm each day."
+         data-tw="Kyerɛw adwuma a woyɛ wɔ wo afuo so daa.">
+        Log what you do on your farm each day.
+      </p>
+      <div class="log-form-row">
+        <select class="form-select" id="logCrop" style="max-width:140px;">
+          <option value="">Select crop</option>
+          <option>Maize</option><option>Cassava</option><option>Tomatoes</option>
+          <option>Plantain</option><option>Yam</option><option>Cocoa</option>
+          <option>Pepper</option><option>Groundnut</option><option>Rice</option>
+          <option>Vegetables</option><option>Soybean</option><option>Cowpea</option>
+        </select>
+        <select class="form-select" id="logAction" style="max-width:160px;">
+          <option value="">Select action</option>
+          <option>Land preparation</option><option>Planting</option>
+          <option>Fertilizer applied</option><option>Weeding</option>
+          <option>Pest spray</option><option>Irrigation</option>
+          <option>Harvesting</option><option>Storage</option><option>Other</option>
+        </select>
+        <input class="form-input" id="logNote" placeholder="Note (optional)" style="min-width:120px;"/>
+        <input class="form-input" id="logDate" type="date" style="max-width:140px;"/>
+        <button class="add-log-btn" onclick="addLog()">+ Add</button>
+      </div>
+      <div class="log-list" id="logList">
+        <div class="log-empty" id="logEmpty">No diary entries yet. Log your first farm activity above.</div>
+      </div>
+    </div>
+
+  </div><!-- /panel-farm -->
+
+</div><!-- /container -->
 
 <script>
 const QUICK_EN = {{ quick_en | tojson }};
@@ -532,10 +732,252 @@ function setLang(lang) {
 
 // Tabs
 function showTab(name) {
-  const names = ['weather','prices','pests','diagnose','chat'];
+  const names = ['weather','prices','pests','diagnose','chat','farm'];
   document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', names[i]===name));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id==='panel-'+name));
+  if (name === 'farm') initFarmTab();
 }
+
+// ─────────────────────────────────────────────────────────────
+// FARM PROFILE
+// ─────────────────────────────────────────────────────────────
+const FARM_PROFILE_KEY = 'nkosoo_farm_profile';
+let farmProfile = {};
+let calendarData = null;
+
+// Server-side profile pre-load
+const SERVER_PROFILE = {{ (profile or {}) | tojson }};
+
+function initFarmTab() {
+  // merge server profile into local state
+  farmProfile = Object.assign({}, SERVER_PROFILE);
+  if (typeof farmProfile.crops === 'string') {
+    try { farmProfile.crops = JSON.parse(farmProfile.crops); } catch { farmProfile.crops = []; }
+  }
+  if (!Array.isArray(farmProfile.crops)) farmProfile.crops = [];
+  renderProfileForm();
+  loadLogs();
+  const hasProfile = farmProfile.farmer_name || (farmProfile.crops && farmProfile.crops.length > 0);
+  document.getElementById('profileNudge').style.display = hasProfile ? 'none' : 'flex';
+}
+
+function renderProfileForm() {
+  if (farmProfile.farmer_name) document.getElementById('pName').value   = farmProfile.farmer_name;
+  if (farmProfile.phone)        document.getElementById('pPhone').value  = farmProfile.phone;
+  if (farmProfile.farm_size)    document.getElementById('pSize').value   = farmProfile.farm_size;
+  if (farmProfile.size_unit)    document.getElementById('pUnit').value   = farmProfile.size_unit;
+  if (farmProfile.soil_type)    document.getElementById('pSoil').value   = farmProfile.soil_type;
+  if (farmProfile.water_source) document.getElementById('pWater').value  = farmProfile.water_source;
+  if (farmProfile.region)       document.getElementById('pRegion').value = farmProfile.region;
+  // chips
+  const crops = farmProfile.crops || [];
+  document.querySelectorAll('.crop-chip').forEach(c => {
+    c.classList.toggle('selected', crops.includes(c.dataset.crop));
+  });
+}
+
+// crop chip toggle
+document.querySelectorAll('.crop-chip').forEach(chip => {
+  chip.addEventListener('click', () => chip.classList.toggle('selected'));
+});
+
+function getSelectedCrops() {
+  return [...document.querySelectorAll('.crop-chip.selected')].map(c => c.dataset.crop);
+}
+
+function openProfileSection() {
+  document.getElementById('profileCard').scrollIntoView({behavior:'smooth'});
+}
+
+async function saveProfile() {
+  const btn = document.getElementById('saveProfileBtn');
+  const crops = getSelectedCrops();
+  const data = {
+    farmer_name:  document.getElementById('pName').value.trim(),
+    phone:        document.getElementById('pPhone').value.trim(),
+    farm_size:    parseFloat(document.getElementById('pSize').value) || 1,
+    size_unit:    document.getElementById('pUnit').value,
+    soil_type:    document.getElementById('pSoil').value,
+    water_source: document.getElementById('pWater').value,
+    region:       document.getElementById('pRegion').value,
+    crops,
+  };
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const resp = await fetch('/api/profile', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)
+    });
+    if (resp.ok) {
+      farmProfile = data;
+      const saved = document.getElementById('profileSaved');
+      saved.classList.add('show');
+      setTimeout(() => saved.classList.remove('show'), 4000);
+      document.getElementById('profileNudge').style.display = 'none';
+      // update log crop selector to match selected crops
+      syncLogCropSelect(crops);
+    } else { alert('Save failed. Please try again.'); }
+  } catch(e) { alert('Connection error.'); }
+  btn.disabled = false; btn.textContent = '💾 Save My Farm Profile';
+}
+
+function syncLogCropSelect(crops) {
+  const sel = document.getElementById('logCrop');
+  const current = sel.value;
+  // add any new crops not already in select
+  crops.forEach(c => {
+    if (![...sel.options].some(o => o.value === c)) {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      sel.appendChild(opt);
+    }
+  });
+  if (current) sel.value = current;
+}
+
+// ─────────────────────────────────────────────────────────────
+// PLANTING CALENDAR
+// ─────────────────────────────────────────────────────────────
+const MONTHS = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+const MONTH_EMOJIS = ['❄️','🌱','🌧️','🌧️','☔','🌦️','⛅','🌤️','🌦️','🌧️','🍂','☀️'];
+
+async function generateCalendar() {
+  const btn = document.getElementById('genCalBtn');
+  const crops = getSelectedCrops().length > 0 ? getSelectedCrops() : (farmProfile.crops || []);
+  if (crops.length === 0) {
+    alert('Please select at least one crop in your farm profile first.');
+    openProfileSection(); return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> AI is building your calendar…';
+  document.getElementById('calendarEmpty').textContent = '⏳ Generating your personalized 12-month plan…';
+  document.getElementById('calendarGrid').style.display = 'none';
+  try {
+    const resp = await fetch('/api/calendar?lang=' + currentLang);
+    const data = await resp.json();
+    if (!resp.ok) {
+      document.getElementById('calendarEmpty').textContent =
+        data.message || data.error || 'Error generating calendar. Please save your profile first.';
+      btn.disabled = false; btn.innerHTML = '✨ Generate My Planting Calendar'; return;
+    }
+    calendarData = data.calendar;
+    renderCalendar(calendarData, data.profile);
+  } catch(e) {
+    document.getElementById('calendarEmpty').textContent = '⚠ Connection error. Please try again.';
+  }
+  btn.disabled = false; btn.innerHTML = '🔄 Regenerate Calendar';
+}
+
+function renderCalendar(calendar, profile) {
+  const grid = document.getElementById('calendarGrid');
+  const empty = document.getElementById('calendarEmpty');
+  if (!calendar || calendar.length === 0) {
+    empty.textContent = 'No calendar data returned. Please try again.';
+    grid.style.display = 'none'; return;
+  }
+  empty.style.display = 'none';
+  grid.style.display = 'flex';
+  const now = new Date().getMonth(); // 0-indexed
+
+  grid.innerHTML = calendar.map((m, idx) => {
+    const tasks = (m.tasks || []);
+    const isCurrent = MONTHS[now] === m.month;
+    const emoji = MONTH_EMOJIS[MONTHS.indexOf(m.month)] || '📅';
+    const taskHTML = tasks.length === 0
+      ? '<div style="font-size:13px;color:var(--ts);padding:8px 0;">No major tasks this month — monitor crops and check for pests.</div>'
+      : tasks.map(t => `
+          <div class="cal-task">
+            <span class="cal-task-crop">${t.crop}</span>
+            <div class="cal-task-body">
+              <div class="cal-task-action">${t.action}</div>
+              ${t.note ? `<div class="cal-task-note">${t.note}</div>` : ''}
+            </div>
+            <button class="cal-task-log-btn" onclick='logFromCalendar(${JSON.stringify(t.crop)},${JSON.stringify(t.action)})'>+ Log</button>
+          </div>`).join('');
+    return `
+      <div class="cal-month ${isCurrent ? 'open' : ''}">
+        <div class="cal-month-header" onclick="toggleMonth(this)">
+          <span>${emoji} ${m.month} ${isCurrent ? '← This month' : ''}</span>
+          <span class="chevron">▾</span>
+        </div>
+        <div class="cal-tasks">${taskHTML}</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleMonth(header) {
+  header.closest('.cal-month').classList.toggle('open');
+}
+
+function logFromCalendar(crop, action) {
+  showTab('farm');
+  document.getElementById('logCrop').value = crop;
+  document.getElementById('logAction').value = action;
+  document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('logNote').focus();
+  document.getElementById('logCrop').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// ─────────────────────────────────────────────────────────────
+// FARM DIARY
+// ─────────────────────────────────────────────────────────────
+let farmLogs = [];
+
+async function loadLogs() {
+  try {
+    const resp = await fetch('/api/log');
+    if (resp.ok) { const d = await resp.json(); farmLogs = d.logs || []; renderLogs(); }
+  } catch {}
+}
+
+function renderLogs() {
+  const list  = document.getElementById('logList');
+  const empty = document.getElementById('logEmpty');
+  if (farmLogs.length === 0) {
+    empty.style.display = 'block'; list.innerHTML = ''; list.appendChild(empty); return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = farmLogs.map(l => `
+    <div class="log-entry" id="log-${l.id}">
+      <div class="log-entry-date">${l.log_date}</div>
+      <div class="log-entry-body">
+        <div class="log-entry-crop">${l.crop}</div>
+        <div class="log-entry-action">${l.action}</div>
+        ${l.note ? `<div class="log-entry-note">${l.note}</div>` : ''}
+      </div>
+      <button class="log-delete-btn" onclick="deleteLog(${l.id})" title="Delete">✕</button>
+    </div>`).join('');
+}
+
+async function addLog() {
+  const crop   = document.getElementById('logCrop').value;
+  const action = document.getElementById('logAction').value;
+  const note   = document.getElementById('logNote').value.trim();
+  const date   = document.getElementById('logDate').value || new Date().toISOString().split('T')[0];
+  if (!crop || !action) { alert('Please select a crop and action.'); return; }
+  try {
+    const resp = await fetch('/api/log', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({crop, action, note, date})
+    });
+    if (resp.ok) {
+      document.getElementById('logNote').value = '';
+      await loadLogs();
+    }
+  } catch(e) { alert('Could not save log. Please try again.'); }
+}
+
+async function deleteLog(id) {
+  try {
+    await fetch(`/api/log/${id}`, {method:'DELETE'});
+    farmLogs = farmLogs.filter(l => l.id !== id);
+    renderLogs();
+  } catch {}
+}
+
+// set today's date as default for log date input
+document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+
 
 // Upgrade modal
 function openUpgrade()  { document.getElementById('upgradeModal').classList.add('open'); }
