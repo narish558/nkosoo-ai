@@ -606,17 +606,62 @@ def admin():
     if not session.get("admin"):
         return render_template("admin_login.html",error=None)
     with get_db() as db:
-        total   = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-        pro     = db.execute("SELECT COUNT(*) FROM users WHERE plan='pro'").fetchone()[0]
-        q_today = db.execute("SELECT COUNT(*) FROM usage WHERE type='chat' AND date(created_at)=date('now')").fetchone()[0]
-        d_today = db.execute("SELECT COUNT(*) FROM usage WHERE type='diagnose' AND date(created_at)=date('now')").fetchone()[0]
-        top_q   = db.execute("SELECT question,COUNT(*) cnt FROM usage WHERE type='chat' AND question IS NOT NULL GROUP BY question ORDER BY cnt DESC LIMIT 10").fetchall()
-        users   = db.execute("SELECT * FROM users ORDER BY created_at DESC LIMIT 20").fetchall()
-        regions = db.execute("SELECT region,COUNT(*) cnt FROM users GROUP BY region ORDER BY cnt DESC").fetchall()
+        # ── Core stats ──────────────────────────────────────────
+        total      = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        pro        = db.execute("SELECT COUNT(*) FROM users WHERE plan='pro'").fetchone()[0]
+        q_today    = db.execute("SELECT COUNT(*) FROM usage WHERE type='chat' AND date(created_at)=date('now')").fetchone()[0]
+        d_today    = db.execute("SELECT COUNT(*) FROM usage WHERE type='diagnose' AND date(created_at)=date('now')").fetchone()[0]
+        q_total    = db.execute("SELECT COUNT(*) FROM usage WHERE type='chat'").fetchone()[0]
+        d_total    = db.execute("SELECT COUNT(*) FROM usage WHERE type='diagnose'").fetchone()[0]
+        top_q      = db.execute("SELECT question,COUNT(*) cnt FROM usage WHERE type='chat' AND question IS NOT NULL GROUP BY question ORDER BY cnt DESC LIMIT 10").fetchall()
+        users      = db.execute("SELECT u.*,fp.farmer_name,fp.farm_size,fp.size_unit,fp.crops FROM users u LEFT JOIN farm_profiles fp ON u.session_id=fp.session_id ORDER BY u.created_at DESC LIMIT 20").fetchall()
+        regions    = db.execute("SELECT region,COUNT(*) cnt FROM users GROUP BY region ORDER BY cnt DESC").fetchall()
+
+        # ── Farm profile stats ──────────────────────────────────
+        profiles_total  = db.execute("SELECT COUNT(*) FROM farm_profiles").fetchone()[0]
+        profiles_named  = db.execute("SELECT COUNT(*) FROM farm_profiles WHERE farmer_name IS NOT NULL AND farmer_name!=''").fetchone()[0]
+        avg_farm_size   = db.execute("SELECT ROUND(AVG(farm_size),1) FROM farm_profiles WHERE farm_size IS NOT NULL").fetchone()[0] or 0
+        soil_stats      = db.execute("SELECT soil_type,COUNT(*) cnt FROM farm_profiles GROUP BY soil_type ORDER BY cnt DESC").fetchall()
+        water_stats     = db.execute("SELECT water_source,COUNT(*) cnt FROM farm_profiles GROUP BY water_source ORDER BY cnt DESC").fetchall()
+        size_unit_stats = db.execute("SELECT size_unit,COUNT(*) cnt FROM farm_profiles GROUP BY size_unit ORDER BY cnt DESC").fetchall()
+
+        # ── Crop popularity ─────────────────────────────────────
+        all_crops_rows  = db.execute("SELECT crops FROM farm_profiles WHERE crops IS NOT NULL AND crops!='[]'").fetchall()
+        crop_counter    = {}
+        for row in all_crops_rows:
+            try:
+                crops = json.loads(row[0]) if isinstance(row[0],str) else row[0]
+                for c in crops:
+                    crop_counter[c] = crop_counter.get(c,0) + 1
+            except: pass
+        top_crops = sorted(crop_counter.items(), key=lambda x: x[1], reverse=True)[:12]
+
+        # ── Diary / calendar stats ──────────────────────────────
+        logs_total      = db.execute("SELECT COUNT(*) FROM planting_logs").fetchone()[0]
+        logs_today      = db.execute("SELECT COUNT(*) FROM planting_logs WHERE date(created_at)=date('now')").fetchone()[0]
+        top_log_actions = db.execute("SELECT action,COUNT(*) cnt FROM planting_logs GROUP BY action ORDER BY cnt DESC LIMIT 6").fetchall()
+        top_log_crops   = db.execute("SELECT crop,COUNT(*) cnt FROM planting_logs GROUP BY crop ORDER BY cnt DESC LIMIT 6").fetchall()
+
+        # ── 7-day activity (questions per day) ──────────────────
+        daily_activity  = db.execute("""
+            SELECT date(created_at) dy, COUNT(*) cnt
+            FROM usage WHERE type='chat'
+            AND created_at >= date('now','-6 days')
+            GROUP BY dy ORDER BY dy ASC
+        """).fetchall()
+
     return render_template("admin.html",
-        total_users=total,pro_users=pro,total_revenue=pro*30,
-        questions_today=q_today,diagnoses_today=d_today,
-        top_questions=top_q,recent_users=users,region_stats=regions,
+        total_users=total, pro_users=pro, total_revenue=pro*30,
+        questions_today=q_today, diagnoses_today=d_today,
+        questions_total=q_total, diagnoses_total=d_total,
+        top_questions=top_q, recent_users=users, region_stats=regions,
+        profiles_total=profiles_total, profiles_named=profiles_named,
+        avg_farm_size=avg_farm_size,
+        soil_stats=soil_stats, water_stats=water_stats,
+        size_unit_stats=size_unit_stats, top_crops=top_crops,
+        logs_total=logs_total, logs_today=logs_today,
+        top_log_actions=top_log_actions, top_log_crops=top_log_crops,
+        daily_activity=daily_activity,
         regions=GHANA_REGIONS)
 
 @app.route("/admin/logout")
