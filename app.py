@@ -648,74 +648,89 @@ def api_profile_save():
     return jsonify({"ok": True})
 
 # ---------------------------------------------------------------------------
-# Planting Calendar API (AI-generated)
+# Planting Calendar API (AI-generated, streaming to beat Render 30s timeout)
 # ---------------------------------------------------------------------------
-@app.route("/api/calendar", methods=["GET"])
+@app.route("/api/calendar", methods=["POST"])
 def api_calendar():
-    sid     = get_sid()
-    lang    = request.args.get("lang", "en")
+    sid  = get_sid()
+    data = request.get_json() or {}
+    lang = data.get("lang", "en")
 
-    # allow caller to pass updated crops in query string so profile
-    # doesn't need a separate save round-trip before generating
-    crops_param = request.args.get("crops")
-    profile = get_farm_profile(sid)
-
-    if not profile:
-        return jsonify({"error": "no_profile",
-            "message": "Please save your farm profile first."}), 400
     if not client.api_key:
         return jsonify({"error": "ANTHROPIC_API_KEY not set"}), 500
 
-    # merge live crops from URL param if provided
-    if crops_param:
-        try:
-            live_crops = json.loads(crops_param)
-            profile["crops"] = live_crops
-        except Exception:
-            pass
+    # use crops sent from frontend directly — most reliable source
+    crops_from_client = data.get("crops", [])
 
-    # normalise crops to list
-    raw = profile.get("crops", "[]")
-    if isinstance(raw, str):
-        try: profile["crops"] = json.loads(raw)
-        except: profile["crops"] = []
+    # also load saved profile for farm details (size, soil, water, region)
+    profile = get_farm_profile(sid) or {}
+
+    # merge: client crops take priority, fall back to saved
+    if crops_from_client:
+        profile["crops"] = crops_from_client
+    else:
+        raw = profile.get("crops", "[]")
+        if isinstance(raw, str):
+            try: profile["crops"] = json.loads(raw)
+            except: profile["crops"] = []
+
+    if not profile.get("crops"):
+        return jsonify({"error": "no_crops",
+            "message": "Please select at least one crop first."}), 400
+
+    # override profile fields if sent from client
+    for field in ("region", "farm_size", "size_unit", "soil_type", "water_source", "farmer_name"):
+        if data.get(field):
+            profile[field] = data[field]
 
     region_key  = profile.get("region", "greater_accra")
     region_name = GHANA_REGIONS.get(region_key, {}).get("name", "Ghana")
     prompt      = build_calendar_prompt(profile, region_name, lang)
 
-    try:
-        msg = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=4096,   # more crops need more tokens
-            messages=[{"role": "user", "content": prompt}])
-        raw_text = msg.content[0].text.strip()
+    def generate():
+        full_text = ""
+        try:
+            with client.messages.stream(
+                model="claude-sonnet-4-20250514",
+                max_tokens=4096,
+                messages=[{"role": "user", "content": prompt}]
+            ) as stream:
+                for text in stream.text_stream:
+                    full_text += text
+                    # send a heartbeat every chunk so Render doesn't time out
+                    yield f"data: {json.dumps({'chunk': text})}\n\n"
 
-        # strip accidental markdown fences
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("\n", 1)[1]
-            raw_text = raw_text.rsplit("```", 1)[0]
-        raw_text = raw_text.strip()
+            # after streaming done, parse JSON and send final payload
+            clean = full_text.strip()
+            if clean.startswith("```"):
+                clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
 
-        calendar = json.loads(raw_text)
-        crops_out = profile.get("crops", [])
-        if isinstance(crops_out, str):
-            try: crops_out = json.loads(crops_out)
-            except: crops_out = []
+            calendar = json.loads(clean)
+            crops_out = profile.get("crops", [])
+            if isinstance(crops_out, str):
+                try: crops_out = json.loads(crops_out)
+                except: crops_out = []
 
-        return jsonify({"calendar": calendar, "profile": {
-            "farmer_name": profile.get("farmer_name", ""),
-            "region":      region_name,
-            "crops":       crops_out,
-            "farm_size":   profile.get("farm_size"),
-            "size_unit":   profile.get("size_unit", "acres"),
-        }})
-    except json.JSONDecodeError as e:
-        print(f"[Calendar JSON error] {e}\nRaw: {raw_text[:300]}")
-        return jsonify({"error": "AI returned an invalid calendar format. Please try again."}), 500
-    except Exception as e:
-        print(f"[Calendar error] {type(e).__name__}: {e}")
-        return jsonify({"error": f"Calendar generation failed: {str(e)}"}), 500
+            payload = {
+                "calendar": calendar,
+                "profile": {
+                    "farmer_name": profile.get("farmer_name", ""),
+                    "region":      region_name,
+                    "crops":       crops_out,
+                    "farm_size":   profile.get("farm_size"),
+                    "size_unit":   profile.get("size_unit", "acres"),
+                }
+            }
+            yield f"data: {json.dumps({'done': True, 'payload': payload})}\n\n"
+
+        except json.JSONDecodeError as e:
+            print(f"[Calendar JSON error] {e} | Raw: {full_text[:400]}")
+            yield f"data: {json.dumps({'error': 'AI returned an invalid format. Please try again.'})}\n\n"
+        except Exception as e:
+            print(f"[Calendar error] {type(e).__name__}: {e}")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return Response(stream_with_context(generate()), mimetype="text/event-stream")
 
 # ---------------------------------------------------------------------------
 # Planting Log API
