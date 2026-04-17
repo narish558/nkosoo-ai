@@ -872,47 +872,84 @@ async function generateCalendar() {
   }
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="loading"></span> Saving profile & building calendar…';
-  document.getElementById('calendarEmpty').textContent = '⏳ Generating your personalised 12-month plan…';
-  document.getElementById('calendarEmpty').style.display = 'block';
+  btn.innerHTML = '<span class="loading"></span> Building your calendar…';
+  const emptyEl = document.getElementById('calendarEmpty');
+  emptyEl.textContent = '⏳ AI is writing your 12-month plan… this takes about 20 seconds.';
+  emptyEl.style.display = 'block';
   document.getElementById('calendarGrid').style.display = 'none';
 
-  // always save the current profile state (including any chip changes) before generating
+  // collect full profile from form fields
+  const profilePayload = {
+    farmer_name:  document.getElementById('pName').value.trim(),
+    phone:        document.getElementById('pPhone').value.trim(),
+    farm_size:    parseFloat(document.getElementById('pSize').value) || 1,
+    size_unit:    document.getElementById('pUnit').value,
+    soil_type:    document.getElementById('pSoil').value,
+    water_source: document.getElementById('pWater').value,
+    region:       document.getElementById('pRegion').value,
+    crops,
+    lang:         currentLang,
+  };
+
+  // save profile silently in background
+  fetch('/api/profile', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(profilePayload)
+  }).catch(() => {});
+
   try {
-    await fetch('/api/profile', {
+    // POST to streaming calendar endpoint
+    const resp = await fetch('/api/calendar', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        farmer_name:  document.getElementById('pName').value.trim(),
-        phone:        document.getElementById('pPhone').value.trim(),
-        farm_size:    parseFloat(document.getElementById('pSize').value) || 1,
-        size_unit:    document.getElementById('pUnit').value,
-        soil_type:    document.getElementById('pSoil').value,
-        water_source: document.getElementById('pWater').value,
-        region:       document.getElementById('pRegion').value,
-        crops,
-      })
+      body: JSON.stringify(profilePayload)
     });
-  } catch(e) { /* non-fatal — profile already saved earlier, continue */ }
 
-  btn.innerHTML = '<span class="loading"></span> AI is building your calendar…';
-
-  try {
-    // pass crops in URL too as a safety net so backend always has latest selection
-    const cropsParam = encodeURIComponent(JSON.stringify(crops));
-    const resp = await fetch(`/api/calendar?lang=${currentLang}&crops=${cropsParam}`);
-    const data = await resp.json();
     if (!resp.ok) {
-      document.getElementById('calendarEmpty').textContent =
-        data.message || data.error || 'Error generating calendar. Please save your profile first.';
+      const err = await resp.json().catch(() => ({}));
+      emptyEl.textContent = '⚠ ' + (err.message || err.error || 'Calendar generation failed. Please try again.');
       btn.disabled = false; btn.innerHTML = '✨ Generate My Planting Calendar'; return;
     }
-    calendarData = data.calendar;
-    renderCalendar(calendarData, data.profile);
+
+    // read SSE stream — accumulate chunks, wait for done event
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream: true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (!raw) continue;
+        try {
+          const msg = JSON.parse(raw);
+          if (msg.error) {
+            emptyEl.textContent = '⚠ ' + msg.error;
+            emptyEl.style.display = 'block';
+            btn.disabled = false; btn.innerHTML = '🔄 Try Again'; return;
+          }
+          if (msg.chunk) {
+            // show live progress tick so farmer knows it's working
+            const dots = '.'.repeat((emptyEl.textContent.match(/\./g)||[]).length % 5 + 1);
+            emptyEl.textContent = '⏳ AI is writing your plan' + dots;
+          }
+          if (msg.done && msg.payload) {
+            calendarData = msg.payload.calendar;
+            renderCalendar(calendarData, msg.payload.profile);
+          }
+        } catch(e) { /* ignore malformed chunk */ }
+      }
+    }
   } catch(e) {
-    document.getElementById('calendarEmpty').textContent =
-      '⚠ Connection error. This can happen with many crops selected — please try again.';
-    document.getElementById('calendarEmpty').style.display = 'block';
+    emptyEl.textContent = '⚠ Connection lost. Please check your internet and try again.';
+    emptyEl.style.display = 'block';
   }
   btn.disabled = false; btn.innerHTML = '🔄 Regenerate Calendar';
 }
