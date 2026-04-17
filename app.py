@@ -82,6 +82,28 @@ def init_db():
             status       TEXT DEFAULT 'pending',
             created_at   TEXT DEFAULT (datetime('now'))
         );
+        CREATE TABLE IF NOT EXISTS farm_profiles (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id   TEXT UNIQUE NOT NULL,
+            farmer_name  TEXT,
+            phone        TEXT,
+            farm_size    REAL,
+            size_unit    TEXT DEFAULT 'acres',
+            soil_type    TEXT DEFAULT 'loamy',
+            water_source TEXT DEFAULT 'rain',
+            crops        TEXT DEFAULT '[]',
+            region       TEXT DEFAULT 'greater_accra',
+            updated_at   TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS planting_logs (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id   TEXT NOT NULL,
+            crop         TEXT NOT NULL,
+            action       TEXT NOT NULL,
+            note         TEXT,
+            log_date     TEXT NOT NULL,
+            created_at   TEXT DEFAULT (datetime('now'))
+        );
         """)
 
 init_db()
@@ -177,6 +199,90 @@ Hwɛ saa foto yi na ka asɛm wɔ akwan wɔ ase yi mu:
 5. ADURO — nkyerɛ aduro a ɛyɛ mmerɛw na ɛho hia a nnomkuo wɔ Ghana bɛtumi de ayɛ
 6. BANBƆ — ɛdeɛn na wɔbɛtumi ayɛ sɛ eyi ammɛba bio
 """
+
+# ---------------------------------------------------------------------------
+# Farm profile helpers
+# ---------------------------------------------------------------------------
+def get_farm_profile(sid):
+    with get_db() as db:
+        row = db.execute("SELECT * FROM farm_profiles WHERE session_id=?", (sid,)).fetchone()
+    return dict(row) if row else {}
+
+def save_farm_profile(sid, data):
+    crops_json = json.dumps(data.get("crops", []))
+    with get_db() as db:
+        db.execute("""
+            INSERT INTO farm_profiles (session_id,farmer_name,phone,farm_size,size_unit,soil_type,water_source,crops,region,updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))
+            ON CONFLICT(session_id) DO UPDATE SET
+                farmer_name=excluded.farmer_name,
+                phone=excluded.phone,
+                farm_size=excluded.farm_size,
+                size_unit=excluded.size_unit,
+                soil_type=excluded.soil_type,
+                water_source=excluded.water_source,
+                crops=excluded.crops,
+                region=excluded.region,
+                updated_at=datetime('now')
+        """, (sid,
+              data.get("farmer_name",""),
+              data.get("phone",""),
+              data.get("farm_size",1),
+              data.get("size_unit","acres"),
+              data.get("soil_type","loamy"),
+              data.get("water_source","rain"),
+              crops_json,
+              data.get("region","greater_accra")))
+        db.commit()
+
+def get_planting_logs(sid):
+    with get_db() as db:
+        rows = db.execute(
+            "SELECT * FROM planting_logs WHERE session_id=? ORDER BY log_date DESC LIMIT 50", (sid,)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+def build_calendar_prompt(profile, region_name, lang="en"):
+    crops = json.loads(profile.get("crops","[]"))
+    crop_list = ", ".join(crops) if crops else "mixed crops"
+    soil      = profile.get("soil_type","loamy")
+    water     = profile.get("water_source","rain")
+    size      = f"{profile.get('farm_size',1)} {profile.get('size_unit','acres')}"
+
+    if lang == "tw":
+        return f"""Wo yɛ Nkɔsoɔ AI. Yɛ aba dua kalenda ma farmer yi:
+
+Farmer tumi: {crop_list}
+Afuo kɛseɛ: {size}
+Asaase: {soil}
+Nsuo: {water}
+Man: {region_name}
+
+Yɛ calendar a ɛwɔ Ghana ɔberɛ 12 mu. Ka adwuma biara a ɛsɛ sɛ farmer yɛ osram biara mu:
+planting, fertilizing, weeding, spraying, harvesting.
+Fa aba biara ho asɛm ntɛm na boa.
+Gyina Ghana osu ɔberɛ so: Major rains (Mar-Jun), Minor rains (Sep-Nov), Dry (Nov-Mar) wɔ South;
+Wet (May-Oct), Dry (Nov-Apr) wɔ North.
+Fa JSON array bi na ɛwɔ saa nhyehyɛe yi:
+[{{"month":"January","tasks":[{{"crop":"Maize","action":"Land preparation","note":"..."}}]}}]
+Ka JSON nko ara — mma preamble biara, mma markdown biara."""
+    else:
+        return f"""You are Nkɔsoɔ AI. Generate a personalized 12-month planting calendar for this farmer:
+
+Crops grown: {crop_list}
+Farm size: {size}
+Soil type: {soil}
+Water source: {water}
+Region: {region_name}
+
+For each month list the exact farming tasks the farmer should do for each of their crops:
+planting dates, fertilizer application, weeding, pest spraying, harvesting windows.
+Base advice on Ghana's actual seasons: Major rains (Mar–Jun), Minor rains (Sep–Nov), Dry season (Nov–Mar) for South;
+Single wet season (May–Oct), Dry (Nov–Apr) for Northern regions.
+Be specific — include quantities, spacing, and local product names where relevant.
+
+Respond ONLY with a valid JSON array — no preamble, no markdown fences:
+[{{"month":"January","tasks":[{{"crop":"Maize","action":"Land preparation","note":"Clear and till. Apply lime if pH below 5.5."}}]}}]"""
 
 # ---------------------------------------------------------------------------
 # Ghana regions
@@ -332,6 +438,10 @@ def index():
     sid  = get_sid()
     user = get_or_create_user(sid)
     region = user.get("region", "greater_accra")
+    profile = get_farm_profile(sid)
+    if profile and isinstance(profile.get("crops"), str):
+        try: profile["crops"] = json.loads(profile["crops"])
+        except: profile["crops"] = []
     return render_template("index.html",
         weather        = get_weather(region),
         prices         = PRICE_DATA,
@@ -340,6 +450,7 @@ def index():
         quick_tw       = QUICK_TW,
         regions        = GHANA_REGIONS,
         user           = user,
+        profile        = profile,
         used_today     = get_usage_today(sid),
         used_diagnose  = get_diagnose_month(sid),
         free_limit     = FREE_DAILY_LIMIT,
@@ -505,6 +616,98 @@ def admin():
 @app.route("/admin/logout")
 def admin_logout():
     session.pop("admin",None); return redirect("/admin")
+
+# ---------------------------------------------------------------------------
+# Farm Profile API
+# ---------------------------------------------------------------------------
+@app.route("/api/profile", methods=["GET"])
+def api_profile_get():
+    sid = get_sid()
+    profile = get_farm_profile(sid)
+    if profile and isinstance(profile.get("crops"), str):
+        try: profile["crops"] = json.loads(profile["crops"])
+        except: profile["crops"] = []
+    return jsonify(profile)
+
+@app.route("/api/profile", methods=["POST"])
+def api_profile_save():
+    sid  = get_sid()
+    data = request.get_json()
+    if not data: return jsonify({"error": "No data"}), 400
+    # keep region in sync with users table too
+    region = data.get("region","greater_accra")
+    with get_db() as db:
+        db.execute("UPDATE users SET region=? WHERE session_id=?",(region,sid)); db.commit()
+    save_farm_profile(sid, data)
+    return jsonify({"ok": True})
+
+# ---------------------------------------------------------------------------
+# Planting Calendar API (AI-generated)
+# ---------------------------------------------------------------------------
+@app.route("/api/calendar", methods=["GET"])
+def api_calendar():
+    sid     = get_sid()
+    lang    = request.args.get("lang","en")
+    profile = get_farm_profile(sid)
+    if not profile:
+        return jsonify({"error": "no_profile",
+            "message": "Please fill in your farm profile first."}), 400
+    if not client.api_key:
+        return jsonify({"error": "ANTHROPIC_API_KEY not set"}), 500
+    region_key  = profile.get("region","greater_accra")
+    region_name = GHANA_REGIONS.get(region_key,{}).get("name","Ghana")
+    prompt      = build_calendar_prompt(profile, region_name, lang)
+    try:
+        msg = client.messages.create(
+            model="claude-sonnet-4-20250514", max_tokens=2048,
+            messages=[{"role":"user","content": prompt}])
+        raw = msg.content[0].text.strip()
+        # strip any accidental markdown fences
+        if raw.startswith("```"): raw = raw.split("\n",1)[1].rsplit("```",1)[0]
+        calendar = json.loads(raw)
+        return jsonify({"calendar": calendar, "profile": {
+            "farmer_name": profile.get("farmer_name",""),
+            "region": region_name,
+            "crops": json.loads(profile.get("crops","[]")) if isinstance(profile.get("crops"),str) else profile.get("crops",[]),
+            "farm_size": profile.get("farm_size"),
+            "size_unit": profile.get("size_unit","acres"),
+        }})
+    except json.JSONDecodeError:
+        return jsonify({"error": "AI returned invalid calendar. Please try again."}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ---------------------------------------------------------------------------
+# Planting Log API
+# ---------------------------------------------------------------------------
+@app.route("/api/log", methods=["GET"])
+def api_log_get():
+    sid = get_sid()
+    return jsonify({"logs": get_planting_logs(sid)})
+
+@app.route("/api/log", methods=["POST"])
+def api_log_add():
+    sid  = get_sid()
+    data = request.get_json()
+    crop   = (data.get("crop","") or "").strip()
+    action = (data.get("action","") or "").strip()
+    note   = (data.get("note","") or "").strip()
+    date   = (data.get("date","") or time.strftime("%Y-%m-%d"))
+    if not crop or not action:
+        return jsonify({"error":"crop and action required"}),400
+    with get_db() as db:
+        db.execute("INSERT INTO planting_logs (session_id,crop,action,note,log_date) VALUES (?,?,?,?,?)",
+                   (sid,crop,action,note,date))
+        db.commit()
+    return jsonify({"ok":True})
+
+@app.route("/api/log/<int:log_id>", methods=["DELETE"])
+def api_log_delete(log_id):
+    sid = get_sid()
+    with get_db() as db:
+        db.execute("DELETE FROM planting_logs WHERE id=? AND session_id=?",(log_id,sid))
+        db.commit()
+    return jsonify({"ok":True})
 
 # ---------------------------------------------------------------------------
 # Offline cache data API — returns JSON snapshot for service worker to cache
