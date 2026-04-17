@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Nkɔsoɔ AI — Ghana Farming Assistant</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --g50:#EAF3DE;--g100:#C0DD97;--g600:#3B6D11;--g900:#173404;
+  --a50:#FAEEDA;--a600:#854F0B;
+  --r50:#FCEBEB;--r600:#A32D2D;
+  --gray50:#F1EFE8;--gray800:#444441;
+  --tp:#1a1a18;--ts:#5F5E5A;
+  --bd:#d6d4cc;--bg:#f7f6f2;--card:#ffffff;--muted:#f1efe8;
+  --rm:8px;--rl:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tp);min-height:100vh;}
+
+/* topbar */
+.topbar{background:var(--card);border-bottom:1px solid var(--bd);padding:0 1rem;display:flex;align-items:center;gap:10px;height:56px;position:sticky;top:0;z-index:10;}
+.logo{width:36px;height:36px;border-radius:50%;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:20px;}
+.app-title{font-size:16px;font-weight:600;color:var(--tp);}
+.app-sub{font-size:11px;color:var(--ts);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.api-ok{font-size:12px;padding:4px 10px;border-radius:var(--rm);background:var(--g50);color:var(--g600);font-weight:500;}
+.api-warn{font-size:12px;padding:4px 10px;border-radius:var(--rm);background:var(--a50);color:var(--a600);font-weight:500;}
+.pro-badge{font-size:11px;padding:4px 10px;border-radius:20px;background:var(--g50);color:var(--g600);font-weight:500;}
+.upgrade-pill{font-size:11px;padding:4px 10px;border-radius:20px;background:var(--a50);color:var(--a600);font-weight:500;cursor:pointer;border:none;}
+.lang-toggle{background:var(--muted);border:1px solid var(--bd);border-radius:var(--rm);padding:3px 2px;display:flex;gap:2px;}
+.lang-btn{padding:4px 9px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--ts);}
+.lang-btn.active{background:var(--g600);color:#fff;}
+
+/* layout */
+.container{max-width:900px;margin:0 auto;padding:1.25rem 1rem;}
+
+/* usage bar */
+.usage-bar{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:12px;}
+.usage-label{font-size:12px;color:var(--ts);white-space:nowrap;}
+.usage-track{flex:1;height:6px;background:var(--muted);border-radius:3px;overflow:hidden;}
+.usage-fill{height:6px;border-radius:3px;transition:width .3s;}
+.fill-ok{background:var(--g600);}.fill-warn{background:#EF9F27;}.fill-full{background:#E24B4A;}
+.usage-count{font-size:12px;font-weight:500;color:var(--tp);white-space:nowrap;}
+
+/* tabs */
+.tabs{display:flex;gap:4px;margin-bottom:1.25rem;background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:6px;overflow-x:auto;}
+.tab-btn{flex:1;min-width:72px;padding:9px 4px;border:none;border-radius:var(--rm);background:transparent;font-size:12px;color:var(--ts);cursor:pointer;font-weight:500;white-space:nowrap;}
+.tab-btn.active{background:var(--g50);color:var(--g600);}
+
+/* panels */
+.panel{display:none;}.panel.active{display:block;}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;}
+.card-title{font-size:12px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.75rem;}
+
+/* region bar */
+.region-bar{display:flex;align-items:center;gap:10px;margin-bottom:1rem;background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:.75rem 1rem;}
+.region-bar label{font-size:13px;font-weight:500;color:var(--ts);white-space:nowrap;}
+.region-select{flex:1;padding:8px 12px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;background:var(--card);color:var(--tp);cursor:pointer;outline:none;}
+.refresh-btn{padding:8px 14px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--g600);color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.live-badge{font-size:11px;padding:3px 8px;border-radius:var(--rm);background:var(--g50);color:var(--g600);font-weight:600;white-space:nowrap;}
+
+/* metrics */
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem;}
+@media(max-width:600px){.metric-grid{grid-template-columns:repeat(2,1fr);}}
+.metric{background:var(--muted);border-radius:var(--rm);padding:.75rem 1rem;}
+.metric-label{font-size:12px;color:var(--ts);margin-bottom:2px;}
+.metric-value{font-size:22px;font-weight:600;}
+
+/* forecast */
+.forecast-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;}
+.forecast-day{flex:0 0 68px;text-align:center;background:var(--muted);border-radius:var(--rm);padding:8px 4px;}
+.day-name{font-size:11px;color:var(--ts);margin-bottom:3px;}
+.day-icon{font-size:20px;margin-bottom:3px;}
+.day-temp{font-size:14px;font-weight:600;}
+.day-rain{font-size:11px;color:var(--ts);}
+
+/* badges */
+.badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:var(--rm);font-weight:600;}
+.b-ok{background:var(--g50);color:var(--g600);}
+.b-warn{background:var(--a50);color:var(--a600);}
+.b-danger{background:var(--r50);color:var(--r600);}
+.b-gray{background:var(--gray50);color:var(--gray800);}
+
+/* price table */
+.price-table{width:100%;border-collapse:collapse;}
+.price-table th{text-align:left;font-size:11px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;padding:0 0 10px;border-bottom:1px solid var(--bd);}
+.price-table td{padding:11px 0;border-bottom:1px solid var(--bd);font-size:14px;}
+.price-table tr:last-child td{border-bottom:none;}
+.price-value{font-size:15px;font-weight:600;}
+
+/* pest */
+.pest-item{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--bd);}
+.pest-item:last-child{border-bottom:none;}
+.pest-name{font-size:15px;font-weight:600;margin-bottom:2px;}
+.pest-crops{font-size:12px;color:var(--ts);margin-bottom:4px;}
+.pest-desc{font-size:13px;color:var(--ts);max-width:400px;}
+.pest-tip{margin-top:6px;font-size:12px;background:var(--g50);color:var(--g600);padding:5px 10px;border-radius:var(--rm);display:inline-block;}
+
+/* chat */
+.chat-window{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);display:flex;flex-direction:column;height:480px;}
+.chat-messages{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:10px;}
+.msg{max-width:82%;padding:10px 14px;border-radius:var(--rl);line-height:1.55;font-size:14px;white-space:pre-wrap;}
+.msg-ai{background:var(--muted);color:var(--tp);align-self:flex-start;}
+.msg-user{background:var(--g50);color:var(--g900);align-self:flex-end;}
+.chat-input-row{display:flex;gap:8px;padding:1rem;border-top:1px solid var(--bd);}
+.chat-input-row input{flex:1;padding:10px 14px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;outline:none;}
+.send-btn{padding:10px 18px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:14px;font-weight:600;cursor:pointer;}
+.send-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* quick questions */
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;}
+@media(max-width:600px){.quick-grid{grid-template-columns:1fr;}}
+.quick-btn{padding:10px 14px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);color:var(--ts);font-size:13px;text-align:left;cursor:pointer;line-height:1.4;}
+.quick-btn:hover{background:var(--g50);color:var(--g600);border-color:var(--g100);}
+
+/* diagnose */
+.upload-zone{border:2px dashed var(--bd);border-radius:var(--rl);padding:2.5rem 1rem;text-align:center;cursor:pointer;background:var(--card);}
+.upload-zone:hover{border-color:var(--g100);background:var(--g50);}
+.upload-zone input{display:none;}
+.upload-icon{font-size:40px;margin-bottom:.75rem;}
+.upload-title{font-size:16px;font-weight:600;margin-bottom:.25rem;}
+.upload-sub{font-size:13px;color:var(--ts);}
+.preview-img{width:100%;max-height:280px;object-fit:cover;border-radius:var(--rl);margin-bottom:1rem;display:none;}
+.diagnose-btn{width:100%;padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:1rem;}
+.diagnose-btn:disabled{opacity:.5;cursor:not-allowed;}
+.result-box{background:var(--muted);border-radius:var(--rl);padding:1.25rem;font-size:14px;line-height:1.7;white-space:pre-wrap;display:none;}
+.result-box.visible{display:block;}
+.alert-box{border-radius:var(--rm);padding:10px 14px;font-size:13px;margin-bottom:1rem;}
+.alert-warn{background:var(--a50);color:var(--a600);}
+.ask-link-btn{width:100%;padding:10px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);color:var(--ts);font-size:13px;cursor:pointer;text-align:left;margin-bottom:6px;}
+.ask-link-btn:hover{background:var(--g50);color:var(--g600);}
+
+/* upgrade modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border-radius:var(--rl);padding:1.5rem;max-width:380px;width:100%;}
+.modal-title{font-size:17px;font-weight:600;margin-bottom:.25rem;}
+.modal-sub{font-size:13px;color:var(--ts);margin-bottom:1.25rem;}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem;}
+.plan-card{border:1px solid var(--bd);border-radius:var(--rl);padding:.875rem;}
+.plan-card.pro{border:2px solid var(--g600);}
+.plan-name{font-size:13px;font-weight:500;margin-bottom:4px;}
+.plan-price{font-size:22px;font-weight:600;}
+.plan-period{font-size:11px;color:var(--ts);margin-bottom:8px;}
+.plan-feat{font-size:12px;color:var(--ts);line-height:1.7;}
+.chk{color:var(--g600);}.crs{color:var(--r600);}
+.popular-pill{font-size:10px;background:var(--g50);color:var(--g600);padding:2px 7px;border-radius:20px;font-weight:500;display:inline-block;margin-bottom:5px;}
+.email-input{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;margin-bottom:.75rem;outline:none;}
+.pay-btn-main{width:100%;padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;}
+.pay-note{text-align:center;font-size:12px;color:var(--ts);}
+.close-btn{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--ts);}
+
+/* pay success */
+.pay-success{background:var(--g50);border:1px solid var(--g100);border-radius:var(--rm);padding:12px 16px;font-size:14px;color:var(--g600);margin-bottom:1rem;text-align:center;}
+
+/* loading */
+.loading{display:inline-block;width:14px;height:14px;border:2px solid var(--g100);border-top-color:var(--g600);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Farm Profile & Calendar ─────────────────────────────────── */
+.profile-form{display:flex;flex-direction:column;gap:1rem;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:600px){.form-row{grid-template-columns:1fr;}}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-label{font-size:12px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;}
+.form-input,.form-select,.form-textarea{padding:10px 12px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;background:var(--card);color:var(--tp);outline:none;transition:border-color .2s;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--g600);}
+.crop-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+.crop-chip{padding:5px 12px;border:1.5px solid var(--bd);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:var(--card);color:var(--ts);transition:all .15s;user-select:none;}
+.crop-chip.selected{background:var(--g600);color:#fff;border-color:var(--g600);}
+.save-profile-btn{padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:15px;font-weight:600;cursor:pointer;}
+.save-profile-btn:disabled{opacity:.5;cursor:not-allowed;}
+.profile-saved{font-size:13px;color:var(--g600);text-align:center;padding:6px;display:none;}
+.profile-saved.show{display:block;}
+.gen-calendar-btn{width:100%;padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;gap:8px;}
+.gen-calendar-btn:disabled{opacity:.5;cursor:not-allowed;}
+.calendar-grid{display:flex;flex-direction:column;gap:10px;}
+.cal-month{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);overflow:hidden;}
+.cal-month-header{background:var(--g50);padding:10px 16px;font-size:13px;font-weight:700;color:var(--g600);display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.cal-month-header .chevron{transition:transform .2s;font-size:12px;}
+.cal-month.open .chevron{transform:rotate(180deg);}
+.cal-tasks{padding:12px 16px;display:none;flex-direction:column;gap:8px;}
+.cal-month.open .cal-tasks{display:flex;}
+.cal-task{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--bd);}
+.cal-task:last-child{border-bottom:none;}
+.cal-task-crop{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--g50);color:var(--g600);white-space:nowrap;flex-shrink:0;}
+.cal-task-body{flex:1;}
+.cal-task-action{font-size:14px;font-weight:600;color:var(--tp);}
+.cal-task-note{font-size:12px;color:var(--ts);margin-top:2px;line-height:1.4;}
+.cal-task-log-btn{font-size:11px;padding:3px 8px;border:1px solid var(--bd);border-radius:20px;background:transparent;color:var(--ts);cursor:pointer;flex-shrink:0;transition:all .15s;}
+.cal-task-log-btn:hover{background:var(--g50);color:var(--g600);border-color:var(--g100);}
+.calendar-empty{text-align:center;padding:2rem;color:var(--ts);font-size:14px;}
+.log-form-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.log-form-row .form-input,.log-form-row .form-select{flex:1;min-width:100px;}
+.add-log-btn{padding:10px 16px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.log-list{display:flex;flex-direction:column;gap:6px;}
+.log-entry{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--muted);border-radius:var(--rm);}
+.log-entry-date{font-size:11px;color:var(--ts);white-space:nowrap;margin-top:2px;}
+.log-entry-body{flex:1;}
+.log-entry-crop{font-size:12px;font-weight:700;color:var(--g600);}
+.log-entry-action{font-size:13px;color:var(--tp);}
+.log-entry-note{font-size:12px;color:var(--ts);}
+.log-delete-btn{background:none;border:none;color:var(--ts);cursor:pointer;font-size:16px;opacity:.5;padding:0 4px;}
+.log-delete-btn:hover{opacity:1;color:var(--r600);}
+.log-empty{text-align:center;padding:1.5rem;color:var(--ts);font-size:13px;}
+.profile-nudge{background:var(--a50);border:1px solid #f0c88a;border-radius:var(--rm);padding:10px 14px;font-size:13px;color:var(--a600);margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+.nudge-link{margin-left:auto;font-size:12px;font-weight:600;color:var(--a600);text-decoration:underline;cursor:pointer;white-space:nowrap;}
+
+.sync-bar{
+  display:flex;align-items:center;gap:10px;padding:.6rem 1rem;
+  font-size:12px;font-weight:500;border-bottom:1px solid var(--bd);
+  background:var(--card);position:sticky;top:56px;z-index:9;
+  transition:background .3s;
+}
+.sync-bar.online  { background:var(--g50); color:var(--g600); }
+.sync-bar.offline { background:var(--a50); color:var(--a600); }
+.sync-bar.syncing { background:#EDF2FF;   color:#3B5BDB;     }
+.sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sync-bar.online  .sync-dot { background:var(--g600); }
+.sync-bar.offline .sync-dot { background:#E24B4A; animation:pulse 1.2s ease-in-out infinite; }
+.sync-bar.syncing .sync-dot { background:#3B5BDB; animation:pulse .7s ease-in-out infinite; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.sync-detail{margin-left:auto;font-size:11px;opacity:.75;}
+.sync-retry{margin-left:6px;padding:2px 8px;border:1px solid currentColor;border-radius:20px;
+            background:transparent;color:inherit;font-size:11px;cursor:pointer;font-weight:600;}
+
+/* ── Voice button ────────────────────────────────────────────── */
+.mic-btn{
+  width:42px;height:42px;border-radius:50%;border:2px solid var(--bd);
+  background:var(--card);color:var(--ts);font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .2s;position:relative;
+}
+.mic-btn:hover { border-color:var(--g600);color:var(--g600); }
+.mic-btn.listening {
+  background:var(--r50);border-color:#E24B4A;color:#E24B4A;
+  animation:mic-pulse 1s ease-in-out infinite;
+}
+.mic-btn.speaking {
+  background:var(--g50);border-color:var(--g600);color:var(--g600);
+  animation:mic-pulse .8s ease-in-out infinite;
+}
+@keyframes mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(226,75,74,.4)}50%{box-shadow:0 0 0 8px rgba(226,75,74,0)}}
+.mic-btn.speaking { animation-name:mic-speak; }
+@keyframes mic-speak{0%,100%{box-shadow:0 0 0 0 rgba(59,109,17,.4)}50%{box-shadow:0 0 0 8px rgba(59,109,17,0)}}
+
+/* voice status strip */
+.voice-status{
+  font-size:12px;color:var(--ts);padding:4px 1rem 0;text-align:center;
+  min-height:20px;transition:opacity .3s;opacity:0;
+}
+.voice-status.visible{opacity:1;}
+
+/* language buttons — extended for 4 langs */
+.lang-toggle{background:var(--muted);border:1px solid var(--bd);border-radius:var(--rm);padding:3px 2px;display:flex;gap:2px;flex-wrap:nowrap;}
+.lang-btn{padding:4px 7px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--ts);}
+.lang-btn.active{background:var(--g600);color:#fff;}
+
+/* offline queued msg indicator */
+.msg-queued{
+  font-size:11px;color:var(--a600);text-align:right;margin-top:2px;
+}
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">🌿</div>
+  <div>
+    <div class="app-title">Nkɔsoɔ AI</div>
+    <div class="app-sub">Ghana Farming Assistant</div>
+  </div>
+  <div class="topbar-right">
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('tw')">TW</button>
+      <button class="lang-btn" onclick="setLang('dg')">DG</button>
+      <button class="lang-btn" onclick="setLang('ha')">HA</button>
+    </div>
+    {% if user.plan == 'pro' %}
+      <span class="pro-badge">&#10003; Pro</span>
+    {% else %}
+      <button class="upgrade-pill" onclick="openUpgrade()">Upgrade to Pro</button>
+    {% endif %}
+    <span class="{{ 'api-ok' if api_ready else 'api-warn' }}">
+      {{ '● AI ready' if api_ready else '⚠ No API key' }}
+    </span>
+  </div>
+</div>
+
+{% if request.args.get('payment') == 'success' %}
+<div class="container" style="padding-bottom:0;">
+  <div class="pay-success">&#10003; Payment confirmed! You are now on Pro. Enjoy unlimited access.</div>
+</div>
+{% endif %}
+
+<!-- Upgrade modal -->
+<div class="modal-overlay" id="upgradeModal">
+  <div class="modal">
+    <button class="close-btn" onclick="closeUpgrade()">&#10005;</button>
+    <div class="modal-title">Upgrade to Nkɔsoɔ Pro</div>
+    <div class="modal-sub">Unlimited AI questions, photo diagnoses and more.</div>
+    <div class="plan-grid">
+      <div class="plan-card">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">GHS 0</div>
+        <div class="plan-period">forever</div>
+        <div class="plan-feat">
+          <span class="chk">&#10003;</span> {{ free_limit }} questions/day<br>
+          <span class="chk">&#10003;</span> {{ diagnose_limit }} diagnoses/month<br>
+          <span class="crs">&#10005;</span> Unlimited chat<br>
+          <span class="crs">&#10005;</span> Price alerts
+        </div>
+      </div>
+      <div class="plan-card pro">
+        <div class="popular-pill">Most popular</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">GHS 30</div>
+        <div class="plan-period">per month</div>
+        <div class="plan-feat">
+          <span class="chk">&#10003;</span> Unlimited chat<br>
+          <span class="chk">&#10003;</span> Unlimited diagnoses<br>
+          <span class="chk">&#10003;</span> Price trend alerts<br>
+          <span class="chk">&#10003;</span> Priority support
+        </div>
+      </div>
+    </div>
+    <input type="email" class="email-input" id="payEmail" placeholder="Enter your email address"/>
+    <button class="pay-btn-main" onclick="startPayment()">Pay GHS 30 with MoMo or Card</button>
+    <div class="pay-note">&#128274; Secured by Paystack · Cancel anytime</div>
+  </div>
+</div>
+
+<!-- Offline / Sync status bar -->
+<div class="sync-bar online" id="syncBar">
+  <div class="sync-dot"></div>
+  <span id="syncMsg">Online — data is live</span>
+  <span class="sync-detail" id="syncDetail"></span>
+  <button class="sync-retry" id="syncRetryBtn" style="display:none" onclick="syncOfflineQueue()">Sync now</button>
+</div>
+
+<div class="container">
+
+  <!-- Usage bar (free users only) -->
+  {% if user.plan != 'pro' %}
+  <div class="usage-bar">
+    <span class="usage-label" data-en="Today's AI questions" data-tw="Nnɛ nsɛmmisa">Today's AI questions</span>
+    <div class="usage-track">
+      <div class="usage-fill {{ 'fill-full' if used_today >= free_limit else ('fill-warn' if used_today >= free_limit - 1 else 'fill-ok') }}"
+           id="usageFill"
+           style="width:{{ [used_today / free_limit * 100, 100]|min|int }}%"></div>
+    </div>
+    <span class="usage-count" id="usageCount">{{ used_today }} / {{ free_limit }}</span>
+    <button class="upgrade-pill" onclick="openUpgrade()">Upgrade</button>
+  </div>
+  {% endif %}
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('weather')" data-en="🌤 Weather"   data-tw="🌤 Ɔhaw">🌤 Weather</button>
+    <button class="tab-btn"        onclick="showTab('prices')"  data-en="📈 Prices"    data-tw="📈 Wuramu">📈 Prices</button>
+    <button class="tab-btn"        onclick="showTab('pests')"   data-en="🐛 Pests"     data-tw="🐛 Mmoa">🐛 Pests</button>
+    <button class="tab-btn"        onclick="showTab('diagnose')" data-en="📷 Diagnose" data-tw="📷 Hwɛ Aba">📷 Diagnose</button>
+    <button class="tab-btn"        onclick="showTab('chat')"    data-en="🤖 Ask AI"    data-tw="🤖 Bisa AI">🤖 Ask AI</button>
+    <button class="tab-btn"        onclick="showTab('farm')"    data-en="🌱 My Farm"   data-tw="🌱 Me Afuo">🌱 My Farm</button>
+  </div>
+
+  <!-- WEATHER -->
+  <div id="panel-weather" class="panel active">
+    <div class="region-bar">
+      <label data-en="📍 Your region:" data-tw="📍 Wo man:">📍 Your region:</label>
+      <select class="region-select" id="regionSelect" onchange="loadWeather()">
+        {% for key,r in regions.items() %}
+        <option value="{{ key }}" {% if key == 'greater_accra' %}selected{% endif %}>{{ r.name }}</option>
+        {% endfor %}
+      </select>
+      <button class="refresh-btn" onclick="loadWeather()" data-en="Update" data-tw="Sesa">Update</button>
+      <span class="live-badge" id="liveBadge">🟢 Live</span>
+    </div>
+    <div class="card">
+      <div class="card-title" id="weatherLoc">{{ weather.location }} — Current conditions</div>
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-label" data-en="Today's high" data-tw="Nnɛ otuoɔ">Today's high</div><div class="metric-value" id="wHigh">{{ weather.today_high }}°C</div></div>
+        <div class="metric"><div class="metric-label" data-en="Humidity" data-tw="Nsuo wim">Humidity</div><div class="metric-value" id="wHumidity">{{ weather.humidity }}%</div></div>
+        <div class="metric"><div class="metric-label" data-en="Rain chance" data-tw="Osu tumi">Rain chance</div><div class="metric-value" id="wRain">{{ weather.rain_chance }}%</div></div>
+        <div class="metric"><div class="metric-label" data-en="Wind" data-tw="Mframa">Wind</div><div class="metric-value" id="wWind">{{ weather.wind_kmh }} km/h</div></div>
+      </div>
+      <div class="card-title" data-en="7-day forecast" data-tw="Nnawɔtwe Ɔhaw">7-day forecast</div>
+      <div class="forecast-strip" id="forecastStrip">
+        {% for day in weather.forecast %}
+        <div class="forecast-day">
+          <div class="day-name">{{ day.day }}</div>
+          <div class="day-icon">{{ day.icon }}</div>
+          <div class="day-temp">{{ day.high }}°</div>
+          <div class="day-rain">{{ day.rain }}%</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" data-en="Farming advice" data-tw="Afuo Agyinaesɛm">Farming advice</div>
+      <p id="weatherAdvice" style="font-size:14px;line-height:1.6;">{{ weather.advice }}</p>
+      <div style="margin-top:10px;">
+        <span class="badge b-{{ weather.risk_level }}" id="weatherRisk">{{ weather.risk }}</span>
+      </div>
+    </div>
+    <button class="ask-link-btn" onclick="askAI(0)">
+      <span data-en="💬 Ask AI: best crops for my region's upcoming rains →" data-tw="💬 Bisa AI: aba pa sɛ osu reba →">💬 Ask AI: best crops for my region's upcoming rains →</span>
+    </button>
+  </div>
+
+  <!-- PRICES -->
+  <div id="panel-prices" class="panel">
+    <div class="card">
+      <div class="card-title" data-en="Current market prices — GHS" data-tw="Aguadi Tenteene — GHS">Current market prices — GHS</div>
+      <table class="price-table">
+        <thead><tr>
+          <th data-en="Crop" data-tw="Aba">Crop</th>
+          <th data-en="Unit" data-tw="Dua">Unit</th>
+          <th data-en="Price" data-tw="Tenteene">Price</th>
+          <th data-en="Change" data-tw="Sesa">Change</th>
+        </tr></thead>
+        <tbody>
+        {% for p in prices %}
+        <tr>
+          <td><strong data-en="{{ p.crop }}" data-tw="{{ p.crop_tw }}">{{ p.crop }}</strong></td>
+          <td style="color:var(--ts)">{{ p.unit }}</td>
+          <td class="price-value">GHS {{ p.price }}</td>
+          <td>
+            {% if p.trend=='up' %}<span class="badge b-ok">▲ {{ p.change }}%</span>
+            {% elif p.trend=='down' %}<span class="badge b-danger">▼ {{ p.change|abs }}%</span>
+            {% else %}<span class="badge b-gray" data-en="Stable" data-tw="Pɛ Pɛɛ">Stable</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <button class="ask-link-btn" onclick="askAI(2)">
+      <span data-en="💬 Ask AI: when to sell for best price →" data-tw="💬 Bisa AI: ɛberɛ bɛn na tɔn pa →">💬 Ask AI: when to sell for best price →</span>
+    </button>
+  </div>
+
+  <!-- PESTS -->
+  <div id="panel-pests" class="panel">
+    <div class="alert-box alert-warn" data-en="⚠ Active pest season in your region. Check crops regularly." data-tw="⚠ Mmoa ɔberɛ wɔ wo man mu. Hwɛ wo aba daa.">
+      ⚠ Active pest season in your region. Check crops regularly.
+    </div>
+    <div class="card">
+      <div class="card-title" data-en="Pest & disease alerts" data-tw="Mmoa ne Yareɛ Nkɔmhyɛ">Pest & disease alerts</div>
+      {% for pest in pests %}
+      <div class="pest-item">
+        <div>
+          <div class="pest-name" data-en="{{ pest.name }}" data-tw="{{ pest.name_tw }}">{{ pest.name }}</div>
+          <div class="pest-crops"><span data-en="Affects:" data-tw="Ɛfa:">Affects:</span> <span data-en="{{ pest.crops }}" data-tw="{{ pest.crops_tw }}">{{ pest.crops }}</span></div>
+          <div class="pest-desc" data-en="{{ pest.description }}" data-tw="{{ pest.description_tw }}">{{ pest.description }}</div>
+          <div class="pest-tip" data-en="💡 {{ pest.tip }}" data-tw="💡 {{ pest.tip_tw }}">💡 {{ pest.tip }}</div>
+        </div>
+        <span class="badge {{ 'b-danger' if pest.level=='high' else ('b-warn' if pest.level=='medium' else 'b-ok') }}">
+          <span data-en="{{ pest.level|capitalize }}" data-tw="{{ 'Kɛseɛ' if pest.level=='high' else ('Mfinimfini' if pest.level=='medium' else 'Ketewa') }}">{{ pest.level|capitalize }}</span>
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    <button class="ask-link-btn" onclick="askAI(1)">
+      <span data-en="💬 Ask AI: how to treat Fall Armyworm →" data-tw="💬 Bisa AI: ɛdeɛn na yɛtua aburo mmoa →">💬 Ask AI: how to treat Fall Armyworm →</span>
+    </button>
+  </div>
+
+  <!-- DIAGNOSE -->
+  <div id="panel-diagnose" class="panel">
+    <div class="card">
+      <div class="card-title" data-en="📷 Crop disease photo diagnosis" data-tw="📷 Aba Yareɛ Foto Hwɛ">📷 Crop disease photo diagnosis</div>
+      <p style="font-size:13px;color:var(--ts);margin-bottom:1rem;"
+         data-en="Take a clear photo of a sick crop leaf or stem. AI will identify the disease and recommend treatment."
+         data-tw="Fa foto pa ho wo aba nkotokuo anaa dua a yareɛ wɔ so. AI bɛhunu yareɛ no.">
+        Take a clear photo of a sick crop leaf or stem. AI will identify the disease and recommend treatment.
+      </p>
+      <div class="upload-zone" onclick="document.getElementById('cropPhoto').click()">
+        <input type="file" id="cropPhoto" accept="image/*" onchange="onPhotoSelected(event)"/>
+        <div class="upload-icon">🌿</div>
+        <div class="upload-title" data-en="Tap to upload crop photo" data-tw="Dii so na fa aba foto">Tap to upload crop photo</div>
+        <div class="upload-sub" data-en="JPG or PNG · Max 5MB" data-tw="JPG anaa PNG · 5MB sene">JPG or PNG · Max 5MB</div>
+      </div>
+      <img id="previewImg" class="preview-img" alt="Crop photo"/>
+      <button id="diagnoseBtn" class="diagnose-btn" onclick="runDiagnosis()" disabled
+        data-en="🔍 Analyse photo for disease" data-tw="🔍 Hwɛ foto ho yareɛ">
+        🔍 Analyse photo for disease
+      </button>
+      <div class="card-title" id="resultTitle" style="display:none;" data-en="AI Diagnosis Result" data-tw="AI Hwɛ Asɛm">AI Diagnosis Result</div>
+      <div class="result-box" id="resultBox"></div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div id="panel-chat" class="panel">
+    <div class="card-title" data-en="Quick questions" data-tw="Nsɛmmisa Ntɛm">Quick questions</div>
+    <div class="quick-grid" id="quickGrid">
+      {% for q in quick_en %}
+      <button class="quick-btn" onclick="askAI({{ loop.index0 }})"
+        data-en="{{ q }}" data-tw="{{ quick_tw[loop.index0] }}">{{ q }}</button>
+      {% endfor %}
+    </div>
+    <div class="chat-window">
+      <div class="chat-messages" id="chatMessages">
+        <div class="msg msg-ai" id="welcomeMsg">
+          👋 Hello! I'm Nkɔsoɔ AI — your Ghana farming assistant. Ask me anything about weather, crops, pests, or market prices.
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="Speak your question">🎤</button>
+        <input type="text" id="chatInput"
+          placeholder="Ask a farming question..."
+          data-en-ph="Ask a farming question..."
+          data-tw-ph="Bisa afuo asɛmmisa..."
+          data-dg-ph="Bisa puuni tiŋ yɛlma..."
+          data-ha-ph="Tambayi tambarin gonaki..."
+          onkeydown="if(event.key==='Enter') sendMessage()"/>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" data-en="Send" data-tw="Soma" data-dg="Tuma" data-ha="Aika">Send</button>
+      </div>
+      <div class="voice-status" id="voiceStatus"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- FARM — Profile + Calendar + Diary                       -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="panel-farm" class="panel">
+
+    <!-- ── Profile nudge (shown when profile is empty) ──── -->
+    <div id="profileNudge" class="profile-nudge" style="display:none">
+      🌱 <span>Fill in your farm details to get a personalized planting calendar.</span>
+      <span class="nudge-link" onclick="openProfileSection()">Set up profile →</span>
+    </div>
+
+    <!-- ── Farm Profile ────────────────────────────────── -->
+    <div class="card" id="profileCard">
+      <div class="card-title" data-en="👤 My Farm Profile" data-tw="👤 Me Afuo Ho Nsɛm">👤 My Farm Profile</div>
+
+      <div class="profile-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" data-en="Your name" data-tw="Wo din">Your name</label>
+            <input class="form-input" id="pName" placeholder="e.g. Kofi Mensah"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-en="Phone number" data-tw="Wo fon nɔma">Phone number</label>
+            <input class="form-input" id="pPhone" placeholder="e.g. 0244123456" type="tel"/>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" data-en="Farm size" data-tw="Afuo kɛseɛ">Farm size</label>
+            <input class="form-input" id="pSize" placeholder="e.g. 2.5" type="number" min="0.1" step="0.1"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-en="Unit" data-tw="Nhwɛso">Unit</label>
+            <select class="form-select" id="pUnit">
+              <option value="acres">Acres</option>
+              <option value="hectares">Hectares</option>
+              <option value="plots">Plots</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" data-en="Soil type" data-tw="Asaase su">Soil type</label>
+            <select class="form-select" id="pSoil">
+              <option value="loamy">Loamy (best for most crops)</option>
+              <option value="sandy">Sandy (good drainage)</option>
+              <option value="clay">Clay (holds moisture)</option>
+              <option value="silty">Silty (fertile, river areas)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-en="Water source" data-tw="Nsuo baabi">Water source</label>
+            <select class="form-select" id="pWater">
+              <option value="rain">Rain-fed only</option>
+              <option value="irrigation">Irrigation system</option>
+              <option value="both">Rain + Irrigation</option>
+              <option value="stream">Stream / River nearby</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" data-en="Region" data-tw="Wo man">Region</label>
+          <select class="form-select" id="pRegion">
+            {% for key,r in regions.items() %}
+            <option value="{{ key }}">{{ r.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" data-en="Crops I grow (tap to select)" data-tw="Aba a mɛdua (tia na paw)">Crops I grow (tap to select)</label>
+          <div class="crop-chips" id="cropChips">
+            <div style="width:100%;font-size:11px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">🌾 Staples & Vegetables</div>
+            <span class="crop-chip" data-crop="Maize">🌽 Maize</span>
+            <span class="crop-chip" data-crop="Cassava">🍠 Cassava</span>
+            <span class="crop-chip" data-crop="Tomatoes">🍅 Tomatoes</span>
+            <span class="crop-chip" data-crop="Plantain">🍌 Plantain</span>
+            <span class="crop-chip" data-crop="Yam">🥔 Yam</span>
+            <span class="crop-chip" data-crop="Cocoa">🍫 Cocoa</span>
+            <span class="crop-chip" data-crop="Pepper">🌶 Pepper</span>
+            <span class="crop-chip" data-crop="Groundnut">🥜 Groundnut</span>
+            <span class="crop-chip" data-crop="Rice">🌾 Rice</span>
+            <span class="crop-chip" data-crop="Vegetables">🥦 Vegetables</span>
+            <span class="crop-chip" data-crop="Soybean">🫘 Soybean</span>
+            <span class="crop-chip" data-crop="Cowpea">🫛 Cowpea</span>
+            <div style="width:100%;font-size:11px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;margin:6px 0 2px;">🍍 Fruits</div>
+            <span class="crop-chip" data-crop="Mango">🥭 Mango</span>
+            <span class="crop-chip" data-crop="Pineapple">🍍 Pineapple</span>
+            <span class="crop-chip" data-crop="Watermelon">🍉 Watermelon</span>
+            <span class="crop-chip" data-crop="Pawpaw">🍈 Pawpaw</span>
+            <span class="crop-chip" data-crop="Orange">🍊 Orange</span>
+            <span class="crop-chip" data-crop="Banana">🍌 Banana</span>
+            <span class="crop-chip" data-crop="Avocado">🥑 Avocado</span>
+            <span class="crop-chip" data-crop="Coconut">🥥 Coconut</span>
+            <span class="crop-chip" data-crop="Guava">🍏 Guava</span>
+            <span class="crop-chip" data-crop="Passion Fruit">💛 Passion Fruit</span>
+            <span class="crop-chip" data-crop="Soursop">🍃 Soursop</span>
+            <span class="crop-chip" data-crop="Lime">🍋 Lime</span>
+          </div>
+        </div>
+
+        <button class="save-profile-btn" id="saveProfileBtn" onclick="saveProfile()">
+          💾 Save My Farm Profile
+        </button>
+        <div class="profile-saved" id="profileSaved">✅ Profile saved! Now generate your planting calendar below.</div>
+      </div>
+    </div>
+
+    <!-- ── Planting Calendar ─────────────────────────────── -->
+    <div class="card">
+      <div class="card-title" data-en="📅 My Planting Calendar" data-tw="📅 Me Dua Aba Kalenda">📅 My Planting Calendar</div>
+      <p style="font-size:13px;color:var(--ts);margin-bottom:1rem;"
+         data-en="AI generates a 12-month crop plan based on your farm profile and Ghana's seasons."
+         data-tw="AI bɛyɛ aba dua plan ama wo afuo ne Ghana ɔberɛ so.">
+        AI generates a 12-month crop plan based on your farm profile and Ghana's seasons.
+      </p>
+      <button class="gen-calendar-btn" id="genCalBtn" onclick="generateCalendar()">
+        <span>✨ Generate My Planting Calendar</span>
+      </button>
+      <div id="calendarContainer">
+        <div class="calendar-empty" id="calendarEmpty">
+          Save your profile above, then tap the button to generate your personalized calendar.
+        </div>
+        <div class="calendar-grid" id="calendarGrid" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- ── Farm Diary ────────────────────────────────────── -->
+    <div class="card">
+      <div class="card-title" data-en="📓 Farm Diary" data-tw="📓 Afuo Dawurubɔ">📓 Farm Diary</div>
+      <p style="font-size:13px;color:var(--ts);margin-bottom:.75rem;"
+         data-en="Log what you do on your farm each day."
+         data-tw="Kyerɛw adwuma a woyɛ wɔ wo afuo so daa.">
+        Log what you do on your farm each day.
+      </p>
+      <div class="log-form-row">
+        <select class="form-select" id="logCrop" style="max-width:140px;">
+          <option value="">Select crop</option>
+          <option>Maize</option><option>Cassava</option><option>Tomatoes</option>
+          <option>Plantain</option><option>Yam</option><option>Cocoa</option>
+          <option>Pepper</option><option>Groundnut</option><option>Rice</option>
+          <option>Vegetables</option><option>Soybean</option><option>Cowpea</option>
+          <optgroup label="Fruits">
+          <option>Mango</option><option>Pineapple</option><option>Watermelon</option>
+          <option>Pawpaw</option><option>Orange</option><option>Banana</option>
+          <option>Avocado</option><option>Coconut</option><option>Guava</option>
+          <option>Passion Fruit</option><option>Soursop</option><option>Lime</option>
+          </optgroup>
+        </select>
+        <select class="form-select" id="logAction" style="max-width:160px;">
+          <option value="">Select action</option>
+          <option>Land preparation</option><option>Planting</option>
+          <option>Fertilizer applied</option><option>Weeding</option>
+          <option>Pest spray</option><option>Irrigation</option>
+          <option>Harvesting</option><option>Storage</option><option>Other</option>
+        </select>
+        <input class="form-input" id="logNote" placeholder="Note (optional)" style="min-width:120px;"/>
+        <input class="form-input" id="logDate" type="date" style="max-width:140px;"/>
+        <button class="add-log-btn" onclick="addLog()">+ Add</button>
+      </div>
+      <div class="log-list" id="logList">
+        <div class="log-empty" id="logEmpty">No diary entries yet. Log your first farm activity above.</div>
+      </div>
+    </div>
+
+  </div><!-- /panel-farm -->
+
+</div><!-- /container -->
+
+<script>
+const QUICK_EN = {{ quick_en | tojson }};
+const QUICK_TW = {{ quick_tw | tojson }};
+const WEATHER_ADVICE = { en: {{ weather.advice | tojson }}, tw: {{ weather.advice_tw | tojson }} };
+const WEATHER_RISK   = { en: {{ weather.risk   | tojson }}, tw: {{ weather.risk_tw   | tojson }} };
+const USER_PLAN   = '{{ user.plan }}';
+const FREE_LIMIT  = {{ free_limit }};
+let usedToday     = {{ used_today }};
+let currentLang   = 'en';
+let currentWeather = { advice: WEATHER_ADVICE, risk: WEATHER_RISK, risk_level: '{{ weather.risk_level }}' };
+
+// ─────────────────────────────────────────────────────────────
+// LANGUAGE  (now supports EN / TW / DG = Dagbani / HA = Hausa)
+// ─────────────────────────────────────────────────────────────
+const WELCOME_MSG = {
+  en: "👋 Hello! I'm Nkɔsoɔ AI — your Ghana farming assistant. Ask me anything about weather, crops, pests, or market prices.",
+  tw: "👋 Akwaaba! Meyɛ Nkɔsoɔ AI. Bisa me asɛmmisa biara a ɛfa ɔhaw, aba dua, mmoa tia, anaa ɛberɛ a ɛsɛ sɛ wo tɔn wo aba.",
+  dg: "👋 Despa! N yɛ Nkɔsoɔ AI — fo puuni tiŋ sɔŋ mali. Bɔri n yɛlgu puuni yɛla, zaŋ daa, ni zaŋ tiŋa kɔɣim.",
+  ha: "👋 Sannu! Ni ne Nkɔsoɔ AI — mataimakin noma naku. Ka tambaya komai game da yanayi, amfanin gona, kwari, ko farashin kasuwa."
+};
+
+const LANG_CODES = {
+  en: 'en-GH', tw: 'tw',     // Web Speech BCP-47 codes
+  dg: 'dag',   ha: 'ha-GH'   // Dagbani / Hausa
+};
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b =>
+    b.classList.toggle('active', b.textContent.trim().toLowerCase() === lang));
+
+  // swap data-en/tw/dg/ha attributes
+  document.querySelectorAll('[data-en]').forEach(el => {
+    const v = el.getAttribute('data-' + lang) || el.getAttribute('data-en');
+    if (v) el.textContent = v;
+  });
+  document.getElementById('weatherAdvice').textContent =
+    currentWeather.advice[lang] || currentWeather.advice.en;
+  document.getElementById('weatherRisk').textContent =
+    currentWeather.risk[lang] || currentWeather.risk.en;
+
+  const inp = document.getElementById('chatInput');
+  inp.placeholder = inp.getAttribute('data-' + lang + '-ph') || inp.getAttribute('data-en-ph');
+
+  document.getElementById('welcomeMsg').textContent = WELCOME_MSG[lang] || WELCOME_MSG.en;
+  document.querySelectorAll('#quickGrid .quick-btn').forEach((b, i) => {
+    b.textContent = lang === 'tw' ? QUICK_TW[i] : QUICK_EN[i];
+  });
+  const db = document.getElementById('diagnoseBtn');
+  if (db) db.textContent = lang === 'tw'
+    ? '🔍 Hwɛ foto ho yareɛ' : '🔍 Analyse photo for disease';
+}
+
+// Tabs
+function showTab(name) {
+  const names = ['weather','prices','pests','diagnose','chat','farm'];
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', names[i]===name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id==='panel-'+name));
+  if (name === 'farm') initFarmTab();
+}
+
+// ─────────────────────────────────────────────────────────────
+// FARM PROFILE
+// ─────────────────────────────────────────────────────────────
+const FARM_PROFILE_KEY = 'nkosoo_farm_profile';
+let farmProfile = {};
+let calendarData = null;
+
+// Server-side profile pre-load
+const SERVER_PROFILE = {{ (profile or {}) | tojson }};
+
+function initFarmTab() {
+  // merge server profile into local state
+  farmProfile = Object.assign({}, SERVER_PROFILE);
+  if (typeof farmProfile.crops === 'string') {
+    try { farmProfile.crops = JSON.parse(farmProfile.crops); } catch { farmProfile.crops = []; }
+  }
+  if (!Array.isArray(farmProfile.crops)) farmProfile.crops = [];
+  renderProfileForm();
+  loadLogs();
+  const hasProfile = farmProfile.farmer_name || (farmProfile.crops && farmProfile.crops.length > 0);
+  document.getElementById('profileNudge').style.display = hasProfile ? 'none' : 'flex';
+}
+
+function renderProfileForm() {
+  if (farmProfile.farmer_name) document.getElementById('pName').value   = farmProfile.farmer_name;
+  if (farmProfile.phone)        document.getElementById('pPhone').value  = farmProfile.phone;
+  if (farmProfile.farm_size)    document.getElementById('pSize').value   = farmProfile.farm_size;
+  if (farmProfile.size_unit)    document.getElementById('pUnit').value   = farmProfile.size_unit;
+  if (farmProfile.soil_type)    document.getElementById('pSoil').value   = farmProfile.soil_type;
+  if (farmProfile.water_source) document.getElementById('pWater').value  = farmProfile.water_source;
+  if (farmProfile.region)       document.getElementById('pRegion').value = farmProfile.region;
+  // chips
+  const crops = farmProfile.crops || [];
+  document.querySelectorAll('.crop-chip').forEach(c => {
+    c.classList.toggle('selected', crops.includes(c.dataset.crop));
+  });
+}
+
+// crop chip toggle
+document.querySelectorAll('.crop-chip').forEach(chip => {
+  chip.addEventListener('click', () => chip.classList.toggle('selected'));
+});
+
+function getSelectedCrops() {
+  return [...document.querySelectorAll('.crop-chip.selected')].map(c => c.dataset.crop);
+}
+
+function openProfileSection() {
+  document.getElementById('profileCard').scrollIntoView({behavior:'smooth'});
+}
+
+async function saveProfile() {
+  const btn = document.getElementById('saveProfileBtn');
+  const crops = getSelectedCrops();
+  const data = {
+    farmer_name:  document.getElementById('pName').value.trim(),
+    phone:        document.getElementById('pPhone').value.trim(),
+    farm_size:    parseFloat(document.getElementById('pSize').value) || 1,
+    size_unit:    document.getElementById('pUnit').value,
+    soil_type:    document.getElementById('pSoil').value,
+    water_source: document.getElementById('pWater').value,
+    region:       document.getElementById('pRegion').value,
+    crops,
+  };
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const resp = await fetch('/api/profile', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)
+    });
+    if (resp.ok) {
+      farmProfile = data;
+      const saved = document.getElementById('profileSaved');
+      saved.classList.add('show');
+      setTimeout(() => saved.classList.remove('show'), 4000);
+      document.getElementById('profileNudge').style.display = 'none';
+      // update log crop selector to match selected crops
+      syncLogCropSelect(crops);
+    } else { alert('Save failed. Please try again.'); }
+  } catch(e) { alert('Connection error.'); }
+  btn.disabled = false; btn.textContent = '💾 Save My Farm Profile';
+}
+
+function syncLogCropSelect(crops) {
+  const sel = document.getElementById('logCrop');
+  const current = sel.value;
+  // add any new crops not already in select
+  crops.forEach(c => {
+    if (![...sel.options].some(o => o.value === c)) {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      sel.appendChild(opt);
+    }
+  });
+  if (current) sel.value = current;
+}
+
+// ─────────────────────────────────────────────────────────────
+// PLANTING CALENDAR
+// ─────────────────────────────────────────────────────────────
+const MONTHS = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+const MONTH_EMOJIS = ['❄️','🌱','🌧️','🌧️','☔','🌦️','⛅','🌤️','🌦️','🌧️','🍂','☀️'];
+
+async function generateCalendar() {
+  const btn = document.getElementById('genCalBtn');
+  const crops = getSelectedCrops().length > 0 ? getSelectedCrops() : (farmProfile.crops || []);
+  if (crops.length === 0) {
+    alert('Please select at least one crop in your farm profile first.');
+    openProfileSection(); return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> AI is building your calendar…';
+  document.getElementById('calendarEmpty').textContent = '⏳ Generating your personalized 12-month plan…';
+  document.getElementById('calendarGrid').style.display = 'none';
+  try {
+    const resp = await fetch('/api/calendar?lang=' + currentLang);
+    const data = await resp.json();
+    if (!resp.ok) {
+      document.getElementById('calendarEmpty').textContent =
+        data.message || data.error || 'Error generating calendar. Please save your profile first.';
+      btn.disabled = false; btn.innerHTML = '✨ Generate My Planting Calendar'; return;
+    }
+    calendarData = data.calendar;
+    renderCalendar(calendarData, data.profile);
+  } catch(e) {
+    document.getElementById('calendarEmpty').textContent = '⚠ Connection error. Please try again.';
+  }
+  btn.disabled = false; btn.innerHTML = '🔄 Regenerate Calendar';
+}
+
+function renderCalendar(calendar, profile) {
+  const grid = document.getElementById('calendarGrid');
+  const empty = document.getElementById('calendarEmpty');
+  if (!calendar || calendar.length === 0) {
+    empty.textContent = 'No calendar data returned. Please try again.';
+    grid.style.display = 'none'; return;
+  }
+  empty.style.display = 'none';
+  grid.style.display = 'flex';
+  const now = new Date().getMonth(); // 0-indexed
+
+  grid.innerHTML = calendar.map((m, idx) => {
+    const tasks = (m.tasks || []);
+    const isCurrent = MONTHS[now] === m.month;
+    const emoji = MONTH_EMOJIS[MONTHS.indexOf(m.month)] || '📅';
+    const taskHTML = tasks.length === 0
+      ? '<div style="font-size:13px;color:var(--ts);padding:8px 0;">No major tasks this month — monitor crops and check for pests.</div>'
+      : tasks.map(t => `
+          <div class="cal-task">
+            <span class="cal-task-crop">${t.crop}</span>
+            <div class="cal-task-body">
+              <div class="cal-task-action">${t.action}</div>
+              ${t.note ? `<div class="cal-task-note">${t.note}</div>` : ''}
+            </div>
+            <button class="cal-task-log-btn" onclick='logFromCalendar(${JSON.stringify(t.crop)},${JSON.stringify(t.action)})'>+ Log</button>
+          </div>`).join('');
+    return `
+      <div class="cal-month ${isCurrent ? 'open' : ''}">
+        <div class="cal-month-header" onclick="toggleMonth(this)">
+          <span>${emoji} ${m.month} ${isCurrent ? '← This month' : ''}</span>
+          <span class="chevron">▾</span>
+        </div>
+        <div class="cal-tasks">${taskHTML}</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleMonth(header) {
+  header.closest('.cal-month').classList.toggle('open');
+}
+
+function logFromCalendar(crop, action) {
+  showTab('farm');
+  document.getElementById('logCrop').value = crop;
+  document.getElementById('logAction').value = action;
+  document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('logNote').focus();
+  document.getElementById('logCrop').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// ─────────────────────────────────────────────────────────────
+// FARM DIARY
+// ─────────────────────────────────────────────────────────────
+let farmLogs = [];
+
+async function loadLogs() {
+  try {
+    const resp = await fetch('/api/log');
+    if (resp.ok) { const d = await resp.json(); farmLogs = d.logs || []; renderLogs(); }
+  } catch {}
+}
+
+function renderLogs() {
+  const list  = document.getElementById('logList');
+  const empty = document.getElementById('logEmpty');
+  if (farmLogs.length === 0) {
+    empty.style.display = 'block'; list.innerHTML = ''; list.appendChild(empty); return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = farmLogs.map(l => `
+    <div class="log-entry" id="log-${l.id}">
+      <div class="log-entry-date">${l.log_date}</div>
+      <div class="log-entry-body">
+        <div class="log-entry-crop">${l.crop}</div>
+        <div class="log-entry-action">${l.action}</div>
+        ${l.note ? `<div class="log-entry-note">${l.note}</div>` : ''}
+      </div>
+      <button class="log-delete-btn" onclick="deleteLog(${l.id})" title="Delete">✕</button>
+    </div>`).join('');
+}
+
+async function addLog() {
+  const crop   = document.getElementById('logCrop').value;
+  const action = document.getElementById('logAction').value;
+  const note   = document.getElementById('logNote').value.trim();
+  const date   = document.getElementById('logDate').value || new Date().toISOString().split('T')[0];
+  if (!crop || !action) { alert('Please select a crop and action.'); return; }
+  try {
+    const resp = await fetch('/api/log', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({crop, action, note, date})
+    });
+    if (resp.ok) {
+      document.getElementById('logNote').value = '';
+      await loadLogs();
+    }
+  } catch(e) { alert('Could not save log. Please try again.'); }
+}
+
+async function deleteLog(id) {
+  try {
+    await fetch(`/api/log/${id}`, {method:'DELETE'});
+    farmLogs = farmLogs.filter(l => l.id !== id);
+    renderLogs();
+  } catch {}
+}
+
+// set today's date as default for log date input
+document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+
+
+// Upgrade modal
+function openUpgrade()  { document.getElementById('upgradeModal').classList.add('open'); }
+function closeUpgrade() { document.getElementById('upgradeModal').classList.remove('open'); }
+
+async function startPayment() {
+  const email = document.getElementById('payEmail').value.trim();
+  if (!email || !email.includes('@')) { alert('Please enter a valid email.'); return; }
+  const btn = document.querySelector('.pay-btn-main');
+  btn.disabled = true; btn.textContent = 'Loading...';
+  try {
+    const resp = await fetch('/api/pay/init', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const data = await resp.json();
+    if (data.authorization_url) { window.location.href = data.authorization_url; }
+    else { alert(data.error||'Payment failed.'); btn.disabled=false; btn.textContent='Pay GHS 30 with MoMo or Card'; }
+  } catch(e) { alert('Connection error.'); btn.disabled=false; btn.textContent='Pay GHS 30 with MoMo or Card'; }
+}
+
+// Usage bar
+function updateUsageBar(used) {
+  usedToday = used;
+  const el   = document.getElementById('usageCount');
+  const fill = document.getElementById('usageFill');
+  if (el)   el.textContent = used + ' / ' + FREE_LIMIT;
+  if (fill) {
+    const pct = Math.min(used / FREE_LIMIT * 100, 100);
+    fill.style.width = pct + '%';
+    fill.className = 'usage-fill ' + (used >= FREE_LIMIT ? 'fill-full' : (used >= FREE_LIMIT - 1 ? 'fill-warn' : 'fill-ok'));
+  }
+}
+
+// Weather
+async function loadWeather() {
+  const key   = document.getElementById('regionSelect').value;
+  const badge = document.getElementById('liveBadge');
+  badge.innerHTML = '<span class="loading"></span>';
+  try {
+    const w = await (await fetch('/api/weather?region=' + key)).json();
+    document.getElementById('wHigh').textContent     = w.today_high + '°C';
+    document.getElementById('wHumidity').textContent = w.humidity + '%';
+    document.getElementById('wRain').textContent     = w.rain_chance + '%';
+    document.getElementById('wWind').textContent     = w.wind_kmh + ' km/h';
+    document.getElementById('weatherLoc').textContent =
+      (currentLang === 'tw' ? w.location_tw : w.location) + ' — ' +
+      (currentLang === 'tw' ? 'Ɔhaw Nnɛ' : 'Current conditions');
+    document.getElementById('forecastStrip').innerHTML = w.forecast.map(d =>
+      `<div class="forecast-day"><div class="day-name">${d.day}</div><div class="day-icon">${d.icon}</div><div class="day-temp">${d.high}°</div><div class="day-rain">${d.rain}%</div></div>`
+    ).join('');
+    currentWeather = { advice:{en:w.advice,tw:w.advice_tw}, risk:{en:w.risk,tw:w.risk_tw}, risk_level:w.risk_level };
+    document.getElementById('weatherAdvice').textContent = currentLang === 'tw' ? w.advice_tw : w.advice;
+    const rEl = document.getElementById('weatherRisk');
+    rEl.textContent = currentLang === 'tw' ? w.risk_tw : w.risk;
+    rEl.className   = 'badge b-' + w.risk_level;
+    badge.textContent = '🟢 Live';
+    // refresh offline cache after live fetch
+    cacheDataForOffline();
+  } catch(e) {
+    badge.textContent = '⚠ Offline';
+    loadCachedWeather();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// OFFLINE MODE
+// ─────────────────────────────────────────────────────────────
+const CACHE_KEY       = 'nkosoo_cache_v1';
+const QUEUE_KEY       = 'nkosoo_offline_queue';
+let isOnline          = navigator.onLine;
+let offlineQueue      = [];   // [{messages, lang, timestamp}]
+
+function loadQueue() {
+  try { offlineQueue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { offlineQueue = []; }
+}
+function saveQueue() {
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(offlineQueue)); } catch {}
+}
+function loadCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch { return null; }
+}
+function saveCache(data) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({...data, saved_at: Date.now()})); } catch {}
+}
+
+async function cacheDataForOffline() {
+  try {
+    const resp = await fetch('/api/cache-data');
+    if (resp.ok) saveCache(await resp.json());
+  } catch {}
+}
+
+function loadCachedWeather() {
+  const c = loadCache();
+  if (!c || !c.weather) return;
+  const w = c.weather;
+  document.getElementById('wHigh').textContent     = w.today_high + '°C';
+  document.getElementById('wHumidity').textContent = w.humidity + '%';
+  document.getElementById('wRain').textContent     = w.rain_chance + '%';
+  document.getElementById('wWind').textContent     = w.wind_kmh + ' km/h';
+  document.getElementById('forecastStrip').innerHTML = (w.forecast||[]).map(d =>
+    `<div class="forecast-day"><div class="day-name">${d.day}</div><div class="day-icon">${d.icon}</div><div class="day-temp">${d.high}°</div><div class="day-rain">${d.rain}%</div></div>`
+  ).join('');
+  const cachedAt = c.saved_at ? new Date(c.saved_at).toLocaleTimeString() : '?';
+  document.getElementById('liveBadge').textContent = '📦 Cached';
+  setSyncBar('offline', `Offline — showing data cached at ${cachedAt}`);
+}
+
+function setSyncBar(state, msg, detail='') {
+  const bar = document.getElementById('syncBar');
+  const txt = document.getElementById('syncMsg');
+  const det = document.getElementById('syncDetail');
+  const btn = document.getElementById('syncRetryBtn');
+  bar.className = 'sync-bar ' + state;
+  txt.textContent = msg;
+  det.textContent = detail;
+  btn.style.display = (state === 'offline' && offlineQueue.length > 0) ? 'inline-block' : 'none';
+}
+
+function handleOnline() {
+  isOnline = true;
+  setSyncBar('online', 'Back online');
+  setTimeout(() => setSyncBar('online', 'Online — data is live'), 3000);
+  syncOfflineQueue();
+}
+function handleOffline() {
+  isOnline = false;
+  const q = offlineQueue.length;
+  setSyncBar('offline',
+    'No internet connection — cached data shown',
+    q > 0 ? `${q} message${q>1?'s':''} queued` : '');
+}
+
+async function syncOfflineQueue() {
+  if (!isOnline || offlineQueue.length === 0) return;
+  setSyncBar('syncing', `Syncing ${offlineQueue.length} queued message${offlineQueue.length>1?'s':''}…`);
+  const toSync = [...offlineQueue];
+  offlineQueue = [];
+  saveQueue();
+
+  for (const item of toSync) {
+    try {
+      const resp = await fetch('/api/chat', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({messages: item.messages, lang: item.lang})
+      });
+      if (resp.ok) {
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+        // Show a "synced" message in chat
+        const aiDiv = appendMsg('', 'ai');
+        const label = document.createElement('div');
+        label.className = 'msg-queued';
+        label.textContent = `⏱ Synced (asked at ${new Date(item.timestamp).toLocaleTimeString()})`;
+        aiDiv.parentNode.insertBefore(label, aiDiv.nextSibling);
+        while(true) {
+          const {done, value} = await reader.read(); if(done) break;
+          for (const line of decoder.decode(value, {stream:true}).split('\n')) {
+            if (line.startsWith('data: ')) {
+              const p = line.slice(6).trim(); if (p === '[DONE]') break;
+              try { fullText += JSON.parse(p).text; aiDiv.textContent = fullText; chatMessages.scrollTop = chatMessages.scrollHeight; } catch{}
+            }
+          }
+        }
+        conversationHistory.push({role:'assistant', content: fullText});
+      }
+    } catch(err) {
+      // put it back
+      offlineQueue.unshift(item);
+      saveQueue();
+      setSyncBar('offline', 'Sync failed — will retry when online', `${offlineQueue.length} queued`);
+      return;
+    }
+  }
+  setSyncBar('online', 'Sync complete — all messages sent');
+  setTimeout(() => setSyncBar('online', 'Online — data is live'), 4000);
+}
+
+window.addEventListener('online',  handleOnline);
+window.addEventListener('offline', handleOffline);
+
+// ─────────────────────────────────────────────────────────────
+// CHAT  (with offline queue support)
+// ─────────────────────────────────────────────────────────────
+const chatMessages = document.getElementById('chatMessages');
+let conversationHistory = [];
+
+function appendMsg(text, role) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role === 'user' ? 'msg-user' : 'msg-ai');
+  div.textContent = text;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return div;
+}
+
+function askAI(idx) {
+  const q = currentLang === 'tw' ? QUICK_TW[idx] : QUICK_EN[idx];
+  showTab('chat');
+  document.getElementById('chatInput').value = q;
+  setTimeout(sendMessage, 100);
+}
+
+async function sendMessage() {
+  const sendBtn   = document.getElementById('sendBtn');
+  const chatInput = document.getElementById('chatInput');
+  const text      = chatInput.value.trim();
+  if (!text || sendBtn.disabled) return;
+  chatInput.value = '';
+  appendMsg(text, 'user');
+  conversationHistory.push({role:'user', content: text});
+  sendBtn.disabled = true;
+
+  // ── OFFLINE: queue and return ──────────────────────────────
+  if (!isOnline) {
+    offlineQueue.push({
+      messages: [...conversationHistory],
+      lang: currentLang,
+      timestamp: Date.now()
+    });
+    saveQueue();
+    const notice = appendMsg(
+      currentLang === 'tw'
+        ? '📦 Asɛmmisa no wɔ hɔ. Wɔde bɛkɔ AI no bere a internet ba.'
+        : '📦 No internet — your question is saved and will be sent when you\'re back online.',
+      'ai');
+    notice.style.opacity = '0.7';
+    setSyncBar('offline', 'Offline — question queued', `${offlineQueue.length} queued`);
+    sendBtn.disabled = false;
+    return;
+  }
+
+  // ── ONLINE: normal flow ─────────────────────────────────────
+  const aiDiv = appendMsg('▌', 'ai');
+  try {
+    const resp = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({messages: conversationHistory, lang: currentLang})
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      if (err.error === 'limit_reached') {
+        aiDiv.textContent = currentLang === 'tw' ? (err.message_tw || err.message) : err.message;
+        updateUsageBar(FREE_LIMIT);
+        setTimeout(openUpgrade, 1500);
+      } else { aiDiv.textContent = '⚠ ' + (err.error || 'Error'); }
+      sendBtn.disabled = false; return;
+    }
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = ''; aiDiv.textContent = '';
+    while(true) {
+      const {done, value} = await reader.read(); if(done) break;
+      for (const line of decoder.decode(value, {stream:true}).split('\n')) {
+        if (line.startsWith('data: ')) {
+          const p = line.slice(6).trim(); if (p === '[DONE]') break;
+          try { fullText += JSON.parse(p).text; aiDiv.textContent = fullText; chatMessages.scrollTop = chatMessages.scrollHeight; } catch{}
+        }
+      }
+    }
+    conversationHistory.push({role:'assistant', content: fullText});
+    if (USER_PLAN !== 'pro') updateUsageBar(usedToday + 1);
+    // read response aloud if voice mode is active
+    if (voiceAutoSpeak) speakText(fullText);
+  } catch(e) {
+    if (!isOnline) {
+      // fell offline mid-request — queue it
+      aiDiv.textContent = '📦 Connection lost. Your question is saved.';
+      offlineQueue.push({messages:[...conversationHistory], lang:currentLang, timestamp:Date.now()});
+      saveQueue();
+    } else {
+      aiDiv.textContent = '⚠ Connection error. Please try again.';
+    }
+  }
+  sendBtn.disabled = false;
+  chatInput.focus();
+}
+
+// ─────────────────────────────────────────────────────────────
+// VOICE INTERFACE
+// ─────────────────────────────────────────────────────────────
+let recognition    = null;
+let isListening    = false;
+let voiceAutoSpeak = false;   // set true after first successful voice input
+let ttsUtterance   = null;
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function setVoiceStatus(msg, visible=true) {
+  const el = document.getElementById('voiceStatus');
+  el.textContent = msg;
+  el.classList.toggle('visible', visible);
+}
+
+function toggleVoice() {
+  if (isListening) {
+    stopListening();
+  } else {
+    startListening();
+  }
+}
+
+function startListening() {
+  // stop any ongoing speech
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+  if (!SpeechRecognition) {
+    setVoiceStatus('⚠ Your browser does not support voice input. Try Chrome or Edge.');
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+
+  // Choose the best BCP-47 code for selected language
+  const langMap = { en:'en-GH', tw:'en-GH', dg:'en-GH', ha:'ha' };
+  // Web Speech API has limited non-English support; fall back to en-GH for Twi/Dagbani
+  recognition.lang = langMap[currentLang] || 'en-GH';
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+  recognition.continuous = false;
+
+  recognition.onstart = () => {
+    isListening = true;
+    voiceAutoSpeak = true;
+    document.getElementById('micBtn').className = 'mic-btn listening';
+    const prompts = {
+      en: '🎤 Listening… speak your question',
+      tw: '🎤 Tie… ka wo asɛmmisa',
+      dg: '🎤 Gbiri… bɔri fo yɛlgu',
+      ha: '🎤 Ana saurara… faɗa tambayarka'
+    };
+    setVoiceStatus(prompts[currentLang] || prompts.en);
+  };
+
+  recognition.onresult = (e) => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    const chatInput = document.getElementById('chatInput');
+    chatInput.value = (final || interim);
+    if (interim) setVoiceStatus('🎤 ' + interim);
+  };
+
+  recognition.onerror = (e) => {
+    const msgs = {
+      'no-speech':        'No speech detected — tap 🎤 and try again',
+      'audio-capture':    '⚠ Microphone not found',
+      'not-allowed':      '⚠ Microphone blocked — allow access in browser settings',
+      'network':          '⚠ Voice recognition needs a connection',
+    };
+    setVoiceStatus(msgs[e.error] || ('⚠ Voice error: ' + e.error));
+    stopListening(false);
+  };
+
+  recognition.onend = () => {
+    stopListening(false);
+    const text = document.getElementById('chatInput').value.trim();
+    if (text) {
+      setVoiceStatus('✅ Got it! Sending…');
+      setTimeout(sendMessage, 300);
+    } else {
+      setVoiceStatus('');
+    }
+  };
+
+  try { recognition.start(); }
+  catch(e) { setVoiceStatus('⚠ Could not start microphone: ' + e.message); }
+}
+
+function stopListening(manual=true) {
+  isListening = false;
+  document.getElementById('micBtn').className = 'mic-btn';
+  if (recognition) { try { recognition.stop(); } catch{} recognition = null; }
+  if (manual) setVoiceStatus('');
+}
+
+// Text-to-speech
+function speakText(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  // strip markdown-ish symbols for cleaner speech
+  const clean = text.replace(/[*_#`~>]/g, '').replace(/\n+/g, '. ');
+
+  ttsUtterance = new SpeechSynthesisUtterance(clean);
+  ttsUtterance.lang = LANG_CODES[currentLang] || 'en-GH';
+  ttsUtterance.rate = 0.92;
+  ttsUtterance.pitch = 1;
+
+  ttsUtterance.onstart = () => {
+    document.getElementById('micBtn').className = 'mic-btn speaking';
+    setVoiceStatus('🔊 Reading answer aloud — tap 🎤 to stop');
+  };
+  ttsUtterance.onend = () => {
+    document.getElementById('micBtn').className = 'mic-btn';
+    setVoiceStatus('');
+  };
+  ttsUtterance.onerror = () => {
+    document.getElementById('micBtn').className = 'mic-btn';
+  };
+  window.speechSynthesis.speak(ttsUtterance);
+}
+
+// ─────────────────────────────────────────────────────────────
+// PHOTO DIAGNOSIS
+// ─────────────────────────────────────────────────────────────
+let selectedImageB64 = null, selectedMediaType = 'image/jpeg';
+
+function onPhotoSelected(event) {
+  const file = event.target.files[0]; if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert(currentLang === 'tw' ? 'Foto no yɛ kɛseɛ.' : 'Image too large. Max 5MB.');
+    return;
+  }
+  selectedMediaType = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = e => {
+    selectedImageB64 = e.target.result.split(',')[1];
+    const prev = document.getElementById('previewImg');
+    prev.src = e.target.result; prev.style.display = 'block';
+    document.getElementById('diagnoseBtn').disabled = false;
+    document.getElementById('resultBox').classList.remove('visible');
+    document.getElementById('resultBox').textContent = '';
+    document.getElementById('resultTitle').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runDiagnosis() {
+  if (!selectedImageB64) return;
+  const btn   = document.getElementById('diagnoseBtn');
+  const box   = document.getElementById('resultBox');
+  const title = document.getElementById('resultTitle');
+  btn.disabled = true;
+  btn.textContent = currentLang === 'tw' ? '🔍 Rereka...' : '🔍 Analysing...';
+  box.textContent = ''; box.classList.add('visible'); title.style.display = 'block';
+  try {
+    const resp = await fetch('/api/diagnose', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({image:selectedImageB64, media_type:selectedMediaType, lang:currentLang})
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      if (err.error === 'limit_reached') { box.textContent = err.message; setTimeout(openUpgrade, 1500); }
+      else { box.textContent = '⚠ ' + (err.error || 'Error'); }
+      btn.disabled = false;
+      btn.textContent = currentLang === 'tw' ? '🔍 Hwɛ foto ho yareɛ' : '🔍 Analyse photo for disease';
+      return;
+    }
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    while(true) {
+      const {done, value} = await reader.read(); if(done) break;
+      for (const line of decoder.decode(value, {stream:true}).split('\n')) {
+        if (line.startsWith('data: ')) {
+          const p = line.slice(6).trim(); if(p === '[DONE]') break;
+          try { fullText += JSON.parse(p).text; box.textContent = fullText; } catch{}
+        }
+      }
+    }
+    // read diagnosis aloud if voice mode active
+    if (voiceAutoSpeak) speakText(fullText);
+  } catch(e) { box.textContent = '⚠ Connection error.'; }
+  btn.disabled = false;
+  btn.textContent = currentLang === 'tw' ? '🔍 Hwɛ foto foforo' : '🔍 Analyse another photo';
+}
+
+// ─────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────
+loadQueue();
+if (!isOnline) handleOffline();
+else cacheDataForOffline();   // prime offline cache immediately on load
+</script>
+
+</body>
+</html>
