@@ -87,12 +87,16 @@ def init_db():
             session_id   TEXT UNIQUE NOT NULL,
             farmer_name  TEXT,
             phone        TEXT,
+            ghana_card   TEXT,
             farm_size    REAL,
             size_unit    TEXT DEFAULT 'acres',
             soil_type    TEXT DEFAULT 'loamy',
             water_source TEXT DEFAULT 'rain',
             crops        TEXT DEFAULT '[]',
             region       TEXT DEFAULT 'greater_accra',
+            latitude     REAL,
+            longitude    REAL,
+            gps_accuracy REAL,
             updated_at   TEXT DEFAULT (datetime('now'))
         );
         CREATE TABLE IF NOT EXISTS planting_logs (
@@ -107,6 +111,25 @@ def init_db():
         """)
 
 init_db()
+
+# ---------------------------------------------------------------------------
+# Migration — safely add new columns to existing live databases on Render
+# ---------------------------------------------------------------------------
+def run_migrations():
+    with get_db() as db:
+        existing = {row[1] for row in db.execute("PRAGMA table_info(farm_profiles)").fetchall()}
+        migrations = [
+            ("ghana_card",   "ALTER TABLE farm_profiles ADD COLUMN ghana_card TEXT"),
+            ("latitude",     "ALTER TABLE farm_profiles ADD COLUMN latitude REAL"),
+            ("longitude",    "ALTER TABLE farm_profiles ADD COLUMN longitude REAL"),
+            ("gps_accuracy", "ALTER TABLE farm_profiles ADD COLUMN gps_accuracy REAL"),
+        ]
+        for col, sql in migrations:
+            if col not in existing:
+                db.execute(sql)
+        db.commit()
+
+run_migrations()
 
 # ---------------------------------------------------------------------------
 # Session helpers
@@ -212,27 +235,37 @@ def save_farm_profile(sid, data):
     crops_json = json.dumps(data.get("crops", []))
     with get_db() as db:
         db.execute("""
-            INSERT INTO farm_profiles (session_id,farmer_name,phone,farm_size,size_unit,soil_type,water_source,crops,region,updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))
+            INSERT INTO farm_profiles
+              (session_id,farmer_name,phone,ghana_card,farm_size,size_unit,
+               soil_type,water_source,crops,region,latitude,longitude,gps_accuracy,updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
             ON CONFLICT(session_id) DO UPDATE SET
                 farmer_name=excluded.farmer_name,
                 phone=excluded.phone,
+                ghana_card=excluded.ghana_card,
                 farm_size=excluded.farm_size,
                 size_unit=excluded.size_unit,
                 soil_type=excluded.soil_type,
                 water_source=excluded.water_source,
                 crops=excluded.crops,
                 region=excluded.region,
+                latitude=excluded.latitude,
+                longitude=excluded.longitude,
+                gps_accuracy=excluded.gps_accuracy,
                 updated_at=datetime('now')
         """, (sid,
-              data.get("farmer_name",""),
-              data.get("phone",""),
-              data.get("farm_size",1),
-              data.get("size_unit","acres"),
-              data.get("soil_type","loamy"),
-              data.get("water_source","rain"),
+              data.get("farmer_name", ""),
+              data.get("phone", ""),
+              data.get("ghana_card", ""),
+              data.get("farm_size", 1),
+              data.get("size_unit", "acres"),
+              data.get("soil_type", "loamy"),
+              data.get("water_source", "rain"),
               crops_json,
-              data.get("region","greater_accra")))
+              data.get("region", "greater_accra"),
+              data.get("latitude"),
+              data.get("longitude"),
+              data.get("gps_accuracy")))
         db.commit()
 
 def get_planting_logs(sid):
@@ -596,7 +629,7 @@ def admin():
         q_total    = db.execute("SELECT COUNT(*) FROM usage WHERE type='chat'").fetchone()[0]
         d_total    = db.execute("SELECT COUNT(*) FROM usage WHERE type='diagnose'").fetchone()[0]
         top_q      = db.execute("SELECT question,COUNT(*) cnt FROM usage WHERE type='chat' AND question IS NOT NULL GROUP BY question ORDER BY cnt DESC LIMIT 10").fetchall()
-        users      = db.execute("SELECT u.*,fp.farmer_name,fp.farm_size,fp.size_unit,fp.crops FROM users u LEFT JOIN farm_profiles fp ON u.session_id=fp.session_id ORDER BY u.created_at DESC LIMIT 20").fetchall()
+        users      = db.execute("SELECT u.*,fp.farmer_name,fp.farm_size,fp.size_unit,fp.crops,fp.ghana_card,fp.latitude,fp.longitude FROM users u LEFT JOIN farm_profiles fp ON u.session_id=fp.session_id ORDER BY u.created_at DESC LIMIT 20").fetchall()
         regions    = db.execute("SELECT region,COUNT(*) cnt FROM users GROUP BY region ORDER BY cnt DESC").fetchall()
 
         # ── Farm profile stats ──────────────────────────────────
@@ -651,8 +684,19 @@ def admin_logout():
     session.pop("admin",None); return redirect("/admin")
 
 # ---------------------------------------------------------------------------
-# Farm Profile API
+# Ghana Card validation (format check — NIA has no public API yet)
 # ---------------------------------------------------------------------------
+@app.route("/api/validate-ghana-card", methods=["POST"])
+def validate_ghana_card():
+    import re
+    data   = request.get_json() or {}
+    number = (data.get("number") or "").strip().upper()
+    # Ghana Card format: GHA-XXXXXXXXX-X (GHA + 9 digits + 1 digit/letter)
+    pattern = r'^GHA-\d{9}-\d$'
+    if re.match(pattern, number):
+        return jsonify({"valid": True})
+    return jsonify({"valid": False,
+        "message": "Format must be GHA-XXXXXXXXX-X (e.g. GHA-123456789-0)"})
 @app.route("/api/profile", methods=["GET"])
 def api_profile_get():
     sid = get_sid()
