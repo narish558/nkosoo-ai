@@ -240,13 +240,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
           {% if u.farmer_name and u.email %}
             <span style="font-size:11px;color:#5F5E5A;font-weight:400;"> · {{ u.email }}</span>
           {% endif %}
+          {% if u.ghana_card %}
+            <span style="font-size:10px;background:#EAF3DE;color:#3B6D11;padding:2px 7px;border-radius:20px;margin-left:4px;">🪪 {{ u.ghana_card }}</span>
+          {% endif %}
         </div>
         <div class="row-sub">
           {{ regions[u.region].name if u.region and u.region in regions else 'Unknown region' }} ·
           {% if u.farm_size %}{{ u.farm_size }} {{ u.size_unit or 'acres' }} · {% endif %}
-          {% if u.crops %}
-            {% set crop_list = u.crops | tojson if u.crops is string else u.crops %}
-            {{ u.crops[:40] }}{% if u.crops|length > 40 %}…{% endif %} ·
+          {% if u.latitude and u.longitude %}
+            <a href="https://maps.google.com/?q={{ u.latitude }},{{ u.longitude }}" target="_blank"
+               style="color:#185FA5;text-decoration:none;">📍 View farm on map</a> ·
           {% endif %}
           Joined {{ u.created_at[:10] if u.created_at else '—' }}
         </div>

@@ -213,6 +213,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .profile-nudge{background:var(--a50);border:1px solid #f0c88a;border-radius:var(--rm);padding:10px 14px;font-size:13px;color:var(--a600);margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
 .nudge-link{margin-left:auto;font-size:12px;font-weight:600;color:var(--a600);text-decoration:underline;cursor:pointer;white-space:nowrap;}
 
+/* Ghana Card */
+.ghana-card-wrap{position:relative;}
+.ghana-card-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none;}
+.ghana-card-input{padding-left:36px !important;font-family:monospace;letter-spacing:.05em;text-transform:uppercase;}
+.ghana-card-status{font-size:11px;margin-top:4px;min-height:16px;}
+.ghana-card-status.valid{color:var(--g600);}
+.ghana-card-status.invalid{color:#E24B4A;}
+
+/* GPS */
+.gps-section{background:var(--muted);border:1px solid var(--bd);border-radius:var(--rm);padding:.875rem;display:flex;flex-direction:column;gap:10px;}
+.gps-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:13px;font-weight:600;cursor:pointer;width:100%;}
+.gps-btn:disabled{opacity:.5;cursor:not-allowed;}
+.gps-btn.located{background:var(--g50);color:var(--g800);border:1px solid var(--g100);}
+.gps-status{font-size:12px;color:var(--ts);min-height:16px;}
+.gps-coords{font-size:12px;font-family:monospace;color:var(--g600);font-weight:500;}
+.map-container{width:100%;height:260px;border-radius:var(--rm);border:1px solid var(--bd);overflow:hidden;margin-top:4px;background:var(--muted);display:flex;align-items:center;justify-content:center;}
+.map-placeholder{text-align:center;color:var(--ts);font-size:13px;}
+.gps-required-note{font-size:11px;color:#E24B4A;margin-top:2px;}
+
+
 .sync-bar{
   display:flex;align-items:center;gap:10px;padding:.6rem 1rem;
   font-size:12px;font-weight:500;border-bottom:1px solid var(--bd);
@@ -269,6 +289,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 }
 
 </style>
+<!-- Google Maps — replace YOUR_API_KEY with your actual key from console.cloud.google.com -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4JR8biTA5SXOdXuBTdnGecbIC1-B3GbU&callback=initMap&libraries=marker" async defer></script>
 </head>
 <body>
 
@@ -548,13 +570,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       <div class="profile-form">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" data-en="Your name" data-tw="Wo din">Your name</label>
+            <label class="form-label">Your name <span style="color:#E24B4A">*</span></label>
             <input class="form-input" id="pName" placeholder="e.g. Kofi Mensah"/>
           </div>
           <div class="form-group">
-            <label class="form-label" data-en="Phone number" data-tw="Wo fon nɔma">Phone number</label>
+            <label class="form-label">Phone number <span style="color:#E24B4A">*</span></label>
             <input class="form-input" id="pPhone" placeholder="e.g. 0244123456" type="tel"/>
           </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Ghana Card Number <span style="color:#E24B4A">*</span></label>
+          <div class="ghana-card-wrap">
+            <span class="ghana-card-icon">🪪</span>
+            <input class="form-input ghana-card-input" id="pGhanaCard"
+              placeholder="GHA-000000000-0"
+              maxlength="17"
+              oninput="formatGhanaCard(this)"
+              onblur="validateGhanaCard()"/>
+          </div>
+          <div class="ghana-card-status" id="ghanaCardStatus"></div>
         </div>
 
         <div class="form-row">
@@ -633,6 +668,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
             <span class="crop-chip" data-crop="Lime">🍋 Lime</span>
           </div>
         </div>
+
+        <div class="form-group">
+          <label class="form-label">📍 Farm Location (GPS) <span style="color:#E24B4A">*</span></label>
+          <div class="gps-section">
+            <button class="gps-btn" id="gpsBtn" type="button" onclick="captureGPS()">
+              <span id="gpsBtnIcon">📡</span>
+              <span id="gpsBtnText">Tap to capture my farm's GPS location</span>
+            </button>
+            <div class="gps-status" id="gpsStatus">Use the button above or pin your location on the map below.</div>
+            <div class="gps-coords" id="gpsCoords" style="display:none;"></div>
+            <!-- Google Map -->
+            <div class="map-container" id="mapContainer">
+              <div class="map-placeholder" id="mapPlaceholder">
+                🗺️<br>Map will appear after GPS capture<br>
+                <span style="font-size:11px;">or tap the map to pin your farm manually</span>
+              </div>
+            </div>
+          </div>
+          <div class="gps-required-note" id="gpsRequiredNote" style="display:none;">
+            ⚠ Farm location is required to save your profile.
+          </div>
+        </div>
+
+        <!-- Hidden lat/lon inputs -->
+        <input type="hidden" id="pLat"/>
+        <input type="hidden" id="pLon"/>
+        <input type="hidden" id="pAcc"/>
 
         <button class="save-profile-btn" id="saveProfileBtn" onclick="saveProfile()">
           💾 Save My Farm Profile
@@ -807,13 +869,27 @@ function initFarmTab() {
 }
 
 function renderProfileForm() {
-  if (farmProfile.farmer_name) document.getElementById('pName').value   = farmProfile.farmer_name;
-  if (farmProfile.phone)        document.getElementById('pPhone').value  = farmProfile.phone;
-  if (farmProfile.farm_size)    document.getElementById('pSize').value   = farmProfile.farm_size;
-  if (farmProfile.size_unit)    document.getElementById('pUnit').value   = farmProfile.size_unit;
-  if (farmProfile.soil_type)    document.getElementById('pSoil').value   = farmProfile.soil_type;
-  if (farmProfile.water_source) document.getElementById('pWater').value  = farmProfile.water_source;
-  if (farmProfile.region)       document.getElementById('pRegion').value = farmProfile.region;
+  if (farmProfile.farmer_name) document.getElementById('pName').value      = farmProfile.farmer_name;
+  if (farmProfile.phone)        document.getElementById('pPhone').value     = farmProfile.phone;
+  if (farmProfile.ghana_card)   document.getElementById('pGhanaCard').value = farmProfile.ghana_card;
+  if (farmProfile.farm_size)    document.getElementById('pSize').value      = farmProfile.farm_size;
+  if (farmProfile.size_unit)    document.getElementById('pUnit').value      = farmProfile.size_unit;
+  if (farmProfile.soil_type)    document.getElementById('pSoil').value      = farmProfile.soil_type;
+  if (farmProfile.water_source) document.getElementById('pWater').value     = farmProfile.water_source;
+  if (farmProfile.region)       document.getElementById('pRegion').value    = farmProfile.region;
+  if (farmProfile.latitude)     document.getElementById('pLat').value       = farmProfile.latitude;
+  if (farmProfile.longitude)    document.getElementById('pLon').value       = farmProfile.longitude;
+  if (farmProfile.latitude && farmProfile.longitude) {
+    gpsLat = farmProfile.latitude;
+    gpsLon = farmProfile.longitude;
+    const coordsEl = document.getElementById('gpsCoords');
+    coordsEl.style.display = 'block';
+    coordsEl.textContent = `📍 ${gpsLat.toFixed(6)}, ${gpsLon.toFixed(6)} · Saved`;
+    document.getElementById('gpsBtn').className = 'gps-btn located';
+    document.getElementById('gpsBtnIcon').textContent = '✅';
+    document.getElementById('gpsBtnText').textContent = 'Location saved — tap to recapture GPS';
+    document.getElementById('gpsStatus').textContent = '✅ Farm location on record';
+  }
   // chips
   const crops = farmProfile.crops || [];
   document.querySelectorAll('.crop-chip').forEach(c => {
@@ -835,18 +911,52 @@ function openProfileSection() {
 }
 
 async function saveProfile() {
-  const btn = document.getElementById('saveProfileBtn');
-  const crops = getSelectedCrops();
+  const btn    = document.getElementById('saveProfileBtn');
+  const crops  = getSelectedCrops();
+
+  // ── Validation ──────────────────────────────────────────────
+  const name      = document.getElementById('pName').value.trim();
+  const phone     = document.getElementById('pPhone').value.trim();
+  const ghanaCard = document.getElementById('pGhanaCard').value.trim();
+  const lat       = parseFloat(document.getElementById('pLat').value);
+  const lon       = parseFloat(document.getElementById('pLon').value);
+
+  if (!name)      { alert('Please enter your name.'); return; }
+  if (!phone)     { alert('Please enter your phone number.'); return; }
+  if (!ghanaCard) { alert('Please enter your Ghana Card number.'); return; }
+
+  // validate card format
+  const cardValid = await validateGhanaCard();
+  if (!cardValid) {
+    alert('Please enter a valid Ghana Card number (format: GHA-XXXXXXXXX-X).');
+    document.getElementById('pGhanaCard').focus(); return;
+  }
+
+  if (!lat || !lon) {
+    document.getElementById('gpsRequiredNote').style.display = 'block';
+    document.getElementById('gpsSection') && document.getElementById('gpsSection').scrollIntoView({behavior:'smooth'});
+    alert('Please capture your farm GPS location or pin it on the map — this is required.');
+    return;
+  }
+  if (crops.length === 0) {
+    alert('Please select at least one crop.'); return;
+  }
+
   const data = {
-    farmer_name:  document.getElementById('pName').value.trim(),
-    phone:        document.getElementById('pPhone').value.trim(),
+    farmer_name:  name,
+    phone,
+    ghana_card:   ghanaCard,
     farm_size:    parseFloat(document.getElementById('pSize').value) || 1,
     size_unit:    document.getElementById('pUnit').value,
     soil_type:    document.getElementById('pSoil').value,
     water_source: document.getElementById('pWater').value,
     region:       document.getElementById('pRegion').value,
     crops,
+    latitude:     lat,
+    longitude:    lon,
+    gps_accuracy: parseFloat(document.getElementById('pAcc').value) || null,
   };
+
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
     const resp = await fetch('/api/profile', {
@@ -859,7 +969,7 @@ async function saveProfile() {
       setTimeout(() => saved.classList.remove('show'), 4000);
       document.getElementById('profileNudge').style.display = 'none';
       syncLogCropSelect(crops);
-      syncCalCropSelect(crops);  // keep cal dropdown in sync
+      syncCalCropSelect(crops);
       if (crops.length > 0) document.getElementById('calendarEmpty').style.display = 'none';
     } else { alert('Save failed. Please try again.'); }
   } catch(e) { alert('Connection error.'); }
@@ -1176,6 +1286,151 @@ async function deleteLog(id) {
     farmLogs = farmLogs.filter(l => l.id !== id);
     renderLogs();
   } catch {}
+}
+
+// ─────────────────────────────────────────────────────────────
+// GHANA CARD
+// ─────────────────────────────────────────────────────────────
+function formatGhanaCard(input) {
+  // Auto-format as GHA-XXXXXXXXX-X while typing
+  let v = input.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+  if (v.length > 3)  v = v.slice(0,3) + '-' + v.slice(3);
+  if (v.length > 13) v = v.slice(0,13) + '-' + v.slice(13);
+  input.value = v.slice(0, 17);
+  // clear status while typing
+  document.getElementById('ghanaCardStatus').textContent = '';
+  document.getElementById('ghanaCardStatus').className = 'ghana-card-status';
+}
+
+async function validateGhanaCard() {
+  const val    = document.getElementById('pGhanaCard').value.trim();
+  const status = document.getElementById('ghanaCardStatus');
+  if (!val) { status.textContent = ''; return false; }
+  try {
+    const resp = await fetch('/api/validate-ghana-card', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({number: val})
+    });
+    const data = await resp.json();
+    if (data.valid) {
+      status.textContent = '✅ Valid Ghana Card format';
+      status.className = 'ghana-card-status valid';
+      return true;
+    } else {
+      status.textContent = '⚠ ' + (data.message || 'Invalid format');
+      status.className = 'ghana-card-status invalid';
+      return false;
+    }
+  } catch(e) { return false; }
+}
+
+// ─────────────────────────────────────────────────────────────
+// GPS + GOOGLE MAPS
+// ─────────────────────────────────────────────────────────────
+let farmMap     = null;
+let farmMarker  = null;
+let gpsLat      = null;
+let gpsLon      = null;
+
+function initMap() {
+  // Default centre — Ghana
+  const ghanaCenter = {lat: 7.9465, lng: -1.0232};
+  farmMap = new google.maps.Map(document.getElementById('mapContainer'), {
+    center: ghanaCenter,
+    zoom: 7,
+    mapTypeId: 'hybrid',   // satellite + labels — best for farm identification
+    mapTypeControl: true,
+    streetViewControl: false,
+    fullscreenControl: true,
+    zoomControl: true,
+  });
+
+  // Click on map to pin location manually
+  farmMap.addListener('click', (e) => {
+    setMapPin(e.latLng.lat(), e.latLng.lng(), null);
+  });
+
+  // If profile already has coords, show them
+  const savedLat = parseFloat('{{ profile.latitude or "" }}');
+  const savedLon = parseFloat('{{ profile.longitude or "" }}');
+  if (savedLat && savedLon) {
+    setMapPin(savedLat, savedLon, null);
+    document.getElementById('mapPlaceholder') && (document.getElementById('mapPlaceholder').style.display = 'none');
+  }
+}
+
+function setMapPin(lat, lon, accuracy) {
+  gpsLat = lat; gpsLon = lon;
+  document.getElementById('pLat').value = lat;
+  document.getElementById('pLon').value = lon;
+  document.getElementById('pAcc').value = accuracy || '';
+
+  const pos = {lat, lng: lon};
+
+  if (farmMarker) farmMarker.setMap(null);
+  farmMarker = new google.maps.Marker({
+    position: pos,
+    map: farmMap,
+    title: 'My Farm',
+    icon: {
+      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">' +
+        '<circle cx="18" cy="18" r="16" fill="#3B6D11" stroke="#fff" stroke-width="2"/>' +
+        '<text x="18" y="24" text-anchor="middle" font-size="18">🌱</text></svg>'
+      ),
+      scaledSize: new google.maps.Size(36, 36),
+      anchor: new google.maps.Point(18, 18),
+    }
+  });
+  farmMap.panTo(pos);
+  if (farmMap.getZoom() < 14) farmMap.setZoom(15);
+
+  const coordsEl = document.getElementById('gpsCoords');
+  coordsEl.style.display = 'block';
+  coordsEl.textContent = `📍 ${lat.toFixed(6)}, ${lon.toFixed(6)}` +
+    (accuracy ? ` · ±${Math.round(accuracy)}m` : ' · Pinned manually');
+
+  document.getElementById('gpsStatus').textContent = accuracy
+    ? '✅ GPS location captured'
+    : '✅ Location pinned on map';
+  document.getElementById('gpsBtn').className = 'gps-btn located';
+  document.getElementById('gpsBtnIcon').textContent = '✅';
+  document.getElementById('gpsBtnText').textContent = 'Location set — tap to recapture GPS';
+  document.getElementById('gpsRequiredNote').style.display = 'none';
+  if (document.getElementById('mapPlaceholder')) {
+    document.getElementById('mapPlaceholder').style.display = 'none';
+  }
+}
+
+function captureGPS() {
+  if (!navigator.geolocation) {
+    document.getElementById('gpsStatus').textContent = '⚠ GPS not supported on this device. Please pin on the map.';
+    return;
+  }
+  const btn = document.getElementById('gpsBtn');
+  btn.disabled = true;
+  document.getElementById('gpsBtnIcon').textContent = '⏳';
+  document.getElementById('gpsBtnText').textContent = 'Getting your location…';
+  document.getElementById('gpsStatus').textContent = 'Accessing GPS — please allow location access…';
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      btn.disabled = false;
+      setMapPin(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+    },
+    (err) => {
+      btn.disabled = false;
+      document.getElementById('gpsBtnIcon').textContent = '📡';
+      document.getElementById('gpsBtnText').textContent = 'Tap to capture my farm\'s GPS location';
+      const msgs = {
+        1: '⚠ Location access denied. Please allow location in your browser settings, or pin on the map.',
+        2: '⚠ GPS signal not found. Please pin your location on the map.',
+        3: '⚠ GPS timed out. Please try again or pin on the map.',
+      };
+      document.getElementById('gpsStatus').textContent = msgs[err.code] || '⚠ GPS error. Please pin on map.';
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
 }
 
 // set today's date as default for log date input
