@@ -39,6 +39,7 @@ client          = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"
 PAYSTACK_SECRET = os.environ.get("PAYSTACK_SECRET_KEY", "")
 PAYSTACK_PUBLIC = os.environ.get("PAYSTACK_PUBLIC_KEY", "")
 ADMIN_PASSWORD  = os.environ.get("ADMIN_PASSWORD", "nkosoo2024")
+GOOGLE_MAPS_KEY = os.environ.get("GOOGLE_MAPS_API_KEY", "")
 
 FREE_DAILY_LIMIT    = 5
 FREE_DIAGNOSE_LIMIT = 3   # per month
@@ -478,6 +479,7 @@ def index():
         diagnose_limit = FREE_DIAGNOSE_LIMIT,
         api_ready      = bool(client.api_key),
         paystack_public= PAYSTACK_PUBLIC,
+        google_maps_key= GOOGLE_MAPS_KEY,
     )
 
 # ---------------------------------------------------------------------------
