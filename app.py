@@ -47,7 +47,7 @@ FREE_DIAGNOSE_LIMIT = 3   # per month
 # ---------------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------------
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nkosoo.db")
+DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "nkosoo.db"))
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
