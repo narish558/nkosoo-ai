@@ -42,7 +42,7 @@ FREE_DIAGNOSE_LIMIT = 3
 # ---------------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------------
-DB_PATH = "/data/nkosoo.db"
+DB_PATH = "/var/data/nkosoo.db"
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
