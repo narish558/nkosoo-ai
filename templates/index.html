@@ -7,8 +7,11 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --g50:#EAF3DE;--g100:#C0DD97;--g600:#3B6D11;--g900:#173404;
-  --a50:#FAEEDA;--a600:#854F0B;
+  /* CROP colours — green */
+  --g50:#EAF3DE;--g100:#C0DD97;--g600:#3B6D11;--g900:#1A4D15;
+  /* LIVESTOCK colours — amber/earth */
+  --a50:#FAEEDA;--a100:#FAC775;--a600:#C4873A;--a900:#633806;
+  /* Shared */
   --r50:#FCEBEB;--r600:#A32D2D;
   --gray50:#F1EFE8;--gray800:#444441;
   --tp:#1a1a18;--ts:#5F5E5A;
@@ -16,69 +19,155 @@
   --rm:8px;--rl:12px;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tp);min-height:100vh;}
+
+/* topbar */
 .topbar{background:var(--card);border-bottom:1px solid var(--bd);padding:0 1rem;display:flex;align-items:center;gap:10px;height:56px;position:sticky;top:0;z-index:10;}
-.logo{width:36px;height:36px;border-radius:50%;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:20px;}
+.logo{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--a600),var(--g600));display:flex;align-items:center;justify-content:center;font-size:20px;}
 .app-title{font-size:16px;font-weight:600;color:var(--tp);}
 .app-sub{font-size:11px;color:var(--ts);}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
-.api-ok{font-size:12px;padding:4px 10px;border-radius:var(--rm);background:var(--g50);color:var(--g600);font-weight:500;}
-.api-warn{font-size:12px;padding:4px 10px;border-radius:var(--rm);background:var(--a50);color:var(--a600);font-weight:500;}
+.api-ok{font-size:12px;padding:4px 10px;border-radius:20px;background:var(--g50);color:var(--g600);font-weight:500;}
+.api-warn{font-size:12px;padding:4px 10px;border-radius:20px;background:var(--a50);color:var(--a600);font-weight:500;}
 .pro-badge{font-size:11px;padding:4px 10px;border-radius:20px;background:var(--g50);color:var(--g600);font-weight:500;}
 .upgrade-pill{font-size:11px;padding:4px 10px;border-radius:20px;background:var(--a50);color:var(--a600);font-weight:500;cursor:pointer;border:none;}
-.lang-toggle{background:var(--muted);border:1px solid var(--bd);border-radius:var(--rm);padding:3px 2px;display:flex;gap:2px;flex-wrap:nowrap;}
-.lang-btn{padding:4px 7px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--ts);}
+.lang-toggle{background:var(--muted);border:1px solid var(--bd);border-radius:var(--rm);padding:3px 2px;display:flex;gap:2px;}
+.lang-btn{padding:4px 9px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--ts);}
 .lang-btn.active{background:var(--g600);color:#fff;}
+
+/* layout */
 .container{max-width:900px;margin:0 auto;padding:1.25rem 1rem;}
+
+/* usage bar */
 .usage-bar{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:12px;}
 .usage-label{font-size:12px;color:var(--ts);white-space:nowrap;}
 .usage-track{flex:1;height:6px;background:var(--muted);border-radius:3px;overflow:hidden;}
 .usage-fill{height:6px;border-radius:3px;transition:width .3s;}
 .fill-ok{background:var(--g600);}.fill-warn{background:#EF9F27;}.fill-full{background:#E24B4A;}
 .usage-count{font-size:12px;font-weight:500;color:var(--tp);white-space:nowrap;}
+
+/* tabs */
 .tabs{display:flex;gap:4px;margin-bottom:1.25rem;background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:6px;overflow-x:auto;}
-.tab-btn{flex:1;min-width:72px;padding:9px 4px;border:none;border-radius:var(--rm);background:transparent;font-size:12px;color:var(--ts);cursor:pointer;font-weight:500;white-space:nowrap;}
-.tab-btn.active{background:var(--g50);color:var(--g600);}
+.tab-btn{flex:1;min-width:62px;padding:9px 3px;border:none;border-radius:var(--rm);background:transparent;font-size:11px;color:var(--ts);cursor:pointer;font-weight:500;white-space:nowrap;}
+/* crop tabs */
+.tab-btn.crop.active{background:var(--g50);color:var(--g600);}
+.tab-btn.crop:hover{background:var(--g50);}
+/* livestock tab */
+.tab-btn.live.active{background:var(--a50);color:var(--a600);}
+.tab-btn.live:hover{background:var(--a50);}
+/* voice tab */
+.tab-btn.voice.active{background:#E6F1FB;color:#185FA5;}
+.tab-btn.voice:hover{background:#E6F1FB;}
+/* shared */
+.tab-btn.shared.active{background:var(--muted);color:var(--tp);}
+
+/* panels */
 .panel{display:none;}.panel.active{display:block;}
+
+/* cards */
 .card{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;}
 .card-title{font-size:12px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.75rem;}
+.card-title.amber{color:var(--a600);}
+.card-title.blue{color:#185FA5;}
+
+/* region bar */
 .region-bar{display:flex;align-items:center;gap:10px;margin-bottom:1rem;background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:.75rem 1rem;}
 .region-bar label{font-size:13px;font-weight:500;color:var(--ts);white-space:nowrap;}
 .region-select{flex:1;padding:8px 12px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;background:var(--card);color:var(--tp);cursor:pointer;outline:none;}
 .refresh-btn{padding:8px 14px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--g600);color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
 .live-badge{font-size:11px;padding:3px 8px;border-radius:var(--rm);background:var(--g50);color:var(--g600);font-weight:600;white-space:nowrap;}
+
+/* metrics */
 .metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem;}
 @media(max-width:600px){.metric-grid{grid-template-columns:repeat(2,1fr);}}
 .metric{background:var(--muted);border-radius:var(--rm);padding:.75rem 1rem;}
 .metric-label{font-size:12px;color:var(--ts);margin-bottom:2px;}
 .metric-value{font-size:22px;font-weight:600;}
+
+/* forecast */
 .forecast-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;}
 .forecast-day{flex:0 0 68px;text-align:center;background:var(--muted);border-radius:var(--rm);padding:8px 4px;}
 .day-name{font-size:11px;color:var(--ts);margin-bottom:3px;}
 .day-icon{font-size:20px;margin-bottom:3px;}
 .day-temp{font-size:14px;font-weight:600;}
 .day-rain{font-size:11px;color:var(--ts);}
+
+/* advice boxes */
+.advice-crop{background:var(--g50);border-radius:var(--rm);padding:10px 14px;font-size:13px;color:var(--g900);border-left:3px solid var(--g600);line-height:1.5;margin-bottom:.5rem;}
+.advice-live{background:var(--a50);border-radius:var(--rm);padding:10px 14px;font-size:13px;color:var(--a900);border-left:3px solid var(--a600);line-height:1.5;}
+
+/* badges */
 .badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:var(--rm);font-weight:600;}
 .b-ok{background:var(--g50);color:var(--g600);}
 .b-warn{background:var(--a50);color:var(--a600);}
 .b-danger{background:var(--r50);color:var(--r600);}
 .b-gray{background:var(--gray50);color:var(--gray800);}
+
+/* price table */
 .price-table{width:100%;border-collapse:collapse;}
 .price-table th{text-align:left;font-size:11px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;padding:0 0 10px;border-bottom:1px solid var(--bd);}
 .price-table td{padding:11px 0;border-bottom:1px solid var(--bd);font-size:14px;}
 .price-table tr:last-child td{border-bottom:none;}
 .price-value{font-size:15px;font-weight:600;}
+.price-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:8px 0 6px;display:flex;align-items:center;gap:6px;}
+.pst-crop{color:var(--g600);}.pst-live{color:var(--a600);}
+
+/* pest */
 .pest-item{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--bd);}
 .pest-item:last-child{border-bottom:none;}
 .pest-name{font-size:15px;font-weight:600;margin-bottom:2px;}
 .pest-crops{font-size:12px;color:var(--ts);margin-bottom:4px;}
 .pest-desc{font-size:13px;color:var(--ts);max-width:400px;}
 .pest-tip{margin-top:6px;font-size:12px;background:var(--g50);color:var(--g600);padding:5px 10px;border-radius:var(--rm);display:inline-block;}
-.chat-window{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);display:flex;flex-direction:column;height:480px;}
+.pest-tip.amber{background:var(--a50);color:var(--a600);}
+
+/* diagnose */
+.diag-mode-toggle{display:flex;gap:8px;margin-bottom:1rem;}
+.diag-mode-btn{flex:1;padding:10px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+.diag-mode-btn.crop-mode.active{background:var(--g50);color:var(--g600);border-color:var(--g100);}
+.diag-mode-btn.live-mode.active{background:var(--a50);color:var(--a600);border-color:var(--a100);}
+.upload-zone{border:2px dashed var(--bd);border-radius:var(--rl);padding:2rem 1rem;text-align:center;cursor:pointer;background:var(--card);}
+.upload-zone:hover{border-color:var(--g100);background:var(--g50);}
+.upload-zone.animal:hover{border-color:var(--a100);background:var(--a50);}
+.upload-zone input{display:none;}
+.upload-icon{font-size:40px;margin-bottom:.75rem;}
+.upload-title{font-size:16px;font-weight:600;margin-bottom:.25rem;}
+.upload-sub{font-size:13px;color:var(--ts);}
+.preview-img{width:100%;max-height:250px;object-fit:cover;border-radius:var(--rl);margin-bottom:1rem;display:none;}
+.diagnose-btn{width:100%;padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:1rem;}
+.diagnose-btn.amber{background:var(--a600);}
+.diagnose-btn:disabled{opacity:.5;cursor:not-allowed;}
+.result-box{background:var(--muted);border-radius:var(--rl);padding:1.25rem;font-size:14px;line-height:1.7;white-space:pre-wrap;display:none;}
+.result-box.visible{display:block;}
+
+/* livestock tab */
+.animal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.625rem;margin-bottom:1rem;}
+.animal-card{border:1px solid var(--bd);border-radius:var(--rl);padding:.875rem;text-align:center;cursor:pointer;}
+.animal-card.sel{border-color:var(--a600);background:var(--a50);}
+.animal-icon{font-size:2rem;margin-bottom:.375rem;}
+.animal-name{font-size:12px;font-weight:600;color:var(--tp);}
+.animal-sub{font-size:10px;color:var(--ts);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem;}
+@media(max-width:600px){.form-row{grid-template-columns:1fr;}}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-label{font-size:11px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;}
+.form-input{padding:9px 12px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;color:var(--tp);background:var(--card);font-family:inherit;outline:none;}
+.form-input.valid{border-color:var(--g600);background:var(--g50);}
+.form-input.invalid{border-color:var(--r600);background:var(--r50);}
+.form-hint{font-size:11px;color:var(--ts);}
+.gc-status{font-size:12px;font-weight:500;margin-top:3px;}
+.gc-ok{color:var(--g600);}.gc-bad{color:var(--r600);}
+.save-btn{width:100%;padding:11px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-top:.25rem;}
+.save-btn.amber{background:var(--a600);}
+.save-success{background:var(--g50);border:1px solid var(--g100);border-radius:var(--rm);padding:10px 14px;font-size:13px;color:var(--g600);text-align:center;display:none;margin-top:.75rem;}
+.save-success.show{display:block;}
+
+/* chat */
+.chat-window{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);display:flex;flex-direction:column;height:460px;}
 .chat-messages{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:10px;}
 .msg{max-width:82%;padding:10px 14px;border-radius:var(--rl);line-height:1.55;font-size:14px;white-space:pre-wrap;}
 .msg-ai{background:var(--muted);color:var(--tp);align-self:flex-start;}
 .msg-user{background:var(--g50);color:var(--g900);align-self:flex-end;}
-.chat-input-row{display:flex;gap:8px;padding:1rem;border-top:1px solid var(--bd);align-items:center;}
+.chat-input-row{display:flex;gap:8px;padding:1rem;border-top:1px solid var(--bd);}
 .chat-input-row input{flex:1;padding:10px 14px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;outline:none;}
 .send-btn{padding:10px 18px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:14px;font-weight:600;cursor:pointer;}
 .send-btn:disabled{opacity:.5;cursor:not-allowed;}
@@ -86,21 +175,39 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 @media(max-width:600px){.quick-grid{grid-template-columns:1fr;}}
 .quick-btn{padding:10px 14px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);color:var(--ts);font-size:13px;text-align:left;cursor:pointer;line-height:1.4;}
 .quick-btn:hover{background:var(--g50);color:var(--g600);border-color:var(--g100);}
-.upload-zone{border:2px dashed var(--bd);border-radius:var(--rl);padding:2.5rem 1rem;text-align:center;cursor:pointer;background:var(--card);}
-.upload-zone:hover{border-color:var(--g100);background:var(--g50);}
-.upload-zone input{display:none;}
-.upload-icon{font-size:40px;margin-bottom:.75rem;}
-.upload-title{font-size:16px;font-weight:600;margin-bottom:.25rem;}
-.upload-sub{font-size:13px;color:var(--ts);}
-.preview-img{width:100%;max-height:280px;object-fit:cover;border-radius:var(--rl);margin-bottom:1rem;display:none;}
-.diagnose-btn{width:100%;padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:1rem;}
-.diagnose-btn:disabled{opacity:.5;cursor:not-allowed;}
-.result-box{background:var(--muted);border-radius:var(--rl);padding:1.25rem;font-size:14px;line-height:1.7;white-space:pre-wrap;display:none;}
-.result-box.visible{display:block;}
-.alert-box{border-radius:var(--rm);padding:10px 14px;font-size:13px;margin-bottom:1rem;}
-.alert-warn{background:var(--a50);color:var(--a600);}
 .ask-link-btn{width:100%;padding:10px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);color:var(--ts);font-size:13px;cursor:pointer;text-align:left;margin-bottom:6px;}
 .ask-link-btn:hover{background:var(--g50);color:var(--g600);}
+
+/* VOICE */
+.voice-center{text-align:center;padding:1.5rem 0;}
+.mic-outer{width:100px;height:100px;border-radius:50%;border:2px solid var(--g100);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;cursor:pointer;transition:all .3s;}
+.mic-outer.listening{border-color:var(--g600);box-shadow:0 0 0 8px rgba(122,200,80,0.12),0 0 0 16px rgba(122,200,80,0.06);}
+.mic-outer.speaking{border-color:var(--a600);box-shadow:0 0 0 8px rgba(196,135,58,0.12),0 0 0 16px rgba(196,135,58,0.06);}
+.mic-inner{width:68px;height:68px;border-radius:50%;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:28px;transition:background .3s;}
+.mic-inner.speaking{background:var(--a50);}
+.voice-status{font-size:15px;font-weight:600;color:var(--tp);margin-bottom:4px;}
+.voice-sub{font-size:13px;color:var(--ts);margin-bottom:1.25rem;}
+.waveform{display:flex;align-items:center;justify-content:center;gap:3px;height:44px;margin-bottom:1rem;}
+.wave-bar{width:4px;border-radius:2px;background:var(--a600);transition:height .12s;}
+.lang-voice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:1rem;}
+.lang-voice-opt{border:1px solid var(--bd);border-radius:var(--rm);padding:.625rem .5rem;text-align:center;cursor:pointer;font-size:12px;color:var(--ts);}
+.lang-voice-opt.sel{border-color:var(--g600);background:var(--g50);color:var(--g600);font-weight:500;}
+.lang-voice-flag{font-size:18px;margin-bottom:3px;}
+.transcript-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ts);margin-bottom:.375rem;}
+.transcript-box{background:var(--muted);border-radius:var(--rm);padding:.875rem;font-size:14px;color:var(--tp);line-height:1.55;margin-bottom:.75rem;min-height:48px;}
+.ai-voice-response{background:var(--g50);border-radius:var(--rm);padding:.875rem;font-size:14px;color:var(--g900);line-height:1.6;margin-bottom:.75rem;border-left:3px solid var(--g600);}
+.ai-voice-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--g600);margin-bottom:.375rem;}
+.speed-row{display:flex;align-items:center;gap:.75rem;margin-bottom:.875rem;}
+.speed-label{font-size:12px;color:var(--ts);white-space:nowrap;}
+.speed-opts{display:flex;gap:.375rem;}
+.speed-btn{padding:4px 10px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--ts);}
+.speed-btn.on{background:var(--g600);color:#fff;border-color:var(--g600);}
+.voice-controls{display:flex;gap:.5rem;margin-bottom:.875rem;}
+.vc-btn{flex:1;padding:10px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);color:var(--ts);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+.vc-btn.primary{background:var(--g600);color:#fff;border-color:var(--g600);}
+.voice-tip{background:var(--muted);border-radius:var(--rm);padding:.625rem .875rem;font-size:12px;color:var(--ts);display:flex;align-items:center;gap:8px;}
+
+/* upgrade modal */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:center;justify-content:center;padding:1rem;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--card);border-radius:var(--rl);padding:1.5rem;max-width:380px;width:100%;}
@@ -119,97 +226,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .pay-btn-main{width:100%;padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;}
 .pay-note{text-align:center;font-size:12px;color:var(--ts);}
 .close-btn{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--ts);}
-.pay-success{background:var(--g50);border:1px solid var(--g100);border-radius:var(--rm);padding:12px 16px;font-size:14px;color:var(--g600);margin-bottom:1rem;text-align:center;}
+.pay-success-banner{background:var(--g50);border:1px solid var(--g100);border-radius:var(--rm);padding:12px 16px;font-size:14px;color:var(--g600);margin-bottom:1rem;text-align:center;}
+
+/* loading spinner */
 .loading{display:inline-block;width:14px;height:14px;border:2px solid var(--g100);border-top-color:var(--g600);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.sync-bar{display:flex;align-items:center;gap:10px;padding:.6rem 1rem;font-size:12px;font-weight:500;border-bottom:1px solid var(--bd);background:var(--card);position:sticky;top:56px;z-index:9;transition:background .3s;}
-.sync-bar.online{background:var(--g50);color:var(--g600);}
-.sync-bar.offline{background:var(--a50);color:var(--a600);}
-.sync-bar.syncing{background:#EDF2FF;color:#3B5BDB;}
-.sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.sync-bar.online .sync-dot{background:var(--g600);}
-.sync-bar.offline .sync-dot{background:#E24B4A;animation:pulse 1.2s ease-in-out infinite;}
-.sync-bar.syncing .sync-dot{background:#3B5BDB;animation:pulse .7s ease-in-out infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.sync-detail{margin-left:auto;font-size:11px;opacity:.75;}
-.sync-retry{margin-left:6px;padding:2px 8px;border:1px solid currentColor;border-radius:20px;background:transparent;color:inherit;font-size:11px;cursor:pointer;font-weight:600;}
-.mic-btn{width:42px;height:42px;border-radius:50%;border:2px solid var(--bd);background:var(--card);color:var(--ts);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
-.mic-btn:hover{border-color:var(--g600);color:var(--g600);}
-.mic-btn.listening{background:var(--r50);border-color:#E24B4A;color:#E24B4A;animation:mic-pulse 1s ease-in-out infinite;}
-.mic-btn.speaking{background:var(--g50);border-color:var(--g600);color:var(--g600);animation:mic-speak .8s ease-in-out infinite;}
-@keyframes mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(226,75,74,.4)}50%{box-shadow:0 0 0 8px rgba(226,75,74,0)}}
-@keyframes mic-speak{0%,100%{box-shadow:0 0 0 0 rgba(59,109,17,.4)}50%{box-shadow:0 0 0 8px rgba(59,109,17,0)}}
-.voice-status{font-size:12px;color:var(--ts);padding:4px 1rem 0;text-align:center;min-height:20px;transition:opacity .3s;opacity:0;}
-.voice-status.visible{opacity:1;}
-.msg-queued{font-size:11px;color:var(--a600);text-align:right;margin-top:2px;}
-.profile-form{display:flex;flex-direction:column;gap:1rem;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-@media(max-width:600px){.form-row{grid-template-columns:1fr;}}
-.form-group{display:flex;flex-direction:column;gap:4px;}
-.form-label{font-size:12px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;}
-.form-input,.form-select{padding:10px 12px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;background:var(--card);color:var(--tp);outline:none;transition:border-color .2s;}
-.form-input:focus,.form-select:focus{border-color:var(--g600);}
-.crop-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
-.crop-chip{padding:5px 12px;border:1.5px solid var(--bd);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:var(--card);color:var(--ts);transition:all .15s;user-select:none;}
-.crop-chip.selected{background:var(--g600);color:#fff;border-color:var(--g600);}
-.save-profile-btn{padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:15px;font-weight:600;cursor:pointer;}
-.save-profile-btn:disabled{opacity:.5;cursor:not-allowed;}
-.profile-saved{font-size:13px;color:var(--g600);text-align:center;padding:6px;display:none;}
-.profile-saved.show{display:block;}
-.profile-nudge{background:var(--a50);border:1px solid #f0c88a;border-radius:var(--rm);padding:10px 14px;font-size:13px;color:var(--a600);margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
-.nudge-link{margin-left:auto;font-size:12px;font-weight:600;color:var(--a600);text-decoration:underline;cursor:pointer;white-space:nowrap;}
-.ghana-card-wrap{position:relative;}
-.ghana-card-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none;}
-.ghana-card-input{padding-left:36px !important;font-family:monospace;letter-spacing:.05em;text-transform:uppercase;}
-.ghana-card-status{font-size:11px;margin-top:4px;min-height:16px;}
-.ghana-card-status.valid{color:var(--g600);}
-.ghana-card-status.invalid{color:#E24B4A;}
-.gps-section{background:var(--muted);border:1px solid var(--bd);border-radius:var(--rm);padding:.875rem;display:flex;flex-direction:column;gap:10px;}
-.gps-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:13px;font-weight:600;cursor:pointer;width:100%;}
-.gps-btn:disabled{opacity:.5;cursor:not-allowed;}
-.gps-btn.located{background:var(--g50);color:var(--g900);border:1px solid var(--g100);}
-.gps-status{font-size:12px;color:var(--ts);min-height:16px;}
-.gps-coords{font-size:12px;font-family:monospace;color:var(--g600);font-weight:500;}
-.map-container{width:100%;height:280px;border-radius:var(--rm);border:1px solid var(--bd);overflow:hidden;margin-top:4px;background:var(--muted);display:flex;align-items:center;justify-content:center;}
-.map-placeholder{text-align:center;color:var(--ts);font-size:13px;line-height:1.8;}
-.gps-required-note{font-size:11px;color:#E24B4A;margin-top:2px;}
-.gen-calendar-btn{width:100%;padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;gap:8px;}
-.gen-calendar-btn:disabled{opacity:.5;cursor:not-allowed;}
-.cal-month{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);overflow:hidden;margin-bottom:8px;}
-.cal-month-header{background:var(--g50);padding:10px 16px;font-size:13px;font-weight:700;color:var(--g600);display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
-.cal-month-header .chevron{transition:transform .2s;font-size:12px;}
-.cal-month.open .chevron{transform:rotate(180deg);}
-.cal-tasks{padding:12px 16px;display:none;flex-direction:column;gap:8px;}
-.cal-month.open .cal-tasks{display:flex;}
-.cal-task{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--bd);}
-.cal-task:last-child{border-bottom:none;}
-.cal-task-body{flex:1;}
-.cal-task-action{font-size:14px;font-weight:600;color:var(--tp);}
-.cal-task-note{font-size:12px;color:var(--ts);margin-top:2px;line-height:1.4;}
-.cal-task-log-btn{font-size:11px;padding:3px 8px;border:1px solid var(--bd);border-radius:20px;background:transparent;color:var(--ts);cursor:pointer;flex-shrink:0;transition:all .15s;}
-.cal-task-log-btn:hover{background:var(--g50);color:var(--g600);border-color:var(--g100);}
-.cal-crop-card{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);margin-bottom:10px;overflow:hidden;}
-.cal-crop-header{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:var(--g50);border-bottom:1px solid var(--g100);}
-.cal-crop-title{font-size:14px;font-weight:600;color:var(--g900);}
-.cal-crop-status{font-size:12px;color:var(--ts);display:flex;align-items:center;gap:5px;}
-.cal-regen-btn{background:none;border:none;color:var(--g600);font-size:12px;cursor:pointer;text-decoration:underline;padding:0;}
-.cal-months-wrap{padding:8px 12px;}
-.cal-no-tasks{font-size:12px;color:var(--ts);padding:6px 0;}
-.log-form-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
-.log-form-row .form-input,.log-form-row .form-select{flex:1;min-width:100px;}
-.add-log-btn{padding:10px 16px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
-.log-list{display:flex;flex-direction:column;gap:6px;}
-.log-entry{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--muted);border-radius:var(--rm);}
-.log-entry-date{font-size:11px;color:var(--ts);white-space:nowrap;margin-top:2px;}
-.log-entry-body{flex:1;}
-.log-entry-crop{font-size:12px;font-weight:700;color:var(--g600);}
-.log-entry-action{font-size:13px;color:var(--tp);}
-.log-entry-note{font-size:12px;color:var(--ts);}
-.log-delete-btn{background:none;border:none;color:var(--ts);cursor:pointer;font-size:16px;opacity:.5;padding:0 4px;}
-.log-delete-btn:hover{opacity:1;color:var(--r600);}
-.log-empty{text-align:center;padding:1.5rem;color:var(--ts);font-size:13px;}
 </style>
-<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&callback=initMap&libraries=marker" async defer></script>
 </head>
 <body>
 
@@ -217,35 +239,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   <div class="logo">🌿</div>
   <div>
     <div class="app-title">Nkɔsoɔ AI</div>
-    <div class="app-sub">Ghana Farming Assistant</div>
+    <div class="app-sub">Crops · Livestock · Aquaculture</div>
   </div>
   <div class="topbar-right">
     <div class="lang-toggle">
       <button class="lang-btn active" onclick="setLang('en')">EN</button>
       <button class="lang-btn" onclick="setLang('tw')">TW</button>
-      <button class="lang-btn" onclick="setLang('dg')">DG</button>
-      <button class="lang-btn" onclick="setLang('ha')">HA</button>
     </div>
-    {% if user.plan == 'pro' %}
+    {% if user.plan=='pro' %}
       <span class="pro-badge">&#10003; Pro</span>
     {% else %}
       <button class="upgrade-pill" onclick="openUpgrade()">Upgrade to Pro</button>
     {% endif %}
-    <span class="{{ 'api-ok' if api_ready else 'api-warn' }}">{{ '● AI ready' if api_ready else '⚠ No API key' }}</span>
+    <span class="{{ 'api-ok' if api_ready else 'api-warn' }}">
+      {{ '● AI ready' if api_ready else '⚠ No key' }}
+    </span>
   </div>
 </div>
 
-{% if request.args.get('payment') == 'success' %}
+{% if request.args.get('payment')=='success' %}
 <div class="container" style="padding-bottom:0;">
-  <div class="pay-success">&#10003; Payment confirmed! You are now on Pro. Enjoy unlimited access.</div>
+  <div class="pay-success-banner">&#10003; Payment confirmed! You are now on Pro.</div>
 </div>
 {% endif %}
 
+<!-- UPGRADE MODAL -->
 <div class="modal-overlay" id="upgradeModal">
   <div class="modal">
     <button class="close-btn" onclick="closeUpgrade()">&#10005;</button>
     <div class="modal-title">Upgrade to Nkɔsoɔ Pro</div>
-    <div class="modal-sub">Unlimited AI questions, photo diagnoses and more.</div>
+    <div class="modal-sub">Unlimited AI questions, diagnoses and more.</div>
     <div class="plan-grid">
       <div class="plan-card">
         <div class="plan-name">Free</div>
@@ -254,8 +277,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
         <div class="plan-feat">
           <span class="chk">&#10003;</span> {{ free_limit }} questions/day<br>
           <span class="chk">&#10003;</span> {{ diagnose_limit }} diagnoses/month<br>
-          <span class="crs">&#10005;</span> Unlimited chat<br>
-          <span class="crs">&#10005;</span> Price alerts
+          <span class="crs">&#10005;</span> Unlimited chat
         </div>
       </div>
       <div class="plan-card pro">
@@ -266,7 +288,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
         <div class="plan-feat">
           <span class="chk">&#10003;</span> Unlimited chat<br>
           <span class="chk">&#10003;</span> Unlimited diagnoses<br>
-          <span class="chk">&#10003;</span> Price trend alerts<br>
           <span class="chk">&#10003;</span> Priority support
         </div>
       </div>
@@ -277,34 +298,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   </div>
 </div>
 
-<div class="sync-bar online" id="syncBar">
-  <div class="sync-dot"></div>
-  <span id="syncMsg">Online — data is live</span>
-  <span class="sync-detail" id="syncDetail"></span>
-  <button class="sync-retry" id="syncRetryBtn" style="display:none" onclick="syncOfflineQueue()">Sync now</button>
-</div>
-
 <div class="container">
 
   {% if user.plan != 'pro' %}
   <div class="usage-bar">
-    <span class="usage-label" data-en="Today's AI questions" data-tw="Nnɛ nsɛmmisa">Today's AI questions</span>
+    <span class="usage-label" data-en="Today's questions" data-tw="Nnɛ nsɛmmisa">Today's questions</span>
     <div class="usage-track">
-      <div class="usage-fill {{ 'fill-full' if used_today >= free_limit else ('fill-warn' if used_today >= free_limit - 1 else 'fill-ok') }}"
-           id="usageFill" style="width:{{ [used_today / free_limit * 100, 100]|min|int }}%"></div>
+      <div class="usage-fill {{ 'fill-full' if used_today>=free_limit else ('fill-warn' if used_today>=free_limit-1 else 'fill-ok') }}"
+           id="usageFill" style="width:{{ [used_today/free_limit*100,100]|min|int }}%"></div>
     </div>
     <span class="usage-count" id="usageCount">{{ used_today }} / {{ free_limit }}</span>
     <button class="upgrade-pill" onclick="openUpgrade()">Upgrade</button>
   </div>
   {% endif %}
 
+  <!-- TABS -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="showTab('weather')" data-en="🌤 Weather" data-tw="🌤 Ɔhaw">🌤 Weather</button>
-    <button class="tab-btn" onclick="showTab('prices')" data-en="📈 Prices" data-tw="📈 Wuramu">📈 Prices</button>
-    <button class="tab-btn" onclick="showTab('pests')" data-en="🐛 Pests" data-tw="🐛 Mmoa">🐛 Pests</button>
-    <button class="tab-btn" onclick="showTab('diagnose')" data-en="📷 Diagnose" data-tw="📷 Hwɛ Aba">📷 Diagnose</button>
-    <button class="tab-btn" onclick="showTab('chat')" data-en="🤖 Ask AI" data-tw="🤖 Bisa AI">🤖 Ask AI</button>
-    <button class="tab-btn" onclick="showTab('farm')" data-en="🌱 My Farm" data-tw="🌱 Me Afuo">🌱 My Farm</button>
+    <button class="tab-btn crop active" onclick="showTab('weather')" data-en="🌤 Weather"   data-tw="🌤 Ɔhaw">🌤 Weather</button>
+    <button class="tab-btn crop"        onclick="showTab('prices')"  data-en="📈 Prices"    data-tw="📈 Wuramu">📈 Prices</button>
+    <button class="tab-btn crop"        onclick="showTab('pests')"   data-en="🐛 Pests"     data-tw="🐛 Mmoa">🐛 Pests</button>
+    <button class="tab-btn crop"        onclick="showTab('diagnose')" data-en="📷 Diagnose" data-tw="📷 Hwɛ">📷 Diagnose</button>
+    <button class="tab-btn crop"        onclick="showTab('profile')" data-en="👤 My Farm"   data-tw="👤 Me Afuo">👤 My Farm</button>
+    <button class="tab-btn live"        onclick="showTab('livestock')" data-en="🐄 Livestock" data-tw="🐄 Mmoa">🐄 Livestock</button>
+    <button class="tab-btn crop"        onclick="showTab('yearplan')" data-en="📅 Year Plan" data-tw="📅 Afe Nhyehyɛe">📅 Year Plan</button>
+    <button class="tab-btn voice"       onclick="showTab('voice')"   data-en="🎤 Voice"     data-tw="🎤 Kasa">🎤 Voice</button>
+    <button class="tab-btn shared"      onclick="showTab('chat')"    data-en="🤖 Ask AI"    data-tw="🤖 Bisa AI">🤖 Ask AI</button>
   </div>
 
   <!-- WEATHER -->
@@ -313,7 +331,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       <label data-en="📍 Your region:" data-tw="📍 Wo man:">📍 Your region:</label>
       <select class="region-select" id="regionSelect" onchange="loadWeather()">
         {% for key,r in regions.items() %}
-        <option value="{{ key }}" {% if key == 'greater_accra' %}selected{% endif %}>{{ r.name }}</option>
+        <option value="{{ key }}" {% if key=='greater_accra' %}selected{% endif %}>{{ r.name }}</option>
         {% endfor %}
       </select>
       <button class="refresh-btn" onclick="loadWeather()" data-en="Update" data-tw="Sesa">Update</button>
@@ -340,19 +358,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       </div>
     </div>
     <div class="card">
-      <div class="card-title" data-en="Farming advice" data-tw="Afuo Agyinaesɛm">Farming advice</div>
-      <p id="weatherAdvice" style="font-size:14px;line-height:1.6;">{{ weather.advice }}</p>
-      <div style="margin-top:10px;"><span class="badge b-{{ weather.risk_level }}" id="weatherRisk">{{ weather.risk }}</span></div>
+      <div class="card-title" data-en="🌾 Crop advice" data-tw="🌾 Aba Agyinaesɛm">🌾 Crop advice</div>
+      <div class="advice-crop" id="weatherAdvice">{{ weather.advice }}</div>
+      <div class="card-title" style="margin-top:.75rem;" data-en="🐄 Livestock advice" data-tw="🐄 Mmoa Agyinaesɛm">🐄 Livestock advice</div>
+      <div class="advice-live" id="weatherAdviceLive">{{ weather.advice_livestock }}</div>
+      <div style="margin-top:10px;">
+        <span class="badge b-{{ weather.risk_level }}" id="weatherRisk">{{ weather.risk }}</span>
+      </div>
     </div>
     <button class="ask-link-btn" onclick="askAI(0)">
-      <span data-en="💬 Ask AI: best crops for my region's upcoming rains →" data-tw="💬 Bisa AI: aba pa sɛ osu reba →">💬 Ask AI: best crops for my region's upcoming rains →</span>
+      <span data-en="💬 Ask AI: best crops for upcoming rains in my region →" data-tw="💬 Bisa AI: aba pa sɛ osu reba →">💬 Ask AI: best crops for upcoming rains in my region →</span>
     </button>
   </div>
 
   <!-- PRICES -->
   <div id="panel-prices" class="panel">
     <div class="card">
-      <div class="card-title" data-en="Current market prices — GHS" data-tw="Aguadi Tenteene — GHS">Current market prices — GHS</div>
+      <div class="price-section-title pst-crop">🌾 Crop prices — GHS</div>
       <table class="price-table">
         <thead><tr>
           <th data-en="Crop" data-tw="Aba">Crop</th>
@@ -366,63 +388,432 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
           <td><strong data-en="{{ p.crop }}" data-tw="{{ p.crop_tw }}">{{ p.crop }}</strong></td>
           <td style="color:var(--ts)">{{ p.unit }}</td>
           <td class="price-value">GHS {{ p.price }}</td>
-          <td>
-            {% if p.trend=='up' %}<span class="badge b-ok">▲ {{ p.change }}%</span>
-            {% elif p.trend=='down' %}<span class="badge b-danger">▼ {{ p.change|abs }}%</span>
-            {% else %}<span class="badge b-gray" data-en="Stable" data-tw="Pɛ Pɛɛ">Stable</span>{% endif %}
-          </td>
+          <td>{% if p.trend=='up' %}<span class="badge b-ok">▲ {{ p.change }}%</span>
+          {% elif p.trend=='down' %}<span class="badge b-danger">▼ {{ p.change|abs }}%</span>
+          {% else %}<span class="badge b-gray" data-en="Stable" data-tw="Pɛ Pɛɛ">Stable</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="price-section-title pst-live">🐄 Livestock prices — GHS</div>
+      <table class="price-table">
+        <thead><tr>
+          <th data-en="Animal" data-tw="Mmoa">Animal</th>
+          <th data-en="Unit" data-tw="Dua">Unit</th>
+          <th data-en="Price" data-tw="Tenteene">Price</th>
+          <th data-en="Change" data-tw="Sesa">Change</th>
+        </tr></thead>
+        <tbody>
+        {% for lp in livestock_prices %}
+        <tr>
+          <td><strong>{{ lp.animal }}</strong></td>
+          <td style="color:var(--ts)">{{ lp.unit }}</td>
+          <td class="price-value">GHS {{ lp.price }}</td>
+          <td>{% if lp.trend=='up' %}<span class="badge b-ok">▲ {{ lp.change }}%</span>
+          {% elif lp.trend=='down' %}<span class="badge b-danger">▼ {{ lp.change|abs }}%</span>
+          {% else %}<span class="badge b-gray">Stable</span>{% endif %}</td>
         </tr>
         {% endfor %}
         </tbody>
       </table>
     </div>
     <button class="ask-link-btn" onclick="askAI(2)">
-      <span data-en="💬 Ask AI: when to sell for best price →" data-tw="💬 Bisa AI: ɛberɛ bɛn na tɔn pa →">💬 Ask AI: when to sell for best price →</span>
+      <span data-en="💬 Ask AI: when to sell crops for best price →" data-tw="💬 Bisa AI: ɛberɛ bɛn na tɔn pa →">💬 Ask AI: when to sell for best price →</span>
+    </button>
+    <button class="ask-link-btn" onclick="askAI(3)">
+      <span data-en="💬 Ask AI: when to sell my chickens for best price →" data-tw="💬 Bisa AI: ɛberɛ bɛn na tɔn me akoko →">💬 Ask AI: when to sell my chickens for best price →</span>
     </button>
   </div>
 
   <!-- PESTS -->
   <div id="panel-pests" class="panel">
-    <div class="alert-box alert-warn" data-en="⚠ Active pest season in your region. Check crops regularly." data-tw="⚠ Mmoa ɔberɛ wɔ wo man mu. Hwɛ wo aba daa.">⚠ Active pest season in your region. Check crops regularly.</div>
     <div class="card">
-      <div class="card-title" data-en="Pest & disease alerts" data-tw="Mmoa ne Yareɛ Nkɔmhyɛ">Pest & disease alerts</div>
+      <div class="card-title" data-en="Active alerts — crops &amp; livestock" data-tw="Nkɔmhyɛ — aba ne mmoa">Active alerts — crops &amp; livestock</div>
       {% for pest in pests %}
       <div class="pest-item">
         <div>
           <div class="pest-name" data-en="{{ pest.name }}" data-tw="{{ pest.name_tw }}">{{ pest.name }}</div>
-          <div class="pest-crops"><span data-en="Affects:" data-tw="Ɛfa:">Affects:</span> {{ pest.crops }}</div>
+          <div class="pest-crops"><span data-en="Affects:" data-tw="Ɛfa:">Affects:</span> <span data-en="{{ pest.crops }}" data-tw="{{ pest.crops_tw }}">{{ pest.crops }}</span></div>
           <div class="pest-desc" data-en="{{ pest.description }}" data-tw="{{ pest.description_tw }}">{{ pest.description }}</div>
-          <div class="pest-tip" data-en="💡 {{ pest.tip }}" data-tw="💡 {{ pest.tip_tw }}">💡 {{ pest.tip }}</div>
+          <div class="pest-tip {{ 'amber' if pest.crops in ['Poultry','Cattle','Goats','Pigs'] else '' }}"
+               data-en="💡 {{ pest.tip }}" data-tw="💡 {{ pest.tip_tw }}">💡 {{ pest.tip }}</div>
         </div>
-        <span class="badge {{ 'b-danger' if pest.level=='high' else ('b-warn' if pest.level=='medium' else 'b-ok') }}">{{ pest.level|capitalize }}</span>
+        <span class="badge {{ 'b-danger' if pest.level=='high' else ('b-warn' if pest.level=='medium' else 'b-ok') }}">
+          <span data-en="{{ pest.level|capitalize }}" data-tw="{{ 'Kɛseɛ' if pest.level=='high' else ('Mfinimfini' if pest.level=='medium' else 'Ketewa') }}">{{ pest.level|capitalize }}</span>
+        </span>
       </div>
       {% endfor %}
     </div>
-    <button class="ask-link-btn" onclick="askAI(1)">
-      <span data-en="💬 Ask AI: how to treat Fall Armyworm →" data-tw="💬 Bisa AI: ɛdeɛn na yɛtua aburo mmoa →">💬 Ask AI: how to treat Fall Armyworm →</span>
-    </button>
   </div>
 
   <!-- DIAGNOSE -->
   <div id="panel-diagnose" class="panel">
     <div class="card">
-      <div class="card-title" data-en="📷 Crop disease photo diagnosis" data-tw="📷 Aba Yareɛ Foto Hwɛ">📷 Crop disease photo diagnosis</div>
-      <p style="font-size:13px;color:var(--ts);margin-bottom:1rem;"
-         data-en="Take a clear photo of a sick crop leaf or stem. AI will identify the disease and recommend treatment."
-         data-tw="Fa foto pa ho wo aba nkotokuo anaa dua a yareɛ wɔ so. AI bɛhunu yareɛ no.">
-        Take a clear photo of a sick crop leaf or stem. AI will identify the disease and recommend treatment.
+      <div class="card-title" data-en="📷 AI photo diagnosis" data-tw="📷 Foto Hwɛ">📷 AI photo diagnosis</div>
+      <div class="diag-mode-toggle">
+        <button class="diag-mode-btn crop-mode active" id="modeCrop" onclick="setDiagMode('crop')">
+          🌾 <span data-en="Crop disease" data-tw="Aba Yareɛ">Crop disease</span>
+        </button>
+        <button class="diag-mode-btn live-mode" id="modeLive" onclick="setDiagMode('animal')">
+          🐄 <span data-en="Animal disease" data-tw="Mmoa Yareɛ">Animal disease</span>
+        </button>
+      </div>
+      <p style="font-size:13px;color:var(--ts);margin-bottom:1rem;line-height:1.5;" id="diagDesc"
+         data-en="Take a clear photo of a sick crop leaf or stem. AI identifies the disease and recommends treatment."
+         data-tw="Fa foto pa ho wo aba nkotokuo anaa dua a yareɛ wɔ so.">
+        Take a clear photo of a sick crop leaf or stem. AI identifies the disease and recommends treatment.
       </p>
-      <div class="upload-zone" onclick="document.getElementById('cropPhoto').click()">
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('cropPhoto').click()">
         <input type="file" id="cropPhoto" accept="image/*" onchange="onPhotoSelected(event)"/>
-        <div class="upload-icon">🌿</div>
-        <div class="upload-title" data-en="Tap to upload crop photo" data-tw="Dii so na fa aba foto">Tap to upload crop photo</div>
+        <div class="upload-icon" id="uploadIcon">🌿</div>
+        <div class="upload-title" id="uploadTitle" data-en="Tap to upload photo" data-tw="Dii so na fa foto">Tap to upload photo</div>
         <div class="upload-sub" data-en="JPG or PNG · Max 5MB" data-tw="JPG anaa PNG · 5MB sene">JPG or PNG · Max 5MB</div>
       </div>
-      <img id="previewImg" class="preview-img" alt="Crop photo"/>
+      <img id="previewImg" class="preview-img" alt="preview"/>
       <button id="diagnoseBtn" class="diagnose-btn" onclick="runDiagnosis()" disabled
-        data-en="🔍 Analyse photo for disease" data-tw="🔍 Hwɛ foto ho yareɛ">🔍 Analyse photo for disease</button>
+        data-en="🔍 Analyse photo" data-tw="🔍 Hwɛ foto">🔍 Analyse photo</button>
       <div class="card-title" id="resultTitle" style="display:none;" data-en="AI Diagnosis Result" data-tw="AI Hwɛ Asɛm">AI Diagnosis Result</div>
       <div class="result-box" id="resultBox"></div>
+    </div>
+  </div>
+
+  <!-- MY FARM PROFILE -->
+  <div id="panel-profile" class="panel">
+    <div class="card">
+      <div class="card-title" data-en="👤 Farmer details" data-tw="👤 Okuafoɔ Nsɛm">👤 Farmer details</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-en="Full name" data-tw="Wo Din Nyinaa">Full name</label>
+          <input class="form-input" type="text" id="farmerName" placeholder="e.g. Kwame Asante"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-en="Phone number" data-tw="Telephone Nɔma">Phone number</label>
+          <input class="form-input" type="tel" id="farmerPhone" placeholder="e.g. 0244123456"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">🇬🇭 Ghana Card number</label>
+        <input class="form-input" type="text" id="ghanaCard" placeholder="GHA-XXXXXXXXX-X" maxlength="15" oninput="validateGhanaCard(this)"/>
+        <div id="ghanaCardStatus" style="display:none;" class="gc-status"></div>
+        <div class="form-hint">Format: GHA-123456789-0 · Stored securely and encrypted</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" data-en="🌾 Farm details" data-tw="🌾 Afuo Nsɛm">🌾 Farm details</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-en="Farm name" data-tw="Afuo Din">Farm name</label>
+          <input class="form-input" type="text" id="farmName" placeholder="e.g. Asante Family Farm"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-en="Farm size (acres)" data-tw="Afuo Kɛseɛ">Farm size (acres)</label>
+          <input class="form-input" type="number" id="farmSize" placeholder="e.g. 2.5" min="0" step="0.1"/>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:.75rem;">
+        <label class="form-label" data-en="Main crops grown" data-tw="Aba a Wɔdua">Main crops grown</label>
+        <input class="form-input" type="text" id="farmCrops" placeholder="e.g. Maize, Tomatoes, Cassava"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Farming type</label>
+          <select class="form-input" id="farmingType">
+            <option value="">Select...</option>
+            <option>Subsistence</option><option>Commercial</option><option>Mixed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Years farming</label>
+          <input class="form-input" type="number" id="yearsFarming" placeholder="e.g. 8" min="0"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nearest market</label>
+        <input class="form-input" type="text" id="nearestMarket" placeholder="e.g. Kumasi Central Market"/>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📍 Farm GPS location</div>
+      <p style="font-size:13px;color:var(--ts);margin-bottom:.875rem;line-height:1.5;">Pin your exact farm for precise weather forecasts and AI advice.</p>
+      <button class="ask-link-btn" onclick="getGPSLocation()">📍 <span id="gpsBtnText">Tap to detect my farm location</span></button>
+      <div id="coordsDisplay" style="display:none;font-family:monospace;font-size:12px;color:var(--ts);background:var(--muted);border-radius:var(--rm);padding:6px 10px;margin:.5rem 0;">
+        📍 <strong id="coordsLat"></strong>, <strong id="coordsLng"></strong>
+      </div>
+      <div id="mapContainer" style="display:none;border-radius:var(--rm);overflow:hidden;border:1px solid var(--bd);margin-bottom:.75rem;">
+        <div id="farmMap" style="height:200px;"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Farm address / landmark</label>
+        <input class="form-input" type="text" id="farmAddress" placeholder="e.g. Near Kumasi Agro Market"/>
+      </div>
+    </div>
+    <button class="save-btn" onclick="saveProfile()">💾 <span data-en="Save farm profile" data-tw="Sie Me Afuo Nsɛm">Save farm profile</span></button>
+    <div class="save-success" id="profileSaved">&#10003; Farm profile saved!</div>
+  </div>
+
+  <!-- LIVESTOCK -->
+  <div id="panel-livestock" class="panel">
+    <div class="card">
+      <div class="card-title amber" data-en="Select your animal type" data-tw="Paw wo mmoa">Select your animal type</div>
+      <div class="animal-grid">
+        <div class="animal-card sel" onclick="selAnimal(this,'poultry')">
+          <div class="animal-icon">🐔</div>
+          <div class="animal-name">Poultry</div>
+          <div class="animal-sub">Chicken, Turkey, Guinea fowl</div>
+        </div>
+        <div class="animal-card" onclick="selAnimal(this,'cattle')">
+          <div class="animal-icon">🐄</div>
+          <div class="animal-name">Cattle</div>
+          <div class="animal-sub">Beef, Dairy</div>
+        </div>
+        <div class="animal-card" onclick="selAnimal(this,'goats')">
+          <div class="animal-icon">🐐</div>
+          <div class="animal-name">Goats</div>
+          <div class="animal-sub">Meat, Dairy</div>
+        </div>
+        <div class="animal-card" onclick="selAnimal(this,'sheep')">
+          <div class="animal-icon">🐑</div>
+          <div class="animal-name">Sheep</div>
+          <div class="animal-sub">Meat, Wool</div>
+        </div>
+        <div class="animal-card" onclick="selAnimal(this,'pigs')">
+          <div class="animal-icon">🐖</div>
+          <div class="animal-name">Pigs</div>
+          <div class="animal-sub">Pork, Breeding</div>
+        </div>
+        <div class="animal-card" onclick="selAnimal(this,'fish')">
+          <div class="animal-icon">🐟</div>
+          <div class="animal-name">Aquaculture</div>
+          <div class="animal-sub">Tilapia, Catfish</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title amber">🐔 Animal details</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Total count</label>
+          <input class="form-input" type="number" id="totalCount" placeholder="e.g. 500" min="0"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sick / isolated</label>
+          <input class="form-input" type="number" id="sickCount" placeholder="e.g. 3" min="0"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Housing type</label>
+          <select class="form-input" id="housingType">
+            <option value="">Select...</option>
+            <option>Deep litter</option><option>Battery cage</option>
+            <option>Free range</option><option>Pen</option><option>Pond</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Main purpose</label>
+          <select class="form-input" id="animalPurpose">
+            <option value="">Select...</option>
+            <option>Eggs (layers)</option><option>Meat (broilers)</option>
+            <option>Both</option><option>Dairy</option><option>Breeding</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Feed source</label>
+          <select class="form-input" id="animalFeed">
+            <option value="">Select...</option>
+            <option>Commercial feed</option><option>Mixed / own</option><option>Pasture</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Water source</label>
+          <select class="form-input" id="animalWater">
+            <option value="">Select...</option>
+            <option>Borehole</option><option>Pipe water</option><option>River</option><option>Well</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:.75rem;">
+        <label class="form-label">Nearest veterinary</label>
+        <input class="form-input" type="text" id="nearestVet" placeholder="e.g. Kumasi Veterinary Clinic"/>
+      </div>
+      <div class="form-group" style="margin-bottom:.75rem;">
+        <label class="form-label">🇬🇭 Ghana Card number (farm owner)</label>
+        <input class="form-input" type="text" id="livestockGhanaCard" placeholder="GHA-XXXXXXXXX-X" maxlength="15" oninput="validateLiveGhanaCard(this)"/>
+        <div id="livestockGhanaCardStatus" style="display:none;" class="gc-status"></div>
+        <div class="form-hint">Format: GHA-123456789-0 · Stored securely</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title amber">📍 Farm / Ranch GPS location</div>
+      <p style="font-size:13px;color:var(--ts);margin-bottom:.875rem;line-height:1.5;">Pin the exact location of your animal farm or ranch for precise alerts and AI advice.</p>
+      <button class="ask-link-btn" style="background:var(--a50);color:var(--a900);border-color:var(--a100);" onclick="getLivestockGPS()">📍 <span id="livestockGpsBtnText">Tap to detect farm/ranch location</span></button>
+      <div id="livestockCoordsDisplay" style="display:none;font-family:monospace;font-size:12px;color:var(--ts);background:var(--muted);border-radius:var(--rm);padding:6px 10px;margin:.5rem 0;">
+        📍 <strong id="livestockCoordsLat"></strong>, <strong id="livestockCoordsLng"></strong>
+      </div>
+      <div id="livestockMapContainer" style="display:none;border-radius:var(--rm);overflow:hidden;border:1px solid var(--bd);margin-bottom:.75rem;">
+        <div id="livestockMap" style="height:180px;"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Farm / ranch address</label>
+        <input class="form-input" type="text" id="livestockFarmAddress" placeholder="e.g. Near Accra Veterinary Office"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input class="form-input" type="text" id="livestockNotes" placeholder="e.g. vaccination due May 1"/>
+      </div>
+    </div>
+    <button class="save-btn amber" onclick="saveLivestock()">💾 <span data-en="Save livestock profile" data-tw="Sie Me Mmoa Nsɛm">Save livestock profile</span></button>
+    <div class="save-success" id="livestockSaved">&#10003; Livestock profile saved!</div>
+    <div style="margin-top:1rem;">
+      <button class="ask-link-btn" onclick="askAI(3)">💬 <span data-en="Ask AI: my chickens are not eating — what is wrong? →" data-tw="💬 Bisa AI: me akoko nni aduan →">Ask AI: my chickens are not eating — what is wrong? →</span></button>
+      <button class="ask-link-btn" onclick="askAI(5)">💬 <span data-en="Ask AI: when to sell my goats for best price →" data-tw="💬 Bisa AI: ɛberɛ bɛn na tɔn me abirekyi →">Ask AI: when to sell my goats for best price →</span></button>
+    </div>
+  </div>
+
+  <!-- YEAR PLAN CALENDAR -->
+  <div id="panel-yearplan" class="panel">
+    <div class="card">
+      <div class="card-title" data-en="📅 Annual farming plan — {{ 2026 }}" data-tw="📅 Afe Nhyehyɛe — {{ 2026 }}">📅 Annual farming plan — 2026</div>
+      <p style="font-size:13px;color:var(--ts);margin-bottom:1rem;line-height:1.5;" data-en="Plan your full farming year — planting, harvesting, vaccinations, market days — for both crops and livestock." data-tw="Bɔ wo afe nyinaa nhyehyɛe — aba dua, aba yi, aduro, ne aguadi da.">
+        Plan your full farming year — planting, harvesting, vaccinations, market days — for both crops and livestock.
+      </p>
+
+      <!-- Add new activity -->
+      <div style="background:var(--muted);border-radius:var(--rm);padding:1rem;margin-bottom:1rem;">
+        <div class="card-title" data-en="Add new activity" data-tw="Fa adwuma foforo">Add new activity</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Activity title</label>
+            <input class="form-input" type="text" id="planTitle" placeholder="e.g. Plant maize — Field 1"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Activity type</label>
+            <select class="form-input" id="planType">
+              <option value="planting">🌱 Planting</option>
+              <option value="harvest">🌾 Harvest</option>
+              <option value="fertilize">🌿 Fertilize / Spray</option>
+              <option value="vaccination">💉 Vaccination</option>
+              <option value="market">💰 Market / Sell</option>
+              <option value="irrigation">💧 Irrigation</option>
+              <option value="other">📝 Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Crop or animal</label>
+            <input class="form-input" type="text" id="planCrop" placeholder="e.g. Maize, Tomatoes, Chickens"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Planned date</label>
+            <input class="form-input" type="date" id="planDate"/>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:.75rem;">
+          <label class="form-label">Notes (optional)</label>
+          <input class="form-input" type="text" id="planNotes" placeholder="e.g. Use SEEDCO SC403 variety"/>
+        </div>
+        <button class="save-btn" style="margin-top:0;" onclick="addYearPlan()">+ Add to plan</button>
+      </div>
+
+      <!-- Monthly view -->
+      <div class="card-title" data-en="Your 2026 farming calendar" data-tw="Wo 2026 Afuo Kalenda">Your 2026 farming calendar</div>
+      <div id="yearPlanList" style="display:flex;flex-direction:column;gap:.5rem;">
+        <div style="font-size:13px;color:var(--ts);text-align:center;padding:1rem;">Loading your plan...</div>
+      </div>
+    </div>
+    <button class="ask-link-btn" onclick="askAI(0)">💬 <span data-en="Ask AI: what should I plant each month in Ghana? →" data-tw="💬 Bisa AI: aba bɛn na mɛdua bosome biara? →">Ask AI: what should I plant each month in Ghana? →</span></button>
+  </div>
+
+  <!-- VOICE -->
+  <div id="panel-voice" class="panel">
+    <div class="card">
+      <div class="card-title blue" data-en="🎤 Voice farming assistant" data-tw="🎤 Kasa Nhyehyɛe">🎤 Voice farming assistant</div>
+      <p style="font-size:13px;color:var(--ts);margin-bottom:1rem;line-height:1.5;"
+         data-en="Speak your farming question — the app listens, asks Claude AI, and reads the answer back to you aloud. No typing or reading needed."
+         data-tw="Ka wo asɛmmisa — app no tie, bisa Claude AI, na kyerɛ wo mmuae no wɔ aso mu.">
+        Speak your farming question — the app listens, asks Claude AI, and reads the answer back to you aloud. No typing or reading needed.
+      </p>
+
+      <div class="card-title blue" data-en="Choose your language" data-tw="Paw wo kasa">Choose your language</div>
+      <div class="lang-voice-grid">
+        <div class="lang-voice-opt sel" onclick="selVoiceLang(this,'en-GH')">
+          <div class="lang-voice-flag">🇬🇧</div>
+          <div>English</div>
+        </div>
+        <div class="lang-voice-opt" onclick="selVoiceLang(this,'ak-GH')">
+          <div class="lang-voice-flag">🇬🇭</div>
+          <div>Twi</div>
+        </div>
+        <div class="lang-voice-opt" onclick="selVoiceLang(this,'dag-GH')">
+          <div class="lang-voice-flag">🇬🇭</div>
+          <div>Dagbani</div>
+        </div>
+        <div class="lang-voice-opt" onclick="selVoiceLang(this,'ha-GH')">
+          <div class="lang-voice-flag">🇬🇭</div>
+          <div>Hausa</div>
+        </div>
+      </div>
+
+      <div class="voice-center">
+        <div class="mic-outer" id="micOuter" onclick="toggleVoice()">
+          <div class="mic-inner" id="micInner">🎤</div>
+        </div>
+        <div class="voice-status" id="voiceStatus" data-en="Tap to speak" data-tw="Dii so na kasa">Tap to speak</div>
+        <div class="voice-sub" id="voiceSub" data-en="Ask any farming or livestock question" data-tw="Bisa afuo anaa mmoa asɛmmisa">Ask any farming or livestock question</div>
+      </div>
+
+      <div class="waveform" id="waveform" style="display:none;">
+        <div class="wave-bar" style="height:8px;"></div>
+        <div class="wave-bar" style="height:16px;"></div>
+        <div class="wave-bar" style="height:28px;"></div>
+        <div class="wave-bar" style="height:20px;"></div>
+        <div class="wave-bar" style="height:36px;"></div>
+        <div class="wave-bar" style="height:24px;"></div>
+        <div class="wave-bar" style="height:32px;"></div>
+        <div class="wave-bar" style="height:18px;"></div>
+        <div class="wave-bar" style="height:28px;"></div>
+        <div class="wave-bar" style="height:10px;"></div>
+      </div>
+    </div>
+
+    <div class="card" id="voiceResponseCard" style="display:none;">
+      <div class="transcript-label" data-en="You said" data-tw="Wokaee">You said</div>
+      <div class="transcript-box" id="voiceTranscript"></div>
+
+      <div class="ai-voice-label" data-en="Nkɔsoɔ AI replied" data-tw="Nkɔsoɔ AI kaeɛ">Nkɔsoɔ AI replied</div>
+      <div class="ai-voice-response" id="voiceResponse"></div>
+
+      <div class="speed-row">
+        <span class="speed-label" data-en="Playback speed:" data-tw="Kasa ntɛmso:">Playback speed:</span>
+        <div class="speed-opts">
+          <button class="speed-btn" onclick="setSpeed(this,0.75)">0.75x</button>
+          <button class="speed-btn on" onclick="setSpeed(this,1)">1x</button>
+          <button class="speed-btn" onclick="setSpeed(this,1.25)">1.25x</button>
+          <button class="speed-btn" onclick="setSpeed(this,1.5)">1.5x</button>
+        </div>
+      </div>
+
+      <div class="voice-controls">
+        <button class="vc-btn" onclick="replayVoice()" data-en="▶ Replay" data-tw="▶ San ka">▶ Replay</button>
+        <button class="vc-btn" onclick="stopVoice()" data-en="⏹ Stop" data-tw="⏹ Gyae">⏹ Stop</button>
+        <button class="vc-btn primary" onclick="resetVoice()" data-en="🎤 New question" data-tw="🎤 Asɛmmisa foforo">🎤 New question</button>
+      </div>
+      <div class="voice-tip">💡 <span data-en="This answer has been added to your AI chat history" data-tw="Wɔasie mmuae no wɔ wo chat mu">This answer has been added to your AI chat history</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title blue" data-en="Quick voice questions" data-tw="Nsɛmmisa Ntɛm">Quick voice questions</div>
+      <div class="quick-grid">
+        <button class="quick-btn" onclick="voiceQuickAsk(0)">🌾 <span data-en="What should I plant this season?" data-tw="Aba bɛn na mɛdua saa ɔberɛ yi?">What should I plant this season?</span></button>
+        <button class="quick-btn" onclick="voiceQuickAsk(1)">🐛 <span data-en="My maize leaves are yellow" data-tw="Me aburo nkotokuo sere">My maize leaves are yellow</span></button>
+        <button class="quick-btn" onclick="voiceQuickAsk(3)">🐔 <span data-en="My chickens are not eating" data-tw="Me akoko nni aduan">My chickens are not eating</span></button>
+        <button class="quick-btn" onclick="voiceQuickAsk(2)">💰 <span data-en="What is the price of tomatoes today?" data-tw="Ntomato wuramu ɛhɛ nnɛ?">What is the price of tomatoes today?</span></button>
+      </div>
     </div>
   </div>
 
@@ -437,254 +828,64 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     </div>
     <div class="chat-window">
       <div class="chat-messages" id="chatMessages">
-        <div class="msg msg-ai" id="welcomeMsg">👋 Hello! I'm Nkɔsoɔ AI — your Ghana farming assistant. Ask me anything about weather, crops, pests, or market prices.</div>
+        <div class="msg msg-ai" id="welcomeMsg">
+          👋 Hello! I'm Nkɔsoɔ AI — your Ghana farming assistant for crops, livestock and aquaculture. Ask me anything!
+        </div>
       </div>
       <div class="chat-input-row">
-        <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="Speak your question">🎤</button>
         <input type="text" id="chatInput"
-          placeholder="Ask a farming question..."
-          data-en-ph="Ask a farming question..."
-          data-tw-ph="Bisa afuo asɛmmisa..."
-          data-dg-ph="Bisa puuni tiŋ yɛlma..."
-          data-ha-ph="Tambayi tambarin gonaki..."
+          placeholder="Ask about crops or livestock..."
+          data-en-ph="Ask about crops or livestock..."
+          data-tw-ph="Bisa afuo anaa mmoa asɛmmisa..."
           onkeydown="if(event.key==='Enter') sendMessage()"/>
-        <button class="send-btn" id="sendBtn" onclick="sendMessage()" data-en="Send" data-tw="Soma" data-dg="Tuma" data-ha="Aika">Send</button>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" data-en="Send" data-tw="Soma">Send</button>
       </div>
-      <div class="voice-status" id="voiceStatus"></div>
     </div>
   </div>
 
-  <!-- FARM -->
-  <div id="panel-farm" class="panel">
-
-    <div id="profileNudge" class="profile-nudge" style="display:none">
-      🌱 <span>Fill in your farm details to get a personalised planting calendar.</span>
-      <span class="nudge-link" onclick="openProfileSection()">Set up profile →</span>
-    </div>
-
-    <div class="card" id="profileCard">
-      <div class="card-title" data-en="👤 My Farm Profile" data-tw="👤 Me Afuo Ho Nsɛm">👤 My Farm Profile</div>
-      <div class="profile-form">
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Your name <span style="color:#E24B4A">*</span></label>
-            <input class="form-input" id="pName" placeholder="e.g. Kofi Mensah"/>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Phone number <span style="color:#E24B4A">*</span></label>
-            <input class="form-input" id="pPhone" placeholder="e.g. 0244123456" type="tel"/>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Ghana Card Number <span style="color:#E24B4A">*</span></label>
-          <div class="ghana-card-wrap">
-            <span class="ghana-card-icon">🪪</span>
-            <input class="form-input ghana-card-input" id="pGhanaCard"
-              placeholder="GHA-000000000-0" maxlength="17"
-              oninput="formatGhanaCard(this)" onblur="validateGhanaCard()"/>
-          </div>
-          <div class="ghana-card-status" id="ghanaCardStatus"></div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Farm size</label>
-            <input class="form-input" id="pSize" placeholder="e.g. 2.5" type="number" min="0.1" step="0.1"/>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Unit</label>
-            <select class="form-select" id="pUnit">
-              <option value="acres">Acres</option>
-              <option value="hectares">Hectares</option>
-              <option value="plots">Plots</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Soil type</label>
-            <select class="form-select" id="pSoil">
-              <option value="loamy">Loamy (best for most crops)</option>
-              <option value="sandy">Sandy (good drainage)</option>
-              <option value="clay">Clay (holds moisture)</option>
-              <option value="silty">Silty (fertile, river areas)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Water source</label>
-            <select class="form-select" id="pWater">
-              <option value="rain">Rain-fed only</option>
-              <option value="irrigation">Irrigation system</option>
-              <option value="both">Rain + Irrigation</option>
-              <option value="stream">Stream / River nearby</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Region</label>
-          <select class="form-select" id="pRegion">
-            {% for key,r in regions.items() %}
-            <option value="{{ key }}">{{ r.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Crops I grow (tap to select) <span style="color:#E24B4A">*</span></label>
-          <div class="crop-chips" id="cropChips">
-            <div style="width:100%;font-size:11px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">🌾 Staples & Vegetables</div>
-            <span class="crop-chip" data-crop="Maize">🌽 Maize</span>
-            <span class="crop-chip" data-crop="Cassava">🍠 Cassava</span>
-            <span class="crop-chip" data-crop="Tomatoes">🍅 Tomatoes</span>
-            <span class="crop-chip" data-crop="Plantain">🍌 Plantain</span>
-            <span class="crop-chip" data-crop="Yam">🥔 Yam</span>
-            <span class="crop-chip" data-crop="Cocoa">🍫 Cocoa</span>
-            <span class="crop-chip" data-crop="Pepper">🌶 Pepper</span>
-            <span class="crop-chip" data-crop="Groundnut">🥜 Groundnut</span>
-            <span class="crop-chip" data-crop="Rice">🌾 Rice</span>
-            <span class="crop-chip" data-crop="Vegetables">🥦 Vegetables</span>
-            <span class="crop-chip" data-crop="Soybean">🫘 Soybean</span>
-            <span class="crop-chip" data-crop="Cowpea">🫛 Cowpea</span>
-            <div style="width:100%;font-size:11px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;margin:6px 0 2px;">🍍 Fruits</div>
-            <span class="crop-chip" data-crop="Mango">🥭 Mango</span>
-            <span class="crop-chip" data-crop="Pineapple">🍍 Pineapple</span>
-            <span class="crop-chip" data-crop="Watermelon">🍉 Watermelon</span>
-            <span class="crop-chip" data-crop="Pawpaw">🍈 Pawpaw</span>
-            <span class="crop-chip" data-crop="Orange">🍊 Orange</span>
-            <span class="crop-chip" data-crop="Banana">🍌 Banana</span>
-            <span class="crop-chip" data-crop="Avocado">🥑 Avocado</span>
-            <span class="crop-chip" data-crop="Coconut">🥥 Coconut</span>
-            <span class="crop-chip" data-crop="Guava">🍏 Guava</span>
-            <span class="crop-chip" data-crop="Passion Fruit">💛 Passion Fruit</span>
-            <span class="crop-chip" data-crop="Soursop">🍃 Soursop</span>
-            <span class="crop-chip" data-crop="Lime">🍋 Lime</span>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">📍 Farm Location (GPS) <span style="color:#E24B4A">*</span></label>
-          <div class="gps-section">
-            <button class="gps-btn" id="gpsBtn" type="button" onclick="captureGPS()">
-              <span id="gpsBtnIcon">📡</span>
-              <span id="gpsBtnText">Tap to capture my farm's GPS location</span>
-            </button>
-            <div class="gps-status" id="gpsStatus">Use the button above or tap the map to pin your farm manually.</div>
-            <div class="gps-coords" id="gpsCoords" style="display:none;"></div>
-            <div class="map-container" id="mapContainer">
-              <div class="map-placeholder" id="mapPlaceholder">
-                🗺️<br>Map will appear after GPS capture<br>
-                <span style="font-size:11px;">or tap the map to pin your farm manually</span>
-              </div>
-            </div>
-          </div>
-          <div class="gps-required-note" id="gpsRequiredNote" style="display:none;">⚠ Farm location is required to save your profile.</div>
-        </div>
-
-        <input type="hidden" id="pLat"/>
-        <input type="hidden" id="pLon"/>
-        <input type="hidden" id="pAcc"/>
-
-        <button class="save-profile-btn" id="saveProfileBtn" onclick="saveProfile()">💾 Save My Farm Profile</button>
-        <div class="profile-saved" id="profileSaved">✅ Profile saved! Now generate your planting calendar below.</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title" data-en="📅 My Planting Calendar" data-tw="📅 Me Dua Aba Kalenda">📅 My Planting Calendar</div>
-      <p style="font-size:13px;color:var(--ts);margin-bottom:.875rem;">Select a crop and generate its 12-month plan — one at a time, results appear in seconds.</p>
-      <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap;">
-        <select class="form-select" id="calCropSelect" style="flex:1;min-width:140px;"><option value="">Select a crop…</option></select>
-        <button class="gen-calendar-btn" id="genOneBtn" onclick="generateOneCrop()"
-          style="margin:0;flex-shrink:0;width:auto;padding:9px 16px;font-size:13px;">✨ Generate</button>
-      </div>
-      <button class="gen-calendar-btn" id="genAllBtn" onclick="generateAllCrops()"
-        style="background:var(--muted);color:var(--g600);border:1px solid var(--g100);font-size:13px;">🔄 Generate all my crops one by one</button>
-      <div id="calStatus" style="font-size:13px;color:var(--ts);min-height:20px;margin:.75rem 0;"></div>
-      <div id="calendarGrid"></div>
-      <div id="calendarEmpty" style="font-size:13px;color:var(--ts);text-align:center;padding:1.5rem 0;">Save your profile and select crops above, then tap Generate.</div>
-    </div>
-
-    <div class="card">
-      <div class="card-title" data-en="📓 Farm Diary" data-tw="📓 Afuo Dawurubɔ">📓 Farm Diary</div>
-      <p style="font-size:13px;color:var(--ts);margin-bottom:.75rem;">Log what you do on your farm each day.</p>
-      <div class="log-form-row">
-        <select class="form-select" id="logCrop" style="max-width:140px;">
-          <option value="">Select crop</option>
-          <option>Maize</option><option>Cassava</option><option>Tomatoes</option>
-          <option>Plantain</option><option>Yam</option><option>Cocoa</option>
-          <option>Pepper</option><option>Groundnut</option><option>Rice</option>
-          <option>Vegetables</option><option>Soybean</option><option>Cowpea</option>
-          <optgroup label="Fruits">
-            <option>Mango</option><option>Pineapple</option><option>Watermelon</option>
-            <option>Pawpaw</option><option>Orange</option><option>Banana</option>
-            <option>Avocado</option><option>Coconut</option><option>Guava</option>
-            <option>Passion Fruit</option><option>Soursop</option><option>Lime</option>
-          </optgroup>
-        </select>
-        <select class="form-select" id="logAction" style="max-width:160px;">
-          <option value="">Select action</option>
-          <option>Land preparation</option><option>Planting</option>
-          <option>Fertilizer applied</option><option>Weeding</option>
-          <option>Pest spray</option><option>Irrigation</option>
-          <option>Harvesting</option><option>Storage</option><option>Other</option>
-        </select>
-        <input class="form-input" id="logNote" placeholder="Note (optional)" style="min-width:120px;"/>
-        <input class="form-input" id="logDate" type="date" style="max-width:140px;"/>
-        <button class="add-log-btn" onclick="addLog()">+ Add</button>
-      </div>
-      <div class="log-list" id="logList">
-        <div class="log-empty" id="logEmpty">No diary entries yet. Log your first farm activity above.</div>
-      </div>
-    </div>
-
-  </div>
-</div>
+</div><!-- /container -->
 
 <script>
 const QUICK_EN = {{ quick_en | tojson }};
 const QUICK_TW = {{ quick_tw | tojson }};
-const WEATHER_ADVICE = { en: {{ weather.advice | tojson }}, tw: {{ weather.advice_tw | tojson }} };
-const WEATHER_RISK   = { en: {{ weather.risk   | tojson }}, tw: {{ weather.risk_tw   | tojson }} };
+const WEATHER_DATA = {
+  advice:    { en: {{ weather.advice | tojson }},            tw: {{ weather.advice_tw | tojson }} },
+  adviceLive:{ en: {{ weather.advice_livestock | tojson }},  tw: {{ weather.advice_livestock_tw | tojson }} },
+  risk:      { en: {{ weather.risk | tojson }},              tw: {{ weather.risk_tw | tojson }} },
+  risk_level: '{{ weather.risk_level }}'
+};
 const USER_PLAN  = '{{ user.plan }}';
 const FREE_LIMIT = {{ free_limit }};
 let usedToday    = {{ used_today }};
 let currentLang  = 'en';
-let currentWeather = { advice: WEATHER_ADVICE, risk: WEATHER_RISK, risk_level: '{{ weather.risk_level }}' };
-const SERVER_PROFILE = {{ (profile or {}) | tojson }};
+let currentWeather = JSON.parse(JSON.stringify(WEATHER_DATA));
 
-const WELCOME_MSG = {
-  en: "👋 Hello! I'm Nkɔsoɔ AI — your Ghana farming assistant. Ask me anything about weather, crops, pests, or market prices.",
-  tw: "👋 Akwaaba! Meyɛ Nkɔsoɔ AI. Bisa me asɛmmisa biara a ɛfa ɔhaw, aba dua, mmoa tia, anaa ɛberɛ a ɛsɛ sɛ wo tɔn wo aba.",
-  dg: "👋 Despa! N yɛ Nkɔsoɔ AI — fo puuni tiŋ sɔŋ mali. Bɔri n yɛlgu puuni yɛla, zaŋ daa, ni zaŋ tiŋa kɔɣim.",
-  ha: "👋 Sannu! Ni ne Nkɔsoɔ AI — mataimakin noma naku. Ka tambaya komai game da yanayi, amfanin gona, kwari, ko farashin kasuwa."
-};
-const LANG_CODES = { en:'en-GH', tw:'tw', dg:'dag', ha:'ha-GH' };
-
+/* ---- Language ---- */
 function setLang(lang) {
   currentLang = lang;
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim().toLowerCase()===lang));
-  document.querySelectorAll('[data-en]').forEach(el => { const v=el.getAttribute('data-'+lang)||el.getAttribute('data-en'); if(v) el.textContent=v; });
-  document.getElementById('weatherAdvice').textContent = currentWeather.advice[lang]||currentWeather.advice.en;
-  document.getElementById('weatherRisk').textContent   = currentWeather.risk[lang]  ||currentWeather.risk.en;
-  const inp=document.getElementById('chatInput');
-  inp.placeholder = inp.getAttribute('data-'+lang+'-ph')||inp.getAttribute('data-en-ph');
-  document.getElementById('welcomeMsg').textContent = WELCOME_MSG[lang]||WELCOME_MSG.en;
-  document.querySelectorAll('#quickGrid .quick-btn').forEach((b,i) => { b.textContent=lang==='tw'?QUICK_TW[i]:QUICK_EN[i]; });
-  const db=document.getElementById('diagnoseBtn');
-  if(db) db.textContent=lang==='tw'?'🔍 Hwɛ foto ho yareɛ':'🔍 Analyse photo for disease';
+  document.querySelectorAll('[data-en]').forEach(el => { const v=el.getAttribute('data-'+lang); if(v) el.textContent=v; });
+  document.getElementById('weatherAdvice').textContent     = currentWeather.advice[lang]     || currentWeather.advice.en;
+  document.getElementById('weatherAdviceLive').textContent = currentWeather.adviceLive[lang] || currentWeather.adviceLive.en;
+  document.getElementById('weatherRisk').textContent       = currentWeather.risk[lang]       || currentWeather.risk.en;
+  const inp = document.getElementById('chatInput');
+  inp.placeholder = inp.getAttribute('data-'+lang+'-ph') || inp.placeholder;
+  document.getElementById('welcomeMsg').textContent = lang==='tw'
+    ? '👋 Akwaaba! Meyɛ Nkɔsoɔ AI. Bisa me asɛmmisa biara a ɛfa wo afuo, mmoa, anaa aguadi.'
+    : "👋 Hello! I'm Nkɔsoɔ AI — your Ghana farming assistant for crops, livestock and aquaculture. Ask me anything!";
+  document.querySelectorAll('#quickGrid .quick-btn').forEach((b,i) => b.textContent = lang==='tw' ? QUICK_TW[i] : QUICK_EN[i]);
 }
 
+/* ---- Tabs ---- */
 function showTab(name) {
-  const names=['weather','prices','pests','diagnose','chat','farm'];
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',names[i]===name));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name));
-  if(name==='farm') initFarmTab();
+  const names=['weather','prices','pests','diagnose','profile','livestock','yearplan','voice','chat'];
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', names[i]===name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id==='panel-'+name));
+  if (name==='profile') loadProfile();
+  if (name==='yearplan') loadYearPlan();
 }
 
+/* ---- Upgrade ---- */
 function openUpgrade()  { document.getElementById('upgradeModal').classList.add('open'); }
 function closeUpgrade() { document.getElementById('upgradeModal').classList.remove('open'); }
 
@@ -692,359 +893,563 @@ async function startPayment() {
   const email=document.getElementById('payEmail').value.trim();
   if(!email||!email.includes('@')){alert('Please enter a valid email.');return;}
   const btn=document.querySelector('.pay-btn-main');
-  btn.disabled=true;btn.textContent='Loading...';
+  btn.disabled=true; btn.textContent='Loading...';
   try {
     const resp=await fetch('/api/pay/init',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
     const data=await resp.json();
-    if(data.authorization_url) window.location.href=data.authorization_url;
+    if(data.authorization_url){window.location.href=data.authorization_url;}
     else{alert(data.error||'Payment failed.');btn.disabled=false;btn.textContent='Pay GHS 30 with MoMo or Card';}
   } catch(e){alert('Connection error.');btn.disabled=false;btn.textContent='Pay GHS 30 with MoMo or Card';}
 }
 
 function updateUsageBar(used) {
   usedToday=used;
-  const el=document.getElementById('usageCount'),fill=document.getElementById('usageFill');
+  const el=document.getElementById('usageCount');
+  const fill=document.getElementById('usageFill');
   if(el) el.textContent=used+' / '+FREE_LIMIT;
-  if(fill){const pct=Math.min(used/FREE_LIMIT*100,100);fill.style.width=pct+'%';fill.className='usage-fill '+(used>=FREE_LIMIT?'fill-full':(used>=FREE_LIMIT-1?'fill-warn':'fill-ok'));}
+  if(fill){
+    fill.style.width=Math.min(used/FREE_LIMIT*100,100)+'%';
+    fill.className='usage-fill '+(used>=FREE_LIMIT?'fill-full':(used>=FREE_LIMIT-1?'fill-warn':'fill-ok'));
+  }
 }
 
+/* ---- Weather ---- */
 async function loadWeather() {
-  const key=document.getElementById('regionSelect').value,badge=document.getElementById('liveBadge');
+  const key=document.getElementById('regionSelect').value;
+  const badge=document.getElementById('liveBadge');
   badge.innerHTML='<span class="loading"></span>';
   try {
-    const w=await(await fetch('/api/weather?region='+key)).json();
-    document.getElementById('wHigh').textContent=w.today_high+'°C';
-    document.getElementById('wHumidity').textContent=w.humidity+'%';
-    document.getElementById('wRain').textContent=w.rain_chance+'%';
-    document.getElementById('wWind').textContent=w.wind_kmh+' km/h';
+    const w=await (await fetch('/api/weather?region='+key)).json();
+    document.getElementById('wHigh').textContent     = w.today_high+'°C';
+    document.getElementById('wHumidity').textContent = w.humidity+'%';
+    document.getElementById('wRain').textContent     = w.rain_chance+'%';
+    document.getElementById('wWind').textContent     = w.wind_kmh+' km/h';
     document.getElementById('weatherLoc').textContent=(currentLang==='tw'?w.location_tw:w.location)+' — '+(currentLang==='tw'?'Ɔhaw Nnɛ':'Current conditions');
-    document.getElementById('forecastStrip').innerHTML=w.forecast.map(d=>`<div class="forecast-day"><div class="day-name">${d.day}</div><div class="day-icon">${d.icon}</div><div class="day-temp">${d.high}°</div><div class="day-rain">${d.rain}%</div></div>`).join('');
-    currentWeather={advice:{en:w.advice,tw:w.advice_tw},risk:{en:w.risk,tw:w.risk_tw},risk_level:w.risk_level};
-    document.getElementById('weatherAdvice').textContent=currentLang==='tw'?w.advice_tw:w.advice;
-    const rEl=document.getElementById('weatherRisk');rEl.textContent=currentLang==='tw'?w.risk_tw:w.risk;rEl.className='badge b-'+w.risk_level;
-    badge.textContent='🟢 Live';cacheDataForOffline();
-  } catch(e){badge.textContent='⚠ Offline';loadCachedWeather();}
+    document.getElementById('forecastStrip').innerHTML=w.forecast.map(d=>
+      `<div class="forecast-day"><div class="day-name">${d.day}</div><div class="day-icon">${d.icon}</div><div class="day-temp">${d.high}°</div><div class="day-rain">${d.rain}%</div></div>`
+    ).join('');
+    currentWeather={
+      advice:{en:w.advice,tw:w.advice_tw},
+      adviceLive:{en:w.advice_livestock,tw:w.advice_livestock_tw},
+      risk:{en:w.risk,tw:w.risk_tw},risk_level:w.risk_level
+    };
+    document.getElementById('weatherAdvice').textContent     = currentLang==='tw'?w.advice_tw:w.advice;
+    document.getElementById('weatherAdviceLive').textContent = currentLang==='tw'?w.advice_livestock_tw:w.advice_livestock;
+    const rEl=document.getElementById('weatherRisk');
+    rEl.textContent=currentLang==='tw'?w.risk_tw:w.risk;
+    rEl.className='badge b-'+w.risk_level;
+    badge.textContent='🟢 Live';
+  } catch(e){badge.textContent='⚠ Error';}
 }
 
-const CACHE_KEY='nkosoo_cache_v1',QUEUE_KEY='nkosoo_offline_queue';
-let isOnline=navigator.onLine,offlineQueue=[];
-
-function loadQueue(){try{offlineQueue=JSON.parse(localStorage.getItem(QUEUE_KEY)||'[]');}catch{offlineQueue=[];}}
-function saveQueue(){try{localStorage.setItem(QUEUE_KEY,JSON.stringify(offlineQueue));}catch{}}
-function loadCache(){try{return JSON.parse(localStorage.getItem(CACHE_KEY)||'null');}catch{return null;}}
-function saveCache(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({...data,saved_at:Date.now()}));}catch{}}
-
-async function cacheDataForOffline(){try{const r=await fetch('/api/cache-data');if(r.ok)saveCache(await r.json());}catch{}}
-
-function loadCachedWeather(){
-  const c=loadCache();if(!c||!c.weather)return;const w=c.weather;
-  document.getElementById('wHigh').textContent=w.today_high+'°C';
-  document.getElementById('wHumidity').textContent=w.humidity+'%';
-  document.getElementById('wRain').textContent=w.rain_chance+'%';
-  document.getElementById('wWind').textContent=w.wind_kmh+' km/h';
-  document.getElementById('forecastStrip').innerHTML=(w.forecast||[]).map(d=>`<div class="forecast-day"><div class="day-name">${d.day}</div><div class="day-icon">${d.icon}</div><div class="day-temp">${d.high}°</div><div class="day-rain">${d.rain}%</div></div>`).join('');
-  document.getElementById('liveBadge').textContent='📦 Cached';
-  const cachedAt=c.saved_at?new Date(c.saved_at).toLocaleTimeString():'?';
-  setSyncBar('offline',`Offline — showing data cached at ${cachedAt}`);
-}
-
-function setSyncBar(state,msg,detail=''){
-  const bar=document.getElementById('syncBar'),btn=document.getElementById('syncRetryBtn');
-  bar.className='sync-bar '+state;
-  document.getElementById('syncMsg').textContent=msg;
-  document.getElementById('syncDetail').textContent=detail;
-  btn.style.display=(state==='offline'&&offlineQueue.length>0)?'inline-block':'none';
-}
-
-function handleOnline(){isOnline=true;setSyncBar('online','Back online');setTimeout(()=>setSyncBar('online','Online — data is live'),3000);syncOfflineQueue();}
-function handleOffline(){isOnline=false;const q=offlineQueue.length;setSyncBar('offline','No internet connection — cached data shown',q>0?`${q} message${q>1?'s':''} queued`:'');}
-
-async function syncOfflineQueue(){
-  if(!isOnline||offlineQueue.length===0)return;
-  setSyncBar('syncing',`Syncing ${offlineQueue.length} queued message${offlineQueue.length>1?'s':''}…`);
-  const toSync=[...offlineQueue];offlineQueue=[];saveQueue();
-  for(const item of toSync){
-    try{
-      const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:item.messages,lang:item.lang})});
-      if(resp.ok){
-        const reader=resp.body.getReader(),decoder=new TextDecoder();let fullText='';
-        const aiDiv=appendMsg('','ai');
-        const label=document.createElement('div');label.className='msg-queued';label.textContent=`⏱ Synced (asked at ${new Date(item.timestamp).toLocaleTimeString()})`;
-        aiDiv.parentNode.insertBefore(label,aiDiv.nextSibling);
-        while(true){const{done,value}=await reader.read();if(done)break;
-          for(const line of decoder.decode(value,{stream:true}).split('\n')){if(line.startsWith('data: ')){const p=line.slice(6).trim();if(p==='[DONE]')break;try{fullText+=JSON.parse(p).text;aiDiv.textContent=fullText;chatMessages.scrollTop=chatMessages.scrollHeight;}catch{}}}}
-        conversationHistory.push({role:'assistant',content:fullText});
-      }
-    }catch(err){offlineQueue.unshift(item);saveQueue();setSyncBar('offline','Sync failed — will retry when online',`${offlineQueue.length} queued`);return;}
-  }
-  setSyncBar('online','Sync complete — all messages sent');setTimeout(()=>setSyncBar('online','Online — data is live'),4000);
-}
-
-window.addEventListener('online',handleOnline);
-window.addEventListener('offline',handleOffline);
-
+/* ---- Chat ---- */
 const chatMessages=document.getElementById('chatMessages');
 let conversationHistory=[];
 
-function appendMsg(text,role){
-  const div=document.createElement('div');div.className='msg '+(role==='user'?'msg-user':'msg-ai');div.textContent=text;
-  chatMessages.appendChild(div);chatMessages.scrollTop=chatMessages.scrollHeight;return div;
+function appendMsg(text,role) {
+  const div=document.createElement('div');
+  div.className='msg '+(role==='user'?'msg-user':'msg-ai');
+  div.textContent=text;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop=chatMessages.scrollHeight;
+  return div;
 }
 
-function askAI(idx){const q=currentLang==='tw'?QUICK_TW[idx]:QUICK_EN[idx];showTab('chat');document.getElementById('chatInput').value=q;setTimeout(sendMessage,100);}
+function askAI(idx) {
+  const q=currentLang==='tw'?QUICK_TW[idx]:QUICK_EN[idx];
+  showTab('chat');
+  document.getElementById('chatInput').value=q;
+  setTimeout(sendMessage,100);
+}
 
-async function sendMessage(){
-  const sendBtn=document.getElementById('sendBtn'),chatInput=document.getElementById('chatInput');
-  const text=chatInput.value.trim();if(!text||sendBtn.disabled)return;
-  chatInput.value='';appendMsg(text,'user');conversationHistory.push({role:'user',content:text});sendBtn.disabled=true;
-  if(!isOnline){
-    offlineQueue.push({messages:[...conversationHistory],lang:currentLang,timestamp:Date.now()});saveQueue();
-    const n=appendMsg(currentLang==='tw'?'📦 Asɛmmisa no wɔ hɔ. Wɔde bɛkɔ AI no bere a internet ba.':'📦 No internet — your question is saved and will be sent when you\'re back online.','ai');
-    n.style.opacity='0.7';setSyncBar('offline','Offline — question queued',`${offlineQueue.length} queued`);sendBtn.disabled=false;return;
-  }
+async function sendMessage() {
+  const sendBtn=document.getElementById('sendBtn');
+  const chatInput=document.getElementById('chatInput');
+  const text=chatInput.value.trim();
+  if(!text||sendBtn.disabled) return;
+  chatInput.value='';
+  appendMsg(text,'user');
+  conversationHistory.push({role:'user',content:text});
+  sendBtn.disabled=true;
   const aiDiv=appendMsg('▌','ai');
-  try{
-    const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:conversationHistory,lang:currentLang})});
-    if(!resp.ok){const err=await resp.json();if(err.error==='limit_reached'){aiDiv.textContent=currentLang==='tw'?(err.message_tw||err.message):err.message;updateUsageBar(FREE_LIMIT);setTimeout(openUpgrade,1500);}else{aiDiv.textContent='⚠ '+(err.error||'Error');}sendBtn.disabled=false;return;}
-    const reader=resp.body.getReader(),decoder=new TextDecoder();let fullText='';aiDiv.textContent='';
-    while(true){const{done,value}=await reader.read();if(done)break;
-      for(const line of decoder.decode(value,{stream:true}).split('\n')){if(line.startsWith('data: ')){const p=line.slice(6).trim();if(p==='[DONE]')break;try{fullText+=JSON.parse(p).text;aiDiv.textContent=fullText;chatMessages.scrollTop=chatMessages.scrollHeight;}catch{}}}}
+  try {
+    const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:conversationHistory,lang:currentLang})});
+    if(!resp.ok){
+      const err=await resp.json();
+      if(err.error==='limit_reached'){
+        aiDiv.textContent=currentLang==='tw'?(err.message_tw||err.message):err.message;
+        updateUsageBar(FREE_LIMIT); setTimeout(openUpgrade,1500);
+      } else { aiDiv.textContent='⚠ '+(err.error||'Error'); }
+      sendBtn.disabled=false; return;
+    }
+    const reader=resp.body.getReader(); const decoder=new TextDecoder();
+    let fullText=''; aiDiv.textContent='';
+    while(true){
+      const {done,value}=await reader.read(); if(done) break;
+      for(const line of decoder.decode(value,{stream:true}).split('\n')){
+        if(line.startsWith('data: ')){
+          const p=line.slice(6).trim(); if(p==='[DONE]') break;
+          try{fullText+=JSON.parse(p).text;aiDiv.textContent=fullText;chatMessages.scrollTop=chatMessages.scrollHeight;}catch{}
+        }
+      }
+    }
     conversationHistory.push({role:'assistant',content:fullText});
-    if(USER_PLAN!=='pro')updateUsageBar(usedToday+1);
-    if(voiceAutoSpeak)speakText(fullText);
-  }catch(e){if(!isOnline){aiDiv.textContent='📦 Connection lost. Your question is saved.';offlineQueue.push({messages:[...conversationHistory],lang:currentLang,timestamp:Date.now()});saveQueue();}else{aiDiv.textContent='⚠ Connection error. Please try again.';}}
-  sendBtn.disabled=false;chatInput.focus();
+    if(USER_PLAN!=='pro') updateUsageBar(usedToday+1);
+  } catch(e){aiDiv.textContent='⚠ Connection error.';}
+  sendBtn.disabled=false; chatInput.focus();
 }
 
-let recognition=null,isListening=false,voiceAutoSpeak=false,ttsUtterance=null;
-const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-function setVoiceStatus(msg,visible=true){const el=document.getElementById('voiceStatus');el.textContent=msg;el.classList.toggle('visible',visible);}
-function toggleVoice(){isListening?stopListening():startListening();}
+/* ---- Diagnose ---- */
+let selectedImageB64=null, selectedMediaType='image/jpeg', diagMode='crop';
 
-function startListening(){
-  if(window.speechSynthesis)window.speechSynthesis.cancel();
-  if(!SpeechRecognition){setVoiceStatus('⚠ Your browser does not support voice input. Try Chrome or Edge.');return;}
-  recognition=new SpeechRecognition();
-  const langMap={en:'en-GH',tw:'en-GH',dg:'en-GH',ha:'ha'};
-  recognition.lang=langMap[currentLang]||'en-GH';recognition.interimResults=true;recognition.maxAlternatives=1;recognition.continuous=false;
-  recognition.onstart=()=>{isListening=true;voiceAutoSpeak=true;document.getElementById('micBtn').className='mic-btn listening';
-    const p={en:'🎤 Listening… speak your question',tw:'🎤 Tie… ka wo asɛmmisa',dg:'🎤 Gbiri… bɔri fo yɛlgu',ha:'🎤 Ana saurara… faɗa tambayarka'};setVoiceStatus(p[currentLang]||p.en);};
-  recognition.onresult=(e)=>{let i='',f='';for(let j=e.resultIndex;j<e.results.length;j++){if(e.results[j].isFinal)f+=e.results[j][0].transcript;else i+=e.results[j][0].transcript;}
-    document.getElementById('chatInput').value=(f||i);if(i)setVoiceStatus('🎤 '+i);};
-  recognition.onerror=(e)=>{const m={'no-speech':'No speech detected — tap 🎤 and try again','audio-capture':'⚠ Microphone not found','not-allowed':'⚠ Microphone blocked — allow access in browser settings','network':'⚠ Voice recognition needs a connection'};setVoiceStatus(m[e.error]||('⚠ Voice error: '+e.error));stopListening(false);};
-  recognition.onend=()=>{stopListening(false);const t=document.getElementById('chatInput').value.trim();if(t){setVoiceStatus('✅ Got it! Sending…');setTimeout(sendMessage,300);}else{setVoiceStatus('');}};
-  try{recognition.start();}catch(e){setVoiceStatus('⚠ Could not start microphone: '+e.message);}
+function setDiagMode(mode) {
+  diagMode=mode;
+  document.getElementById('modeCrop').classList.toggle('active',mode==='crop');
+  document.getElementById('modeLive').classList.toggle('active',mode==='animal');
+  const zone=document.getElementById('uploadZone');
+  zone.className='upload-zone'+(mode==='animal'?' animal':'');
+  document.getElementById('uploadIcon').textContent=mode==='animal'?'🐄':'🌿';
+  const btn=document.getElementById('diagnoseBtn');
+  btn.className='diagnose-btn'+(mode==='animal'?' amber':'');
+  document.getElementById('resultBox').classList.remove('visible');
+  document.getElementById('resultTitle').style.display='none';
 }
 
-function stopListening(manual=true){isListening=false;document.getElementById('micBtn').className='mic-btn';if(recognition){try{recognition.stop();}catch{}recognition=null;}if(manual)setVoiceStatus('');}
-
-function speakText(text){
-  if(!window.speechSynthesis)return;window.speechSynthesis.cancel();
-  const clean=text.replace(/[*_#`~>]/g,'').replace(/\n+/g,'. ');
-  ttsUtterance=new SpeechSynthesisUtterance(clean);ttsUtterance.lang=LANG_CODES[currentLang]||'en-GH';ttsUtterance.rate=0.92;ttsUtterance.pitch=1;
-  ttsUtterance.onstart=()=>{document.getElementById('micBtn').className='mic-btn speaking';setVoiceStatus('🔊 Reading answer aloud — tap 🎤 to stop');};
-  ttsUtterance.onend=()=>{document.getElementById('micBtn').className='mic-btn';setVoiceStatus('');};
-  ttsUtterance.onerror=()=>{document.getElementById('micBtn').className='mic-btn';};
-  window.speechSynthesis.speak(ttsUtterance);
-}
-
-let selectedImageB64=null,selectedMediaType='image/jpeg';
-function onPhotoSelected(event){
-  const file=event.target.files[0];if(!file)return;
-  if(file.size>5*1024*1024){alert(currentLang==='tw'?'Foto no yɛ kɛseɛ.':'Image too large. Max 5MB.');return;}
+function onPhotoSelected(event) {
+  const file=event.target.files[0]; if(!file) return;
+  if(file.size>5*1024*1024){alert('Image too large. Max 5MB.');return;}
   selectedMediaType=file.type||'image/jpeg';
   const reader=new FileReader();
-  reader.onload=e=>{selectedImageB64=e.target.result.split(',')[1];const prev=document.getElementById('previewImg');prev.src=e.target.result;prev.style.display='block';
-    document.getElementById('diagnoseBtn').disabled=false;document.getElementById('resultBox').classList.remove('visible');document.getElementById('resultBox').textContent='';document.getElementById('resultTitle').style.display='none';};
+  reader.onload=e=>{
+    selectedImageB64=e.target.result.split(',')[1];
+    const prev=document.getElementById('previewImg');
+    prev.src=e.target.result; prev.style.display='block';
+    document.getElementById('diagnoseBtn').disabled=false;
+    document.getElementById('resultBox').classList.remove('visible');
+    document.getElementById('resultTitle').style.display='none';
+  };
   reader.readAsDataURL(file);
 }
 
-async function runDiagnosis(){
-  if(!selectedImageB64)return;const btn=document.getElementById('diagnoseBtn'),box=document.getElementById('resultBox'),title=document.getElementById('resultTitle');
-  btn.disabled=true;btn.textContent=currentLang==='tw'?'🔍 Rereka...':'🔍 Analysing...';box.textContent='';box.classList.add('visible');title.style.display='block';
-  try{
-    const resp=await fetch('/api/diagnose',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:selectedImageB64,media_type:selectedMediaType,lang:currentLang})});
-    if(!resp.ok){const err=await resp.json();if(err.error==='limit_reached'){box.textContent=err.message;setTimeout(openUpgrade,1500);}else{box.textContent='⚠ '+(err.error||'Error');}btn.disabled=false;btn.textContent=currentLang==='tw'?'🔍 Hwɛ foto ho yareɛ':'🔍 Analyse photo for disease';return;}
-    const reader=resp.body.getReader(),decoder=new TextDecoder();let fullText='';
-    while(true){const{done,value}=await reader.read();if(done)break;for(const line of decoder.decode(value,{stream:true}).split('\n')){if(line.startsWith('data: ')){const p=line.slice(6).trim();if(p==='[DONE]')break;try{fullText+=JSON.parse(p).text;box.textContent=fullText;}catch{}}}}
-    if(voiceAutoSpeak)speakText(fullText);
-  }catch(e){box.textContent='⚠ Connection error.';}
-  btn.disabled=false;btn.textContent=currentLang==='tw'?'🔍 Hwɛ foto foforo':'🔍 Analyse another photo';
+async function runDiagnosis() {
+  if(!selectedImageB64) return;
+  const btn=document.getElementById('diagnoseBtn');
+  const box=document.getElementById('resultBox');
+  btn.disabled=true; btn.textContent='🔍 Analysing...';
+  box.textContent=''; box.classList.add('visible');
+  document.getElementById('resultTitle').style.display='block';
+  try {
+    const resp=await fetch('/api/diagnose',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image:selectedImageB64,media_type:selectedMediaType,lang:currentLang,mode:diagMode})});
+    if(!resp.ok){
+      const err=await resp.json();
+      box.textContent=err.error==='limit_reached'?err.message:'⚠ Error';
+      if(err.error==='limit_reached') setTimeout(openUpgrade,1500);
+      btn.disabled=false; btn.textContent='🔍 Analyse photo'; return;
+    }
+    const reader=resp.body.getReader(); const decoder=new TextDecoder(); let fullText='';
+    while(true){
+      const {done,value}=await reader.read(); if(done) break;
+      for(const line of decoder.decode(value,{stream:true}).split('\n')){
+        if(line.startsWith('data: ')){const p=line.slice(6).trim();if(p==='[DONE]') break;
+          try{fullText+=JSON.parse(p).text;box.textContent=fullText;}catch{}}
+      }
+    }
+  } catch(e){box.textContent='⚠ Connection error.';}
+  btn.disabled=false; btn.textContent='🔍 Analyse another photo';
 }
 
-let farmProfile={};
-function initFarmTab(){
-  farmProfile=Object.assign({},SERVER_PROFILE);
-  if(typeof farmProfile.crops==='string'){try{farmProfile.crops=JSON.parse(farmProfile.crops);}catch{farmProfile.crops=[];}}
-  if(!Array.isArray(farmProfile.crops))farmProfile.crops=[];
-  renderProfileForm();loadLogs();
-  const hasProfile=farmProfile.farmer_name||(farmProfile.crops&&farmProfile.crops.length>0);
-  document.getElementById('profileNudge').style.display=hasProfile?'none':'flex';
-  if(farmProfile.crops&&farmProfile.crops.length>0){syncCalCropSelect(farmProfile.crops);document.getElementById('calendarEmpty').style.display='none';}
+/* ---- Farm Profile ---- */
+let farmLat=null, farmLng=null;
+
+async function loadProfile() {
+  try {
+    const data=await (await fetch('/api/profile')).json();
+    if(!data||!data.session_id) return;
+    const fields={farmerName:'farmer_name',farmerPhone:'phone',farmName:'farm_name',
+      farmSize:'farm_size',farmCrops:'crops',farmingType:'farming_type',
+      yearsFarming:'years_farming',nearestMarket:'nearest_market',farmAddress:'farm_address'};
+    Object.entries(fields).forEach(([id,key])=>{
+      const el=document.getElementById(id); if(el&&data[key]) el.value=data[key];
+    });
+    if(data.ghana_card){const gc=document.getElementById('ghanaCard');gc.value=data.ghana_card;validateGhanaCard(gc);}
+    if(data.latitude&&data.longitude){farmLat=data.latitude;farmLng=data.longitude;showCoords(farmLat,farmLng,data.farm_address||'');}
+  } catch(e){}
 }
 
-function renderProfileForm(){
-  if(farmProfile.farmer_name) document.getElementById('pName').value=farmProfile.farmer_name;
-  if(farmProfile.phone)        document.getElementById('pPhone').value=farmProfile.phone;
-  if(farmProfile.ghana_card)   document.getElementById('pGhanaCard').value=farmProfile.ghana_card;
-  if(farmProfile.farm_size)    document.getElementById('pSize').value=farmProfile.farm_size;
-  if(farmProfile.size_unit)    document.getElementById('pUnit').value=farmProfile.size_unit;
-  if(farmProfile.soil_type)    document.getElementById('pSoil').value=farmProfile.soil_type;
-  if(farmProfile.water_source) document.getElementById('pWater').value=farmProfile.water_source;
-  if(farmProfile.region)       document.getElementById('pRegion').value=farmProfile.region;
-  if(farmProfile.latitude)     document.getElementById('pLat').value=farmProfile.latitude;
-  if(farmProfile.longitude)    document.getElementById('pLon').value=farmProfile.longitude;
-  if(farmProfile.latitude&&farmProfile.longitude){
-    gpsLat=farmProfile.latitude;gpsLon=farmProfile.longitude;
-    const c=document.getElementById('gpsCoords');c.style.display='block';c.textContent=`📍 ${parseFloat(gpsLat).toFixed(6)}, ${parseFloat(gpsLon).toFixed(6)} · Saved`;
-    document.getElementById('gpsBtn').className='gps-btn located';document.getElementById('gpsBtnIcon').textContent='✅';
-    document.getElementById('gpsBtnText').textContent='Location saved — tap to recapture GPS';document.getElementById('gpsStatus').textContent='✅ Farm location on record';
+function validateGhanaCard(input) {
+  const val=input.value.toUpperCase(); input.value=val;
+  const status=document.getElementById('ghanaCardStatus');
+  let clean=val.replace(/[^A-Z0-9]/g,'');
+  if(clean.startsWith('GHA')){
+    let f='GHA';
+    if(clean.length>3) f+='-'+clean.slice(3,12);
+    if(clean.length>12) f+='-'+clean.slice(12,13);
+    if(f!==val) input.value=f;
   }
-  const crops=farmProfile.crops||[];document.querySelectorAll('.crop-chip').forEach(c=>c.classList.toggle('selected',crops.includes(c.dataset.crop)));
+  const valid=/^GHA-\d{9}-\d$/.test(input.value);
+  if(input.value.length<3){status.style.display='none';input.classList.remove('valid','invalid');return;}
+  status.style.display='block';
+  if(valid){input.classList.add('valid');input.classList.remove('invalid');status.innerHTML='<span class="gc-ok">✅ Valid Ghana Card format</span>';}
+  else if(input.value.length>=5){input.classList.add('invalid');input.classList.remove('valid');status.innerHTML='<span class="gc-bad">⚠ Format: GHA-123456789-0</span>';}
+  else{input.classList.remove('valid','invalid');status.style.display='none';}
 }
 
-document.querySelectorAll('.crop-chip').forEach(chip=>chip.addEventListener('click',()=>chip.classList.toggle('selected')));
-function getSelectedCrops(){return[...document.querySelectorAll('.crop-chip.selected')].map(c=>c.dataset.crop);}
-function openProfileSection(){document.getElementById('profileCard').scrollIntoView({behavior:'smooth'});}
-
-async function saveProfile(){
-  const btn=document.getElementById('saveProfileBtn'),crops=getSelectedCrops();
-  const name=document.getElementById('pName').value.trim(),phone=document.getElementById('pPhone').value.trim();
-  const ghanaCard=document.getElementById('pGhanaCard').value.trim();
-  const lat=parseFloat(document.getElementById('pLat').value),lon=parseFloat(document.getElementById('pLon').value);
-  if(!name){alert('Please enter your name.');return;}
-  if(!phone){alert('Please enter your phone number.');return;}
-  if(!ghanaCard){alert('Please enter your Ghana Card number.');return;}
-  const cardValid=await validateGhanaCard();
-  if(!cardValid){alert('Please enter a valid Ghana Card number (format: GHA-XXXXXXXXX-X).');document.getElementById('pGhanaCard').focus();return;}
-  if(!lat||!lon){document.getElementById('gpsRequiredNote').style.display='block';alert('Please capture your farm GPS location or pin it on the map — this is required.');return;}
-  if(crops.length===0){alert('Please select at least one crop.');return;}
-  const data={farmer_name:name,phone,ghana_card:ghanaCard,farm_size:parseFloat(document.getElementById('pSize').value)||1,size_unit:document.getElementById('pUnit').value,soil_type:document.getElementById('pSoil').value,water_source:document.getElementById('pWater').value,region:document.getElementById('pRegion').value,crops,latitude:lat,longitude:lon,gps_accuracy:parseFloat(document.getElementById('pAcc').value)||null};
-  btn.disabled=true;btn.textContent='Saving…';
-  try{
-    const resp=await fetch('/api/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-    if(resp.ok){farmProfile=data;const s=document.getElementById('profileSaved');s.classList.add('show');setTimeout(()=>s.classList.remove('show'),4000);
-      document.getElementById('profileNudge').style.display='none';syncLogCropSelect(crops);syncCalCropSelect(crops);
-      if(crops.length>0)document.getElementById('calendarEmpty').style.display='none';
-    }else{alert('Save failed. Please try again.');}
-  }catch(e){alert('Connection error.');}
-  btn.disabled=false;btn.textContent='💾 Save My Farm Profile';
+function showCoords(lat,lng,address) {
+  document.getElementById('coordsLat').textContent=lat.toFixed(6)+'°N';
+  document.getElementById('coordsLng').textContent=Math.abs(lng).toFixed(6)+'°W';
+  document.getElementById('coordsDisplay').style.display='block';
+  const mapContainer=document.getElementById('mapContainer');
+  mapContainer.style.display='block';
+  document.getElementById('farmMap').innerHTML=
+    `<iframe src="https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.005},${lat-0.005},${lng+0.005},${lat+0.005}&layer=mapnik&marker=${lat},${lng}" style="width:100%;height:200px;border:none;" loading="lazy"></iframe>`;
+  document.getElementById('gpsBtnText').textContent=currentLang==='tw'?'📍 Sesa me afuo baabi':'📍 Update farm location';
+  if(address&&!document.getElementById('farmAddress').value) document.getElementById('farmAddress').value=address;
 }
 
-function syncLogCropSelect(crops){const sel=document.getElementById('logCrop'),cur=sel.value;crops.forEach(c=>{if(![...sel.options].some(o=>o.value===c)){const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);}});if(cur)sel.value=cur;}
-
-function formatGhanaCard(input){
-  let v=input.value.replace(/[^A-Z0-9]/gi,'').toUpperCase();
-  if(v.length>3)v=v.slice(0,3)+'-'+v.slice(3);if(v.length>13)v=v.slice(0,13)+'-'+v.slice(13);
-  input.value=v.slice(0,17);document.getElementById('ghanaCardStatus').textContent='';document.getElementById('ghanaCardStatus').className='ghana-card-status';
-}
-
-async function validateGhanaCard(){
-  const val=document.getElementById('pGhanaCard').value.trim(),status=document.getElementById('ghanaCardStatus');
-  if(!val){status.textContent='';return false;}
-  try{const resp=await fetch('/api/validate-ghana-card',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number:val})});
-    const data=await resp.json();
-    if(data.valid){status.textContent='✅ Valid Ghana Card format';status.className='ghana-card-status valid';return true;}
-    else{status.textContent='⚠ '+(data.message||'Invalid format');status.className='ghana-card-status invalid';return false;}
-  }catch(e){return false;}
-}
-
-let farmMap=null,farmMarker=null,gpsLat=null,gpsLon=null;
-function initMap(){
-  farmMap=new google.maps.Map(document.getElementById('mapContainer'),{center:{lat:7.9465,lng:-1.0232},zoom:7,mapTypeId:'hybrid',mapTypeControl:true,streetViewControl:false,fullscreenControl:true,zoomControl:true});
-  farmMap.addListener('click',(e)=>setMapPin(e.latLng.lat(),e.latLng.lng(),null));
-  const sLat=parseFloat('{{ profile.latitude or "" }}'),sLon=parseFloat('{{ profile.longitude or "" }}');
-  if(sLat&&sLon){setMapPin(sLat,sLon,null);const ph=document.getElementById('mapPlaceholder');if(ph)ph.style.display='none';}
-}
-
-function setMapPin(lat,lon,accuracy){
-  gpsLat=lat;gpsLon=lon;document.getElementById('pLat').value=lat;document.getElementById('pLon').value=lon;document.getElementById('pAcc').value=accuracy||'';
-  if(farmMarker)farmMarker.setMap(null);
-  farmMarker=new google.maps.Marker({position:{lat,lng:lon},map:farmMap,title:'My Farm',icon:{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="#3B6D11" stroke="#fff" stroke-width="2"/><text x="18" y="24" text-anchor="middle" font-size="18">🌱</text></svg>'),scaledSize:new google.maps.Size(36,36),anchor:new google.maps.Point(18,18)}});
-  farmMap.panTo({lat,lng:lon});if(farmMap.getZoom()<14)farmMap.setZoom(15);
-  const c=document.getElementById('gpsCoords');c.style.display='block';c.textContent=`📍 ${lat.toFixed(6)}, ${lon.toFixed(6)}`+(accuracy?` · ±${Math.round(accuracy)}m`:' · Pinned manually');
-  document.getElementById('gpsStatus').textContent=accuracy?'✅ GPS location captured':'✅ Location pinned on map';
-  document.getElementById('gpsBtn').className='gps-btn located';document.getElementById('gpsBtnIcon').textContent='✅';document.getElementById('gpsBtnText').textContent='Location set — tap to recapture GPS';
-  document.getElementById('gpsRequiredNote').style.display='none';const ph=document.getElementById('mapPlaceholder');if(ph)ph.style.display='none';
-}
-
-function captureGPS(){
-  if(!navigator.geolocation){document.getElementById('gpsStatus').textContent='⚠ GPS not supported. Please pin on the map.';return;}
-  const btn=document.getElementById('gpsBtn');btn.disabled=true;document.getElementById('gpsBtnIcon').textContent='⏳';document.getElementById('gpsBtnText').textContent='Getting your location…';document.getElementById('gpsStatus').textContent='Accessing GPS — please allow location access…';
+function getGPSLocation() {
+  const btn=document.getElementById('gpsBtnText');
+  btn.textContent=currentLang==='tw'?'Rehwehwɛ...':'Detecting location...';
+  if(!navigator.geolocation){alert('GPS not supported on this device.');btn.textContent=currentLang==='tw'?'Tap to detect':'Tap to detect my farm location';return;}
   navigator.geolocation.getCurrentPosition(
-    (pos)=>{btn.disabled=false;setMapPin(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy);},
-    (err)=>{btn.disabled=false;document.getElementById('gpsBtnIcon').textContent='📡';document.getElementById('gpsBtnText').textContent="Tap to capture my farm's GPS location";
-      const m={1:'⚠ Location access denied. Please allow in browser settings, or pin on the map.',2:'⚠ GPS signal not found. Please pin your location on the map.',3:'⚠ GPS timed out. Please try again or pin on the map.'};
-      document.getElementById('gpsStatus').textContent=m[err.code]||'⚠ GPS error. Please pin on map.';},
-    {enableHighAccuracy:true,timeout:15000,maximumAge:0});
+    async pos=>{
+      farmLat=pos.coords.latitude; farmLng=pos.coords.longitude;
+      let address='';
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${farmLat}&lon=${farmLng}&format=json`);
+        const geo=await r.json();
+        address=geo.display_name?geo.display_name.split(',').slice(0,3).join(', '):'';
+      }catch{}
+      showCoords(farmLat,farmLng,address);
+    },
+    err=>{
+      btn.textContent=currentLang==='tw'?'Tap to detect':'Tap to detect my farm location';
+      alert(err.code===1?'Location access denied. Please allow location in browser settings.':'Could not get location. Please try again.');
+    },
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+  );
 }
 
-const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-const MONTH_EMOJIS=['🌵','🌱','🌧️','🌧️','☔','🌦️','⛅','🌤️','🌦️','🌧️','🍂','☀️'];
-const CROP_EMOJI={'Maize':'🌽','Cassava':'🍠','Tomatoes':'🍅','Plantain':'🍌','Yam':'🥔','Cocoa':'🍫','Pepper':'🌶','Groundnut':'🥜','Rice':'🌾','Vegetables':'🥦','Soybean':'🫘','Cowpea':'🫛','Mango':'🥭','Pineapple':'🍍','Watermelon':'🍉','Pawpaw':'🍈','Orange':'🍊','Banana':'🍌','Avocado':'🥑','Coconut':'🥥','Guava':'🍏','Passion Fruit':'💛','Soursop':'🍃','Lime':'🍋'};
-let calendarStore={},isGenerating=false;
-
-function syncCalCropSelect(crops){const sel=document.getElementById('calCropSelect');sel.innerHTML='<option value="">Select a crop…</option>';crops.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=(CROP_EMOJI[c]||'🌿')+' '+c;sel.appendChild(o);});}
-function setCalStatus(msg,color='var(--ts)'){const el=document.getElementById('calStatus');el.textContent=msg;el.style.color=color;}
-function getProfilePayload(){return{region:document.getElementById('pRegion').value,farm_size:parseFloat(document.getElementById('pSize').value)||1,size_unit:document.getElementById('pUnit').value,soil_type:document.getElementById('pSoil').value,water_source:document.getElementById('pWater').value,lang:currentLang};}
-
-async function generateOneCrop(){const crop=document.getElementById('calCropSelect').value;if(!crop){alert('Please select a crop first.');return;}if(isGenerating)return;await generateCropCalendar(crop);}
-
-async function generateAllCrops(){
-  if(isGenerating)return;const crops=getSelectedCrops().length>0?getSelectedCrops():(farmProfile.crops||[]);
-  if(crops.length===0){alert('Please select at least one crop in your profile first.');openProfileSection();return;}
-  fetch('/api/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...getProfilePayload(),crops,farmer_name:document.getElementById('pName').value.trim(),phone:document.getElementById('pPhone').value.trim()})}).catch(()=>{});
-  document.getElementById('calendarEmpty').style.display='none';
-  for(let i=0;i<crops.length;i++){setCalStatus(`Generating ${i+1} of ${crops.length}: ${crops[i]}…`,'var(--g600)');await generateCropCalendar(crops[i]);}
-  setCalStatus(`✅ All ${crops.length} crop${crops.length>1?'s':''} done!`,'var(--g600)');setTimeout(()=>setCalStatus(''),4000);
+async function saveProfile() {
+  const btn=document.querySelector('#panel-profile .save-btn');
+  btn.disabled=true; btn.textContent='⏳ Saving...';
+  const payload={
+    farmer_name:document.getElementById('farmerName').value.trim(),
+    phone:document.getElementById('farmerPhone').value.trim(),
+    farm_name:document.getElementById('farmName').value.trim(),
+    farm_size:document.getElementById('farmSize').value.trim(),
+    crops:document.getElementById('farmCrops').value.trim(),
+    ghana_card:document.getElementById('ghanaCard').value.trim(),
+    farming_type:document.getElementById('farmingType').value,
+    years_farming:document.getElementById('yearsFarming').value.trim(),
+    nearest_market:document.getElementById('nearestMarket').value.trim(),
+    latitude:farmLat, longitude:farmLng,
+    farm_address:document.getElementById('farmAddress').value.trim(),
+  };
+  try {
+    const resp=await fetch('/api/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await resp.json();
+    if(data.success){const s=document.getElementById('profileSaved');s.classList.add('show');setTimeout(()=>s.classList.remove('show'),3500);}
+  } catch(e){alert('Error saving. Please try again.');}
+  btn.disabled=false; btn.textContent=currentLang==='tw'?'💾 Sie Me Afuo Nsɛm':'💾 Save farm profile';
 }
 
-async function generateCropCalendar(crop){
-  isGenerating=true;document.getElementById('calendarEmpty').style.display='none';
-  const cardId='cal-card-'+crop.replace(/\s+/g,'-');let card=document.getElementById(cardId);
-  if(!card){card=document.createElement('div');card.id=cardId;card.className='cal-crop-card';
-    card.innerHTML=`<div class="cal-crop-header"><span class="cal-crop-title">${CROP_EMOJI[crop]||'🌿'} ${crop}</span><span class="cal-crop-status" id="ccs-${crop.replace(/\s+/g,'-')}"><span class="loading"></span> Generating…</span></div><div class="cal-months-wrap" id="cmw-${crop.replace(/\s+/g,'-')}"></div>`;
-    document.getElementById('calendarGrid').appendChild(card);
-  }else{const s=card.querySelector('.cal-crop-status');if(s)s.innerHTML='<span class="loading"></span> Regenerating…';const w=card.querySelector('.cal-months-wrap');if(w)w.innerHTML='';}
-  card.scrollIntoView({behavior:'smooth',block:'nearest'});
-  const statusEl=document.getElementById('ccs-'+crop.replace(/\s+/g,'-')),wrapEl=document.getElementById('cmw-'+crop.replace(/\s+/g,'-'));
-  try{
-    const resp=await fetch('/api/calendar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({crop,...getProfilePayload()})});
-    if(!resp.ok){const err=await resp.json().catch(()=>({}));if(statusEl)statusEl.innerHTML='⚠ '+(err.error||'Failed');isGenerating=false;return;}
-    const reader=resp.body.getReader(),decoder=new TextDecoder();let buffer='';
-    while(true){const{done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});const lines=buffer.split('\n');buffer=lines.pop();
-      for(const line of lines){if(!line.startsWith('data: '))continue;const raw=line.slice(6).trim();if(!raw)continue;
-        try{const msg=JSON.parse(raw);if(msg.error){if(statusEl)statusEl.innerHTML='⚠ '+msg.error;isGenerating=false;return;}
-          if(msg.done&&msg.calendar){calendarStore[crop]=msg.calendar;renderCropCalendar(crop,msg.calendar,wrapEl,statusEl);}}catch(e){}}}
-  }catch(e){if(statusEl)statusEl.innerHTML='⚠ Connection error';}
-  isGenerating=false;
+/* ---- Livestock ---- */
+let selectedAnimal='poultry', livestockLat=null, livestockLng=null;
+
+function selAnimal(el,type) {
+  document.querySelectorAll('.animal-card').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel'); selectedAnimal=type;
 }
 
-function renderCropCalendar(crop,calendar,wrapEl,statusEl){
-  if(!wrapEl)return;const now=new Date().getMonth();
-  wrapEl.innerHTML=calendar.map(m=>{const tasks=m.tasks||[],isCurrent=MONTHS[now]===m.month,emoji=MONTH_EMOJIS[MONTHS.indexOf(m.month)]||'📅';
-    const taskHTML=tasks.length===0?'<div class="cal-no-tasks">No major tasks — monitor crop and check for pests.</div>'
-      :tasks.map(t=>`<div class="cal-task"><div class="cal-task-body"><div class="cal-task-action">${t.action}</div>${t.note?`<div class="cal-task-note">${t.note}</div>`:''}</div><button class="cal-task-log-btn" onclick='logFromCalendar(${JSON.stringify(crop)},${JSON.stringify(t.action)})'>+ Log</button></div>`).join('');
-    return`<div class="cal-month ${isCurrent?'open':''}"><div class="cal-month-header" onclick="this.closest('.cal-month').classList.toggle('open')"><span>${emoji} ${m.month}${isCurrent?' <span style="font-size:10px;opacity:.7;">← now</span>':''}</span><span class="chevron">▾</span></div><div class="cal-tasks">${taskHTML}</div></div>`;
-  }).join('');
-  if(statusEl)statusEl.innerHTML=`✅ Ready · <button class="cal-regen-btn" onclick="generateCropCalendar('${crop}')">↻ Refresh</button>`;
+function validateLiveGhanaCard(input) {
+  const val=input.value.toUpperCase(); input.value=val;
+  const status=document.getElementById('livestockGhanaCardStatus');
+  let clean=val.replace(/[^A-Z0-9]/g,'');
+  if(clean.startsWith('GHA')){
+    let f='GHA';
+    if(clean.length>3) f+='-'+clean.slice(3,12);
+    if(clean.length>12) f+='-'+clean.slice(12,13);
+    if(f!==val) input.value=f;
+  }
+  const valid=/^GHA-\d{9}-\d$/.test(input.value);
+  if(input.value.length<3){status.style.display='none';input.classList.remove('valid','invalid');return;}
+  status.style.display='block';
+  if(valid){input.classList.add('valid');input.classList.remove('invalid');status.innerHTML='<span class="gc-ok">✅ Valid Ghana Card format</span>';}
+  else if(input.value.length>=5){input.classList.add('invalid');input.classList.remove('valid');status.innerHTML='<span class="gc-bad">⚠ Format: GHA-123456789-0</span>';}
+  else{input.classList.remove('valid','invalid');status.style.display='none';}
 }
 
-function logFromCalendar(crop,action){showTab('farm');document.getElementById('logCrop').value=crop;document.getElementById('logAction').value=action;document.getElementById('logDate').value=new Date().toISOString().split('T')[0];document.getElementById('logNote').focus();document.getElementById('logCrop').scrollIntoView({behavior:'smooth',block:'center'});}
+function getLivestockGPS() {
+  const btn=document.getElementById('livestockGpsBtnText');
+  btn.textContent=currentLang==='tw'?'Rehwehwɛ...':'Detecting location...';
+  if(!navigator.geolocation){alert('GPS not supported.');btn.textContent='Tap to detect farm/ranch location';return;}
+  navigator.geolocation.getCurrentPosition(
+    async pos=>{
+      livestockLat=pos.coords.latitude; livestockLng=pos.coords.longitude;
+      let address='';
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${livestockLat}&lon=${livestockLng}&format=json`);
+        const geo=await r.json();
+        address=geo.display_name?geo.display_name.split(',').slice(0,3).join(', '):'';
+      }catch{}
+      document.getElementById('livestockCoordsLat').textContent=livestockLat.toFixed(6)+'°N';
+      document.getElementById('livestockCoordsLng').textContent=Math.abs(livestockLng).toFixed(6)+'°W';
+      document.getElementById('livestockCoordsDisplay').style.display='block';
+      const mc=document.getElementById('livestockMapContainer');
+      mc.style.display='block';
+      document.getElementById('livestockMap').innerHTML=
+        `<iframe src="https://www.openstreetmap.org/export/embed.html?bbox=${livestockLng-0.005},${livestockLat-0.005},${livestockLng+0.005},${livestockLat+0.005}&layer=mapnik&marker=${livestockLat},${livestockLng}" style="width:100%;height:180px;border:none;" loading="lazy"></iframe>`;
+      btn.textContent=currentLang==='tw'?'📍 Sesa baabi':'📍 Update farm/ranch location';
+      if(address&&!document.getElementById('livestockFarmAddress').value)
+        document.getElementById('livestockFarmAddress').value=address;
+    },
+    err=>{btn.textContent='Tap to detect farm/ranch location';alert('Could not get location. Please try again.');},
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+  );
+}
 
-let farmLogs=[];
-async function loadLogs(){try{const resp=await fetch('/api/log');if(resp.ok){const d=await resp.json();farmLogs=d.logs||[];renderLogs();}}catch{}}
-function renderLogs(){const list=document.getElementById('logList'),empty=document.getElementById('logEmpty');if(farmLogs.length===0){empty.style.display='block';list.innerHTML='';list.appendChild(empty);return;}empty.style.display='none';
-  list.innerHTML=farmLogs.map(l=>`<div class="log-entry" id="log-${l.id}"><div class="log-entry-date">${l.log_date}</div><div class="log-entry-body"><div class="log-entry-crop">${l.crop}</div><div class="log-entry-action">${l.action}</div>${l.note?`<div class="log-entry-note">${l.note}</div>`:''}</div><button class="log-delete-btn" onclick="deleteLog(${l.id})" title="Delete">✕</button></div>`).join('');}
-async function addLog(){const crop=document.getElementById('logCrop').value,action=document.getElementById('logAction').value,note=document.getElementById('logNote').value.trim(),date=document.getElementById('logDate').value||new Date().toISOString().split('T')[0];
-  if(!crop||!action){alert('Please select a crop and action.');return;}
-  try{const resp=await fetch('/api/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({crop,action,note,date})});if(resp.ok){document.getElementById('logNote').value='';await loadLogs();}}catch(e){alert('Could not save log. Please try again.');}}
-async function deleteLog(id){try{await fetch(`/api/log/${id}`,{method:'DELETE'});farmLogs=farmLogs.filter(l=>l.id!==id);renderLogs();}catch{}}
+async function saveLivestock() {
+  const btn=document.querySelector('#panel-livestock .save-btn');
+  btn.disabled=true; btn.textContent='⏳ Saving...';
+  const payload={
+    animal_type:selectedAnimal,
+    total_count:parseInt(document.getElementById('totalCount').value)||0,
+    sick_count:parseInt(document.getElementById('sickCount').value)||0,
+    housing_type:document.getElementById('housingType').value,
+    purpose:document.getElementById('animalPurpose').value,
+    feed_source:document.getElementById('animalFeed').value,
+    water_source:document.getElementById('animalWater').value,
+    nearest_vet:document.getElementById('nearestVet').value.trim(),
+    ghana_card:document.getElementById('livestockGhanaCard').value.trim(),
+    latitude:livestockLat, longitude:livestockLng,
+    farm_address:document.getElementById('livestockFarmAddress').value.trim(),
+    notes:document.getElementById('livestockNotes').value.trim(),
+  };
+  try {
+    const resp=await fetch('/api/livestock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await resp.json();
+    if(data.success){const s=document.getElementById('livestockSaved');s.classList.add('show');setTimeout(()=>s.classList.remove('show'),3500);}
+  } catch(e){alert('Error saving. Please try again.');}
+  btn.disabled=false; btn.textContent=currentLang==='tw'?'💾 Sie Me Mmoa Nsɛm':'💾 Save livestock profile';
+}
 
-document.getElementById('logDate').value=new Date().toISOString().split('T')[0];
-loadQueue();
-if(!isOnline)handleOffline();
-else cacheDataForOffline();
+/* ---- Year Plan Calendar ---- */
+const ACTIVITY_ICONS = {
+  planting:'🌱', harvest:'🌾', fertilize:'🌿',
+  vaccination:'💉', market:'💰', irrigation:'💧', other:'📝'
+};
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+async function loadYearPlan() {
+  const list=document.getElementById('yearPlanList');
+  try {
+    const data=await (await fetch('/api/yearplan')).json();
+    if(!data.length){
+      list.innerHTML='<div style="font-size:13px;color:var(--ts);text-align:center;padding:1.5rem;">No activities planned yet. Add your first activity above.</div>';
+      return;
+    }
+    // Group by month
+    const grouped={};
+    data.forEach(p=>{
+      const m=p.month||1;
+      if(!grouped[m]) grouped[m]=[];
+      grouped[m].push(p);
+    });
+    let html='';
+    Object.keys(grouped).sort((a,b)=>a-b).forEach(m=>{
+      html+=`<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--g600);padding:.5rem 0 .25rem;">${MONTHS[m-1]} 2026</div>`;
+      grouped[m].forEach(p=>{
+        const icon=ACTIVITY_ICONS[p.activity_type]||'📝';
+        const done=p.status==='done';
+        html+=`<div style="display:flex;align-items:center;gap:10px;padding:.625rem;background:${done?'var(--g50)':'var(--muted)'};border-radius:var(--rm);margin-bottom:.375rem;border-left:3px solid ${done?'var(--g600)':'var(--a600)'};">
+          <span style="font-size:18px;">${icon}</span>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:500;color:var(--tp);${done?'text-decoration:line-through;':''}">${p.title}</div>
+            <div style="font-size:11px;color:var(--ts);">${p.crop_or_animal?p.crop_or_animal+' · ':''} ${p.planned_date||''} ${p.notes?'· '+p.notes:''}</div>
+          </div>
+          <button onclick="toggleDone(${p.id},'${done?'pending':'done'}')" style="font-size:11px;padding:3px 8px;border:0.5px solid var(--bd);border-radius:var(--rm);background:var(--card);cursor:pointer;font-family:inherit;">${done?'↩ Undo':'✓ Done'}</button>
+          <button onclick="deleteActivity(${p.id})" style="font-size:11px;padding:3px 8px;border:0.5px solid var(--r600);border-radius:var(--rm);background:var(--r50);color:var(--r600);cursor:pointer;font-family:inherit;">✕</button>
+        </div>`;
+      });
+    });
+    list.innerHTML=html;
+  } catch(e){list.innerHTML='<div style="font-size:13px;color:var(--ts);text-align:center;padding:1rem;">Error loading plan.</div>';}
+}
+
+async function addYearPlan() {
+  const title=document.getElementById('planTitle').value.trim();
+  if(!title){alert('Please enter an activity title.');return;}
+  const dateVal=document.getElementById('planDate').value;
+  const month=dateVal?parseInt(dateVal.split('-')[1]):1;
+  const payload={
+    title, activity_type:document.getElementById('planType').value,
+    crop_or_animal:document.getElementById('planCrop').value.trim(),
+    planned_date:dateVal, month,
+    notes:document.getElementById('planNotes').value.trim(),
+    status:'pending'
+  };
+  try {
+    const resp=await fetch('/api/yearplan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await resp.json();
+    if(data.success){
+      document.getElementById('planTitle').value='';
+      document.getElementById('planCrop').value='';
+      document.getElementById('planDate').value='';
+      document.getElementById('planNotes').value='';
+      loadYearPlan();
+    }
+  } catch(e){alert('Error adding activity.');}
+}
+
+async function toggleDone(id, status) {
+  await fetch(`/api/yearplan/${id}/status`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+  loadYearPlan();
+}
+
+async function deleteActivity(id) {
+  if(!confirm('Delete this activity?')) return;
+  await fetch(`/api/yearplan/${id}`,{method:'DELETE'});
+  loadYearPlan();
+}
+
+/* ---- VOICE INTERFACE ---- */
+let voiceLang='en-GH', voiceRate=1, isListening=false, currentUtterance=null, waveInterval=null;
+let lastVoiceAnswer='';
+
+function selVoiceLang(el,lang) {
+  document.querySelectorAll('.lang-voice-opt').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel'); voiceLang=lang;
+}
+
+function setSpeed(btn,rate) {
+  document.querySelectorAll('.speed-btn').forEach(x=>x.classList.remove('on'));
+  btn.classList.add('on'); voiceRate=rate;
+  if(currentUtterance) currentUtterance.rate=rate;
+}
+
+function startWave() {
+  document.getElementById('waveform').style.display='flex';
+  const bars=document.querySelectorAll('.wave-bar');
+  waveInterval=setInterval(()=>{bars.forEach(b=>{b.style.height=(Math.random()*32+8)+'px';});},120);
+}
+
+function stopWave() {
+  clearInterval(waveInterval);
+  document.getElementById('waveform').style.display='none';
+  document.querySelectorAll('.wave-bar').forEach(b=>b.style.height='8px');
+}
+
+function speakAnswer(text) {
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  currentUtterance=new SpeechSynthesisUtterance(text);
+  currentUtterance.rate=voiceRate; currentUtterance.pitch=1; currentUtterance.lang='en-GH';
+  const micOuter=document.getElementById('micOuter');
+  const micInner=document.getElementById('micInner');
+  micOuter.classList.add('speaking'); micInner.classList.add('speaking');
+  document.getElementById('voiceStatus').textContent=currentLang==='tw'?'Nkɔsoɔ AI rekasa...':'Nkɔsoɔ AI is speaking...';
+  startWave();
+  currentUtterance.onend=()=>{
+    stopWave(); micOuter.classList.remove('speaking'); micInner.classList.remove('speaking');
+    document.getElementById('voiceStatus').textContent=currentLang==='tw'?'Dii so na kasa':'Tap to speak';
+    document.getElementById('voiceSub').textContent=currentLang==='tw'?'Asɛmmisa foforo?':'Ask another question';
+  };
+  window.speechSynthesis.speak(currentUtterance);
+}
+
+async function processVoiceQuestion(question) {
+  document.getElementById('voiceTranscript').textContent=question;
+  document.getElementById('voiceResponse').textContent=currentLang==='tw'?'Nkɔsoɔ AI reka...':'Nkɔsoɔ AI is thinking...';
+  document.getElementById('voiceResponseCard').style.display='block';
+
+  try {
+    const msgs=[...conversationHistory,{role:'user',content:question}];
+    const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:msgs,lang:currentLang})});
+    if(!resp.ok){
+      const err=await resp.json();
+      document.getElementById('voiceResponse').textContent=currentLang==='tw'?(err.message_tw||err.message):err.message;
+      if(err.error==='limit_reached') setTimeout(openUpgrade,2000);
+      resetVoiceState(); return;
+    }
+    const reader=resp.body.getReader(); const decoder=new TextDecoder(); let fullText='';
+    document.getElementById('voiceResponse').textContent='';
+    while(true){
+      const {done,value}=await reader.read(); if(done) break;
+      for(const line of decoder.decode(value,{stream:true}).split('\n')){
+        if(line.startsWith('data: ')){const p=line.slice(6).trim();if(p==='[DONE]') break;
+          try{fullText+=JSON.parse(p).text;document.getElementById('voiceResponse').textContent=fullText;}catch{}}
+      }
+    }
+    lastVoiceAnswer=fullText;
+    conversationHistory.push({role:'user',content:question},{role:'assistant',content:fullText});
+    if(USER_PLAN!=='pro') updateUsageBar(usedToday+1);
+    speakAnswer(fullText);
+  } catch(e){document.getElementById('voiceResponse').textContent='⚠ Connection error.';resetVoiceState();}
+}
+
+function resetVoiceState() {
+  const micOuter=document.getElementById('micOuter');
+  const micInner=document.getElementById('micInner');
+  micOuter.classList.remove('listening','speaking');
+  micInner.classList.remove('speaking');
+  micInner.textContent='🎤';
+  document.getElementById('voiceStatus').textContent=currentLang==='tw'?'Dii so na kasa':'Tap to speak';
+  document.getElementById('voiceSub').textContent=currentLang==='tw'?'Bisa afuo anaa mmoa asɛmmisa':'Ask any farming or livestock question';
+  stopWave(); isListening=false;
+}
+
+function toggleVoice() {
+  if(isListening){stopListening();return;}
+  if(!window.SpeechRecognition&&!window.webkitSpeechRecognition){
+    const fallback=prompt(currentLang==='tw'?'Wo phone no nni voice mu. Ka wo asɛmmisa wɔ ase yi:':'Voice not supported on this browser. Type your question:');
+    if(fallback&&fallback.trim()) processVoiceQuestion(fallback.trim());
+    return;
+  }
+  startListening();
+}
+
+function startListening() {
+  isListening=true;
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const recognition=new SpeechRecognition();
+  recognition.lang='en-GH'; recognition.continuous=false; recognition.interimResults=false;
+  const micOuter=document.getElementById('micOuter');
+  const micInner=document.getElementById('micInner');
+  micOuter.classList.add('listening');
+  micInner.textContent='🎤';
+  document.getElementById('voiceStatus').textContent=currentLang==='tw'?'Yɛreti...':'Listening...';
+  document.getElementById('voiceSub').textContent=currentLang==='tw'?'Ka wo asɛmmisa nnɛ':'Speak your farming question now';
+  recognition.onresult=e=>{
+    const transcript=e.results[0][0].transcript;
+    micOuter.classList.remove('listening');
+    document.getElementById('voiceStatus').textContent=currentLang==='tw'?'Yɛreka...':'Processing...';
+    processVoiceQuestion(transcript);
+    isListening=false;
+  };
+  recognition.onerror=e=>{
+    resetVoiceState();
+    if(e.error==='not-allowed') alert(currentLang==='tw'?'Fa microphone ahoɔden mma app no.':'Please allow microphone access in your browser.');
+  };
+  recognition.onend=()=>{ if(isListening) resetVoiceState(); };
+  recognition.start();
+}
+
+function stopListening() { resetVoiceState(); }
+
+function replayVoice() { if(lastVoiceAnswer) speakAnswer(lastVoiceAnswer); }
+function stopVoice()   { if(window.speechSynthesis) window.speechSynthesis.cancel(); stopWave(); resetVoiceState(); }
+function resetVoice()  { stopVoice(); document.getElementById('voiceResponseCard').style.display='none'; lastVoiceAnswer=''; }
+
+function voiceQuickAsk(idx) {
+  const q=currentLang==='tw'?QUICK_TW[idx]:QUICK_EN[idx];
+  document.getElementById('voiceTranscript').textContent=q;
+  document.getElementById('voiceResponse').textContent='';
+  document.getElementById('voiceResponseCard').style.display='block';
+  processVoiceQuestion(q);
+}
 </script>
 </body>
 </html>
