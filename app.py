@@ -42,7 +42,9 @@ FREE_DIAGNOSE_LIMIT = 3
 # ---------------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------------
-DB_PATH = "/var/data/nkosoo.db"
+# Use persistent disk if available, otherwise local
+_data_dir = "/var/data" if os.path.isdir("/var/data") else os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(_data_dir, "nkosoo.db")
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -652,34 +654,45 @@ def admin():
         if request.form.get("password")==ADMIN_PASSWORD: session["admin"]=True
         else: return render_template("admin_login.html",error="Wrong password")
     if not session.get("admin"): return render_template("admin_login.html",error=None)
-    with get_db() as db:
-        total        = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-        pro          = db.execute("SELECT COUNT(*) FROM users WHERE plan='pro'").fetchone()[0]
-        q_today      = db.execute("SELECT COUNT(*) FROM usage WHERE type='chat' AND date(created_at)=date('now')").fetchone()[0]
-        d_today      = db.execute("SELECT COUNT(*) FROM usage WHERE type='diagnose' AND date(created_at)=date('now')").fetchone()[0]
-        voice_today  = db.execute("SELECT COUNT(*) FROM usage WHERE type='voice' AND date(created_at)=date('now')").fetchone()[0]
-        top_q        = db.execute("SELECT question,COUNT(*) cnt FROM usage WHERE type='chat' AND question IS NOT NULL GROUP BY question ORDER BY cnt DESC LIMIT 10").fetchall()
-        users        = db.execute("SELECT * FROM users ORDER BY created_at DESC LIMIT 20").fetchall()
-        region_stats = db.execute("SELECT region,COUNT(*) cnt FROM users GROUP BY region ORDER BY cnt DESC").fetchall()
-        profiles     = db.execute("SELECT COUNT(*) FROM farm_profiles").fetchone()[0]
-        verified     = db.execute("SELECT COUNT(*) FROM farm_profiles WHERE ghana_card_valid=1").fetchone()[0]
-        gps_cnt      = db.execute("SELECT COUNT(*) FROM farm_profiles WHERE latitude IS NOT NULL").fetchone()[0]
-        avg_fs_row   = db.execute("SELECT AVG(CAST(farm_size AS REAL)) FROM farm_profiles WHERE farm_size!=''").fetchone()[0]
-        avg_farm_size= round(avg_fs_row,1) if avg_fs_row else 0
-        livestock_cnt      = db.execute("SELECT COUNT(*) FROM livestock_profiles").fetchone()[0]
-        livestock_verified = db.execute("SELECT COUNT(*) FROM livestock_profiles WHERE ghana_card_valid=1").fetchone()[0]
-        livestock_gps      = db.execute("SELECT COUNT(*) FROM livestock_profiles WHERE latitude IS NOT NULL").fetchone()[0]
-        sick_animals       = db.execute("SELECT SUM(sick_count) FROM livestock_profiles").fetchone()[0] or 0
-        animal_stats       = db.execute("SELECT animal_type,COUNT(*) cnt FROM livestock_profiles GROUP BY animal_type ORDER BY cnt DESC").fetchall()
+    try:
+        with get_db() as db:
+            total        = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+            pro          = db.execute("SELECT COUNT(*) FROM users WHERE plan='pro'").fetchone()[0]
+            q_today      = db.execute("SELECT COUNT(*) FROM usage WHERE type='chat' AND date(created_at)=date('now')").fetchone()[0]
+            d_today      = db.execute("SELECT COUNT(*) FROM usage WHERE type='diagnose' AND date(created_at)=date('now')").fetchone()[0]
+            voice_today  = db.execute("SELECT COUNT(*) FROM usage WHERE type='voice' AND date(created_at)=date('now')").fetchone()[0]
+            top_q        = db.execute("SELECT question,COUNT(*) cnt FROM usage WHERE type='chat' AND question IS NOT NULL GROUP BY question ORDER BY cnt DESC LIMIT 10").fetchall()
+            users        = db.execute("SELECT * FROM users ORDER BY created_at DESC LIMIT 20").fetchall()
+            region_stats = db.execute("SELECT region,COUNT(*) cnt FROM users GROUP BY region ORDER BY cnt DESC").fetchall()
+            # Farm profiles — safe fallback if table/columns missing
+            try:
+                profiles      = db.execute("SELECT COUNT(*) FROM farm_profiles").fetchone()[0]
+                verified      = db.execute("SELECT COUNT(*) FROM farm_profiles WHERE ghana_card_valid=1").fetchone()[0]
+                avg_fs_row    = db.execute("SELECT AVG(CAST(farm_size AS REAL)) FROM farm_profiles WHERE farm_size!=''").fetchone()[0]
+                avg_farm_size = round(avg_fs_row,1) if avg_fs_row else 0
+            except Exception:
+                profiles=0; verified=0; avg_farm_size=0
+            # Livestock profiles — safe fallback
+            try:
+                livestock_cnt      = db.execute("SELECT COUNT(*) FROM livestock_profiles").fetchone()[0]
+                sick_animals       = db.execute("SELECT SUM(sick_count) FROM livestock_profiles").fetchone()[0] or 0
+                animal_stats       = db.execute("SELECT animal_type,COUNT(*) cnt FROM livestock_profiles GROUP BY animal_type ORDER BY cnt DESC").fetchall()
+                try:
+                    livestock_verified = db.execute("SELECT COUNT(*) FROM livestock_profiles WHERE ghana_card_valid=1").fetchone()[0]
+                except Exception:
+                    livestock_verified = 0
+            except Exception:
+                livestock_cnt=0; sick_animals=0; animal_stats=[]; livestock_verified=0
+    except Exception as e:
+        return f"<h2>Admin Error</h2><pre>{e}</pre><p><a href='/admin/logout'>Sign out</a></p>", 500
     return render_template("admin.html",
         total_users=total, pro_users=pro, total_revenue=pro*30,
         questions_today=q_today, diagnoses_today=d_today, voice_today=voice_today,
         top_questions=top_q, recent_users=users, region_stats=region_stats,
         regions=GHANA_REGIONS, profiles=profiles, verified=verified,
-        gps_cnt=gps_cnt, avg_farm_size=avg_farm_size,
+        avg_farm_size=avg_farm_size,
         livestock_cnt=livestock_cnt, livestock_verified=livestock_verified,
-        livestock_gps=livestock_gps, sick_animals=sick_animals,
-        animal_stats=animal_stats)
+        sick_animals=sick_animals, animal_stats=animal_stats)
 
 @app.route("/admin/logout")
 def admin_logout():
