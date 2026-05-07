@@ -1041,11 +1041,12 @@ async function saveCropProfile(){
     const data=await resp.json();
     if(data.success){
       showSaved('cropSaved','g');
-      // Update diary crop select
       const sel=document.getElementById('cDiaryCrop');
       sel.innerHTML='<option value="all">All crops</option>'+selectedCrops.map(c=>`<option value="${c}">${c}</option>`).join('');
+    } else {
+      alert('Save failed: '+(data.error||'Unknown error. Please try again.'));
     }
-  }catch(e){alert('Error saving profile. Please try again.');}
+  }catch(e){alert('Connection error — please check your internet and try again.');}
 }
 
 async function saveLivestockProfile(){
