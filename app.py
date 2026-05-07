@@ -24,9 +24,9 @@ Environment variables:
   SECRET_KEY
 """
 
-import os, json, time, re, sqlite3, requests, anthropic
+import os, json, time, re, sqlite3, requests, anthropic, csv, io
 from flask import (Flask, render_template, request, jsonify,
-                   stream_with_context, Response, session, redirect)
+                   stream_with_context, Response, session, redirect, make_response)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "nkosoo-secret-2024")
@@ -649,134 +649,6 @@ def api_usage():
                     "free_limit":FREE_DAILY_LIMIT,"diagnose_limit":FREE_DIAGNOSE_LIMIT})
 
 # ---------------------------------------------------------------------------
-# Admin exports
-# ---------------------------------------------------------------------------
-import csv, io
-
-@app.route("/admin/export/crop-profiles")
-def export_crop_profiles():
-    if not session.get("admin"): return redirect("/admin")
-    with get_db() as db:
-        rows = db.execute("""
-            SELECT farmer_name, phone, ghana_card,
-                   CASE WHEN ghana_card_valid=1 THEN 'Yes' ELSE 'No' END as gc_verified,
-                   region, email, farm_size, farm_unit,
-                   crop_type, crops, soil_type, water_source,
-                   created_at, updated_at
-            FROM farm_profiles
-            ORDER BY created_at DESC
-        """).fetchall()
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow([
-        "Full Name","Phone","Ghana Card","GC Verified",
-        "Region","Email","Farm Size","Unit",
-        "Crop Type","Crops","Soil Type","Water Source",
-        "Registered At","Last Updated"
-    ])
-    for r in rows:
-        writer.writerow([
-            r["farmer_name"] or "",
-            r["phone"] or "",
-            r["ghana_card"] or "",
-            r["gc_verified"],
-            GHANA_REGIONS.get(r["region"],{}).get("name",r["region"] or ""),
-            r["email"] or "",
-            r["farm_size"] or "",
-            r["farm_unit"] or "",
-            r["crop_type"] or "",
-            r["crops"] or "",
-            r["soil_type"] or "",
-            r["water_source"] or "",
-            (r["created_at"] or "")[:16],
-            (r["updated_at"] or "")[:16],
-        ])
-    output.seek(0)
-    from flask import Response
-    return Response(
-        output.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-Disposition":"attachment;filename=nkosoo_crop_profiles.csv"}
-    )
-
-@app.route("/admin/export/livestock-profiles")
-def export_livestock_profiles():
-    if not session.get("admin"): return redirect("/admin")
-    with get_db() as db:
-        rows = db.execute("""
-            SELECT farmer_name, phone, ghana_card,
-                   CASE WHEN ghana_card_valid=1 THEN 'Yes' ELSE 'No' END as gc_verified,
-                   region, email, animal_type, total_count, sick_count,
-                   housing_type, purpose, feed_source, water_source,
-                   nearest_vet, created_at, updated_at
-            FROM livestock_profiles
-            WHERE animal_type IS NOT NULL AND animal_type != 'profile'
-            ORDER BY created_at DESC
-        """).fetchall()
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow([
-        "Full Name","Phone","Ghana Card","GC Verified",
-        "Region","Email","Animal Type","Total Count","Sick Count",
-        "Housing","Purpose","Feed Source","Water Source",
-        "Nearest Vet","Registered At","Last Updated"
-    ])
-    for r in rows:
-        writer.writerow([
-            r["farmer_name"] or "",
-            r["phone"] or "",
-            r["ghana_card"] or "",
-            r["gc_verified"],
-            GHANA_REGIONS.get(r["region"],{}).get("name",r["region"] or ""),
-            r["email"] or "",
-            (r["animal_type"] or "").capitalize(),
-            r["total_count"] or 0,
-            r["sick_count"] or 0,
-            r["housing_type"] or "",
-            r["purpose"] or "",
-            r["feed_source"] or "",
-            r["water_source"] or "",
-            r["nearest_vet"] or "",
-            (r["created_at"] or "")[:16],
-            (r["updated_at"] or "")[:16],
-        ])
-    output.seek(0)
-    return Response(
-        output.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-Disposition":"attachment;filename=nkosoo_livestock_profiles.csv"}
-    )
-
-@app.route("/admin/export/all-farmers")
-def export_all_farmers():
-    if not session.get("admin"): return redirect("/admin")
-    with get_db() as db:
-        rows = db.execute("""
-            SELECT session_id, email, plan, region,
-                   created_at, pro_since
-            FROM users
-            ORDER BY created_at DESC
-        """).fetchall()
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["Session ID","Email","Plan","Region","Joined","Pro Since"])
-    for r in rows:
-        writer.writerow([
-            r["session_id"],
-            r["email"] or "",
-            r["plan"] or "free",
-            GHANA_REGIONS.get(r["region"],{}).get("name",r["region"] or ""),
-            (r["created_at"] or "")[:16],
-            (r["pro_since"] or "")[:16],
-        ])
-    output.seek(0)
-    return Response(
-        output.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-Disposition":"attachment;filename=nkosoo_all_farmers.csv"}
-    )
-
-# ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 @app.route("/api/pay/init", methods=["POST"])
 def pay_init():
@@ -871,7 +743,6 @@ def admin_logout():
 # ---------------------------------------------------------------------------
 # Admin exports — CSV downloads
 # ---------------------------------------------------------------------------
-import csv, io
 
 def require_admin():
     return session.get("admin") == True
@@ -898,7 +769,6 @@ def export_crop_profiles():
     for row in rows:
         writer.writerow(list(row))
     output.seek(0)
-    from flask import make_response
     resp = make_response(output.getvalue())
     resp.headers["Content-Disposition"] = "attachment; filename=nkosoo_crop_profiles.csv"
     resp.headers["Content-Type"] = "text/csv; charset=utf-8"
@@ -929,7 +799,6 @@ def export_livestock_profiles():
     for row in rows:
         writer.writerow(list(row))
     output.seek(0)
-    from flask import make_response
     resp = make_response(output.getvalue())
     resp.headers["Content-Disposition"] = "attachment; filename=nkosoo_livestock_profiles.csv"
     resp.headers["Content-Type"] = "text/csv; charset=utf-8"
@@ -966,7 +835,6 @@ def export_all_farmers():
     for row in rows:
         writer.writerow(list(row))
     output.seek(0)
-    from flask import make_response
     resp = make_response(output.getvalue())
     resp.headers["Content-Disposition"] = "attachment; filename=nkosoo_all_farmers.csv"
     resp.headers["Content-Type"] = "text/csv; charset=utf-8"
