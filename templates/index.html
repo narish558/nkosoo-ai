@@ -685,29 +685,64 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   <div id="panel-voice" class="panel">
     <div class="card">
       <div class="card-title b">🎤 Voice farming assistant</div>
-      <p style="font-size:13px;color:var(--ts);margin-bottom:1rem;line-height:1.5;">Speak your farming question — the app listens, asks Claude AI, and reads the answer back to you aloud. No typing needed.</p>
-      <div class="card-title b">Choose your language</div>
+
+      <!-- Language selector -->
+      <div class="card-title b" style="margin-bottom:.5rem;">Choose your language</div>
       <div class="lang-voice-grid">
-        <div class="lang-voice-opt sel" onclick="selVoiceLang(this,'en-GH')"><div class="lang-voice-flag">🇬🇧</div><div>English</div></div>
-        <div class="lang-voice-opt" onclick="selVoiceLang(this,'ak-GH')"><div class="lang-voice-flag">🇬🇭</div><div>Twi</div></div>
-        <div class="lang-voice-opt" onclick="selVoiceLang(this,'dag-GH')"><div class="lang-voice-flag">🇬🇭</div><div>Dagbani</div></div>
-        <div class="lang-voice-opt" onclick="selVoiceLang(this,'ha-GH')"><div class="lang-voice-flag">🇬🇭</div><div>Hausa</div></div>
+        <div class="lang-voice-opt sel" onclick="selVoiceLang(this,'en')">
+          <div class="lang-voice-flag">🇬🇧</div><div>English</div>
+          <div style="font-size:9px;color:var(--g600);margin-top:2px;">🎤 Voice</div>
+        </div>
+        <div class="lang-voice-opt" onclick="selVoiceLang(this,'tw')">
+          <div class="lang-voice-flag">🇬🇭</div><div>Twi</div>
+          <div style="font-size:9px;color:var(--ts);margin-top:2px;">⌨ Type</div>
+        </div>
+        <div class="lang-voice-opt" onclick="selVoiceLang(this,'dag')">
+          <div class="lang-voice-flag">🇬🇭</div><div>Dagbani</div>
+          <div style="font-size:9px;color:var(--ts);margin-top:2px;">⌨ Type</div>
+        </div>
+        <div class="lang-voice-opt" onclick="selVoiceLang(this,'ha')">
+          <div class="lang-voice-flag">🇬🇭</div><div>Hausa</div>
+          <div style="font-size:9px;color:var(--ts);margin-top:2px;">⌨ Type</div>
+        </div>
       </div>
-      <div class="voice-center">
-        <div class="mic-outer" id="micOuter" onclick="toggleVoice()"><div class="mic-inner" id="micInner">🎤</div></div>
-        <div class="voice-status" id="voiceStatus">Tap to speak</div>
-        <div class="voice-sub" id="voiceSub">Ask any farming or livestock question</div>
+
+      <!-- ENGLISH — microphone mode -->
+      <div id="voice-en-mode">
+        <div class="voice-center">
+          <div class="mic-outer" id="micOuter" onclick="toggleVoice()">
+            <div class="mic-inner" id="micInner">🎤</div>
+          </div>
+          <div class="voice-status" id="voiceStatus">Tap to speak</div>
+          <div class="voice-sub" id="voiceSub">Ask any farming or livestock question in English</div>
+        </div>
+        <div class="waveform" id="waveform" style="display:none;">
+          <div class="wave-bar" style="height:8px;"></div><div class="wave-bar" style="height:16px;"></div>
+          <div class="wave-bar" style="height:28px;"></div><div class="wave-bar" style="height:20px;"></div>
+          <div class="wave-bar" style="height:36px;"></div><div class="wave-bar" style="height:24px;"></div>
+          <div class="wave-bar" style="height:32px;"></div><div class="wave-bar" style="height:18px;"></div>
+          <div class="wave-bar" style="height:28px;"></div><div class="wave-bar" style="height:10px;"></div>
+        </div>
       </div>
-      <div class="waveform" id="waveform" style="display:none;">
-        <div class="wave-bar" style="height:8px;"></div><div class="wave-bar" style="height:16px;"></div>
-        <div class="wave-bar" style="height:28px;"></div><div class="wave-bar" style="height:20px;"></div>
-        <div class="wave-bar" style="height:36px;"></div><div class="wave-bar" style="height:24px;"></div>
-        <div class="wave-bar" style="height:32px;"></div><div class="wave-bar" style="height:18px;"></div>
-        <div class="wave-bar" style="height:28px;"></div><div class="wave-bar" style="height:10px;"></div>
+
+      <!-- NON-ENGLISH — type mode -->
+      <div id="voice-type-mode" style="display:none;">
+        <div style="background:var(--blue50);border-radius:var(--rm);padding:10px 14px;font-size:13px;color:var(--blue);margin-bottom:1rem;line-height:1.5;">
+          ℹ Browser voice recognition only supports English. For <strong id="selectedLangName">Twi</strong>, type your question below — Claude will respond in <strong id="selectedLangName2">Twi</strong> and read the answer aloud.
+        </div>
+        <div class="fg" style="margin-bottom:.75rem;">
+          <div class="lbl" id="typeInputLabel">Type your question in Twi</div>
+          <textarea class="diary-ta" id="voiceTypeInput" rows="2" placeholder="Type your question here..."></textarea>
+        </div>
+        <button class="save-btn g" onclick="sendTypedVoice()" style="margin-bottom:.5rem;">
+          🤖 Get answer &amp; read aloud
+        </button>
       </div>
     </div>
+
+    <!-- Response card -->
     <div class="card" id="voiceResponseCard" style="display:none;">
-      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ts);margin-bottom:.375rem;">You said</div>
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ts);margin-bottom:.375rem;">You asked</div>
       <div class="transcript-box" id="voiceTranscript"></div>
       <div class="ai-voice-label">Nkɔsoɔ AI replied</div>
       <div class="ai-voice-response" id="voiceResponse"></div>
@@ -723,17 +758,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       <div class="voice-controls">
         <button class="vc-btn" onclick="replayVoice()">▶ Replay</button>
         <button class="vc-btn" onclick="stopVoice()">⏹ Stop</button>
-        <button class="vc-btn primary" onclick="resetVoice()">🎤 New question</button>
+        <button class="vc-btn primary" onclick="resetVoice()">🔄 New question</button>
       </div>
-      <div class="voice-tip">💡 Answer has been added to your AI chat history</div>
+      <div class="voice-tip">💡 Answer saved to your AI chat history</div>
     </div>
+
+    <!-- Quick questions -->
     <div class="card">
-      <div class="card-title b">Quick voice questions</div>
+      <div class="card-title b">Quick questions</div>
       <div class="quick-grid">
         <button class="quick-btn" onclick="voiceQuickAsk(0)">🌾 What should I plant this season?</button>
         <button class="quick-btn" onclick="voiceQuickAsk(1)">🐛 My maize leaves are yellow</button>
         <button class="quick-btn" onclick="voiceQuickAsk(3)">🐔 My chickens are not eating</button>
         <button class="quick-btn" onclick="voiceQuickAsk(2)">💰 What is the price of tomatoes today?</button>
+      </div>
+    </div>
+
+    <!-- Language note -->
+    <div class="card" style="background:var(--g50);border-color:var(--g100);">
+      <div class="card-title g">🌍 Language support</div>
+      <div style="font-size:13px;color:var(--g900);line-height:1.7;">
+        <strong>English 🇬🇧</strong> — Full voice: tap mic, speak, hear answer<br>
+        <strong>Twi 🇬🇭</strong> — Type your question, Claude responds in Twi, answer read aloud<br>
+        <strong>Dagbani 🇬🇭</strong> — Type your question, Claude responds in Dagbani, answer read aloud<br>
+        <strong>Hausa 🇬🇭</strong> — Type your question, Claude responds in Hausa, answer read aloud
       </div>
     </div>
   </div>
@@ -1043,12 +1091,22 @@ function renderCalendar(containerId,legendId,month,year,events,colorClass){
 }
 
 // ── Crop calendar ──
+const CROP_COLORS=['g','a','b','p'];
+const CROP_COLOR_HEX=['#3B6D11','#C4873A','#185FA5','#6D2E46'];
 const CROP_EVENTS={
-  'Maize':[{day:4,title:'Apply basal fertilizer',sub:'NPK 15-15-15 · 1 bag/acre',color:'g'},{day:14,title:'Check for Fall Armyworm',sub:'Inspect leaf whorls · spray neem if found',color:'g'},{day:24,title:'Top-dress fertilizer',sub:'Urea · 3–4 weeks after planting',color:'g'}],
-  'Tomatoes':[{day:10,title:'Transplant seedlings',sub:'Spacing 60cm × 45cm · water immediately',color:'a'},{day:20,title:'First fungicide spray',sub:'Dithane M-45 · 2g per litre water',color:'a'},{day:29,title:'Top-dress fertilizer',sub:'Sulphate of ammonia · 3 weeks after transplant',color:'a'}],
-  'Cassava':[{day:5,title:'Plant cassava stems',sub:'Cut stems 20–25cm · slanted planting',color:'g'},{day:21,title:'Weed control',sub:'First weeding at 3–4 weeks',color:'g'}],
-  'Plantain':[{day:8,title:'Fertilize plantain',sub:'NPK 15-15-15 · around base of plant',color:'g'},{day:25,title:'Check for bunch emergence',sub:'Monitor flowering · support bunches if needed',color:'g'}],
-  'default':[{day:7,title:'Inspect crops',sub:'Check for pests and diseases',color:'g'},{day:18,title:'Apply fertilizer',sub:'Follow crop-specific dosage',color:'g'},{day:28,title:'Water management',sub:'Irrigate or check drainage as needed',color:'g'}],
+  'Maize':[{day:4,title:'Apply basal fertilizer',sub:'NPK 15-15-15 · 1 bag/acre'},{day:14,title:'Check for Fall Armyworm',sub:'Inspect leaf whorls · spray neem if found'},{day:24,title:'Top-dress fertilizer',sub:'Urea · 3–4 weeks after planting'}],
+  'Tomatoes':[{day:10,title:'Transplant seedlings',sub:'Spacing 60cm × 45cm · water immediately'},{day:20,title:'First fungicide spray',sub:'Dithane M-45 · 2g per litre water'},{day:29,title:'Top-dress fertilizer',sub:'Sulphate of ammonia · 3 weeks after transplant'}],
+  'Cassava':[{day:5,title:'Plant cassava stems',sub:'Cut stems 20–25cm · slanted planting'},{day:21,title:'Weed control',sub:'First weeding at 3–4 weeks'}],
+  'Plantain':[{day:8,title:'Fertilize plantain',sub:'NPK 15-15-15 · around base of plant'},{day:25,title:'Check for bunch emergence',sub:'Monitor flowering · support bunches if needed'}],
+  'Yam':[{day:6,title:'Stake yam vines',sub:'Use 2m stakes · tie loosely'},{day:20,title:'Apply fertilizer',sub:'NPK 12-12-17 · 3 weeks after sprouting'}],
+  'Groundnut':[{day:7,title:'First weeding',sub:'Remove weeds before they establish'},{day:22,title:'Gypsum application',sub:'Calcium for pod formation'}],
+  'Pepper':[{day:9,title:'Transplant pepper seedlings',sub:'Spacing 45cm × 60cm'},{day:23,title:'Spray for aphids',sub:'Neem oil solution · early morning'}],
+  'Okra':[{day:5,title:'Direct sow okra',sub:'2–3 seeds per hole · thin to 1'},{day:18,title:'First harvest check',sub:'Harvest at 5–7cm length'}],
+  'Mango':[{day:10,title:'Prune mango trees',sub:'Remove dead branches after harvest'},{day:28,title:'Apply fertilizer',sub:'NPK around drip line'}],
+  'Pineapple':[{day:8,title:'Apply fertilizer',sub:'Urea foliar spray · monthly'},{day:25,title:'Check for mealybugs',sub:'Inspect leaf bases · treat if found'}],
+  'Rice':[{day:5,title:'Transplant rice seedlings',sub:'Spacing 20cm × 20cm in flooded field'},{day:20,title:'Weed management',sub:'Hand weed or apply herbicide'}],
+  'Cocoa':[{day:7,title:'Prune cocoa trees',sub:'Remove diseased pods and branches'},{day:21,title:'Apply fungicide',sub:'Copper-based spray for black pod'}],
+  'default':[{day:7,title:'Inspect crops',sub:'Check for pests and diseases'},{day:18,title:'Apply fertilizer',sub:'Follow crop-specific dosage'},{day:28,title:'Water management',sub:'Irrigate or check drainage as needed'}],
 };
 
 function generateCropCalendar(){
@@ -1062,29 +1120,53 @@ function generateCropCalendar(){
 function renderCropCal(){
   const {y,m}=cropCalMonth;
   document.getElementById('calMonthLabel').textContent=MONTHS[m]+' '+y;
-  // Combine events from all crops
-  let allEvents=[];
+  const firstDay=new Date(y,m,1).getDay();
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const today=new Date();
+
+  // Build a map: day → [{crop, colorIdx}]
+  const dayMap={};
   selectedCrops.forEach((crop,ci)=>{
     const evs=CROP_EVENTS[crop]||CROP_EVENTS['default'];
-    evs.forEach(e=>allEvents.push({...e,crop}));
+    evs.forEach(e=>{
+      if(!dayMap[e.day]) dayMap[e.day]=[];
+      dayMap[e.day].push({crop,ci,title:e.title,sub:e.sub});
+    });
   });
-  // Use first event's day for rendering
-  const calEvents=allEvents.map(e=>({day:e.day}));
-  renderCalendar('calDays','calLegend',m,y,calEvents,selectedCrops.length>1?'g':'g');
+
+  let html='';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>html+=`<div class="dn">${d}</div>`);
+  for(let i=0;i<firstDay;i++) html+=`<div class="cd"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const isToday=today.getDate()===d&&today.getMonth()===m&&today.getFullYear()===y;
+    const evs=dayMap[d];
+    let dotHtml='';
+    let bgStyle='';
+    if(evs&&evs.length>0){
+      const ci=evs[0].ci%4;
+      bgStyle=`background:${CROP_COLOR_HEX[ci]}22;`;
+      dotHtml=evs.map(e=>`<div class="cdot" style="background:${CROP_COLOR_HEX[e.ci%4]};"></div>`).join('');
+    }
+    const tdayClass=isToday?'today':'';
+    html+=`<div class="cd ${tdayClass}" style="${bgStyle}"><span class="cdate" style="${evs&&!isToday?`color:${CROP_COLOR_HEX[evs[0].ci%4]};font-weight:600;`:''}">${d}</span>${dotHtml}</div>`;
+  }
+  document.getElementById('calDays').innerHTML=html;
+
   // Legend
-  const colors=['var(--g600)','var(--a600)','var(--blue)','#6D2E46'];
-  document.getElementById('calLegend').innerHTML=selectedCrops.map((c,i)=>`<div class="li"><div class="ld" style="background:${colors[i%colors.length]};border:1px solid ${colors[i%colors.length]};opacity:.5;"></div>${c}</div>`).join('');
-  // Upcoming
+  document.getElementById('calLegend').innerHTML=selectedCrops.map((c,i)=>
+    `<div class="li"><div class="ld" style="background:${CROP_COLOR_HEX[i%4]};opacity:.6;border-radius:3px;"></div>${c}</div>`
+  ).join('');
+
+  // Upcoming — sorted by day, labelled by crop with its colour
   let upcoming=[];
-  selectedCrops.forEach(crop=>{
-    const evs=CROP_EVENTS[crop]||CROP_EVENTS['default'];
-    evs.forEach(e=>upcoming.push({...e,crop}));
+  selectedCrops.forEach((crop,ci)=>{
+    (CROP_EVENTS[crop]||CROP_EVENTS['default']).forEach(e=>upcoming.push({...e,crop,ci}));
   });
   upcoming.sort((a,b)=>a.day-b.day);
-  document.getElementById('calUpcoming').innerHTML=upcoming.slice(0,6).map(e=>`
+  document.getElementById('calUpcoming').innerHTML=upcoming.slice(0,8).map(e=>`
     <div class="up-item">
       <div class="up-date"><div class="up-day">${e.day}</div><div class="up-mon">${MONTHS[m].slice(0,3)}</div></div>
-      <div><div class="up-title">${e.title}<span class="crop-tag tag-${e.color}">${e.crop}</span></div><div class="up-sub">${e.sub}</div></div>
+      <div><div class="up-title">${e.title}<span class="crop-tag" style="background:${CROP_COLOR_HEX[e.ci%4]}22;color:${CROP_COLOR_HEX[e.ci%4]};">${e.crop}</span></div><div class="up-sub">${e.sub}</div></div>
     </div>`).join('');
 }
 
@@ -1161,57 +1243,176 @@ function renderDiary(type){
   }).join('');
 }
 
-// ── Voice ──
-function selVoiceLang(el,lang){document.querySelectorAll('.lang-voice-opt').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');voiceLang=lang;}
-function setSpeed(btn,rate){document.querySelectorAll('.speed-btn').forEach(x=>x.classList.remove('on'));btn.classList.add('on');voiceRate=rate;if(currentUtterance)currentUtterance.rate=rate;}
-function startWave(){document.getElementById('waveform').style.display='flex';const bars=document.querySelectorAll('.wave-bar');waveInterval=setInterval(()=>{bars.forEach(b=>{b.style.height=(Math.random()*32+8)+'px';});},120);}
-function stopWave(){clearInterval(waveInterval);document.getElementById('waveform').style.display='none';document.querySelectorAll('.wave-bar').forEach(b=>b.style.height='8px');}
+// ── Voice Interface — Multilingual ──
+const LANG_NAMES={en:'English',tw:'Twi',dag:'Dagbani',ha:'Hausa'};
+
+function selVoiceLang(el,lang){
+  document.querySelectorAll('.lang-voice-opt').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+  voiceLang=lang;
+  const isEn=lang==='en';
+  const enMode=document.getElementById('voice-en-mode');
+  const typeMode=document.getElementById('voice-type-mode');
+  if(enMode) enMode.style.display=isEn?'block':'none';
+  if(typeMode) typeMode.style.display=isEn?'none':'block';
+  const name=LANG_NAMES[lang]||lang;
+  document.querySelectorAll('#selectedLangName,#selectedLangName2').forEach(el=>el.textContent=name);
+  const lbl=document.getElementById('typeInputLabel');
+  if(lbl) lbl.textContent='Type your question in '+name;
+  const ta=document.getElementById('voiceTypeInput');
+  if(ta) ta.placeholder='Type your farming question in '+name+'...';
+  document.getElementById('voiceResponseCard').style.display='none';
+  resetVoiceState();
+}
+
+function setSpeed(btn,rate){
+  document.querySelectorAll('.speed-btn').forEach(x=>x.classList.remove('on'));
+  btn.classList.add('on'); voiceRate=rate;
+  if(currentUtterance) currentUtterance.rate=rate;
+}
+
+function startWave(){
+  const wf=document.getElementById('waveform');
+  if(wf) wf.style.display='flex';
+  const bars=document.querySelectorAll('.wave-bar');
+  waveInterval=setInterval(()=>{bars.forEach(b=>{b.style.height=(Math.random()*32+8)+'px';});},120);
+}
+
+function stopWave(){
+  clearInterval(waveInterval);
+  const wf=document.getElementById('waveform');
+  if(wf) wf.style.display='none';
+  document.querySelectorAll('.wave-bar').forEach(b=>b.style.height='8px');
+}
+
 function speakAnswer(text){
-  if(!window.speechSynthesis)return;
+  if(!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   currentUtterance=new SpeechSynthesisUtterance(text);
-  currentUtterance.rate=voiceRate;currentUtterance.pitch=1;currentUtterance.lang='en-GH';
-  const mo=document.getElementById('micOuter');const mi=document.getElementById('micInner');
-  mo.classList.add('speaking');mi.classList.add('speaking');
-  document.getElementById('voiceStatus').textContent='Nkɔsoɔ AI is speaking...';
-  startWave();
-  currentUtterance.onend=()=>{stopWave();mo.classList.remove('speaking');mi.classList.remove('speaking');document.getElementById('voiceStatus').textContent='Tap to speak';document.getElementById('voiceSub').textContent='Ask another question';};
+  currentUtterance.rate=voiceRate;
+  currentUtterance.pitch=1;
+  currentUtterance.lang='en-GH';
+  const mo=document.getElementById('micOuter');
+  const mi=document.getElementById('micInner');
+  if(mo) mo.classList.add('speaking');
+  if(mi) mi.classList.add('speaking');
+  const vs=document.getElementById('voiceStatus');
+  if(vs) vs.textContent='Reading answer aloud...';
+  if(voiceLang==='en') startWave();
+  currentUtterance.onend=()=>{
+    stopWave();
+    if(mo) mo.classList.remove('speaking');
+    if(mi) mi.classList.remove('speaking');
+    if(vs) vs.textContent='Tap to speak';
+    const vb=document.getElementById('voiceSub');
+    if(vb) vb.textContent='Ask another question';
+  };
   window.speechSynthesis.speak(currentUtterance);
 }
+
 async function processVoiceQuestion(question){
   document.getElementById('voiceTranscript').textContent=question;
   document.getElementById('voiceResponse').textContent='Thinking...';
   document.getElementById('voiceResponseCard').style.display='block';
   try{
     const msgs=[...conversationHistory,{role:'user',content:question}];
-    const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:msgs,lang:currentLang})});
-    if(!resp.ok){const err=await resp.json();document.getElementById('voiceResponse').textContent=currentLang==='tw'?(err.message_tw||err.message):err.message;if(err.error==='limit_reached')setTimeout(openUpgrade,2000);resetVoiceState();return;}
-    const reader=resp.body.getReader();const decoder=new TextDecoder();let fullText='';document.getElementById('voiceResponse').textContent='';
-    while(true){const{done,value}=await reader.read();if(done)break;for(const line of decoder.decode(value,{stream:true}).split('\n')){if(line.startsWith('data: ')){const p=line.slice(6).trim();if(p==='[DONE]')break;try{fullText+=JSON.parse(p).text;document.getElementById('voiceResponse').textContent=fullText;}catch{}}}}
+    const resp=await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:msgs,lang:voiceLang})
+    });
+    if(!resp.ok){
+      const err=await resp.json();
+      document.getElementById('voiceResponse').textContent=err.message||'⚠ Error';
+      if(err.error==='limit_reached') setTimeout(openUpgrade,2000);
+      resetVoiceState(); return;
+    }
+    const reader=resp.body.getReader();
+    const decoder=new TextDecoder();
+    let fullText='';
+    document.getElementById('voiceResponse').textContent='';
+    while(true){
+      const{done,value}=await reader.read(); if(done) break;
+      for(const line of decoder.decode(value,{stream:true}).split('\n')){
+        if(line.startsWith('data: ')){
+          const p=line.slice(6).trim(); if(p==='[DONE]') break;
+          try{fullText+=JSON.parse(p).text;document.getElementById('voiceResponse').textContent=fullText;}catch{}
+        }
+      }
+    }
     lastVoiceAnswer=fullText;
     conversationHistory.push({role:'user',content:question},{role:'assistant',content:fullText});
-    if(USER_PLAN!=='pro')updateUsageBar(usedToday+1);
+    if(USER_PLAN!=='pro') updateUsageBar(usedToday+1);
     speakAnswer(fullText);
-  }catch(e){document.getElementById('voiceResponse').textContent='⚠ Connection error.';resetVoiceState();}
+  }catch(e){
+    document.getElementById('voiceResponse').textContent='⚠ Connection error.';
+    resetVoiceState();
+  }
 }
-function resetVoiceState(){const mo=document.getElementById('micOuter');const mi=document.getElementById('micInner');mo.classList.remove('listening','speaking');mi.classList.remove('speaking');mi.textContent='🎤';document.getElementById('voiceStatus').textContent='Tap to speak';document.getElementById('voiceSub').textContent='Ask any farming or livestock question';stopWave();isListening=false;}
+
+function sendTypedVoice(){
+  const ta=document.getElementById('voiceTypeInput');
+  const text=ta.value.trim();
+  if(!text){alert('Please type your question first.');return;}
+  ta.value='';
+  processVoiceQuestion(text);
+}
+
+function resetVoiceState(){
+  const mo=document.getElementById('micOuter');
+  const mi=document.getElementById('micInner');
+  if(mo) mo.classList.remove('listening','speaking');
+  if(mi){mi.classList.remove('speaking');mi.textContent='🎤';}
+  const vs=document.getElementById('voiceStatus');
+  if(vs) vs.textContent='Tap to speak';
+  const vb=document.getElementById('voiceSub');
+  if(vb) vb.textContent='Ask any farming or livestock question in English';
+  stopWave(); isListening=false;
+}
+
 function toggleVoice(){
+  if(voiceLang!=='en'){
+    const ta=document.getElementById('voiceTypeInput');
+    if(ta) ta.focus();
+    return;
+  }
   if(isListening){resetVoiceState();return;}
-  if(!window.SpeechRecognition&&!window.webkitSpeechRecognition){const q=prompt('Voice not supported on this browser. Type your question:');if(q&&q.trim())processVoiceQuestion(q.trim());return;}
+  if(!window.SpeechRecognition&&!window.webkitSpeechRecognition){
+    const q=prompt('Voice not supported on this browser. Type your question:');
+    if(q&&q.trim()) processVoiceQuestion(q.trim());
+    return;
+  }
   isListening=true;
   const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-  const recognition=new SpeechRecognition();recognition.lang='en-GH';recognition.continuous=false;recognition.interimResults=false;
-  const mo=document.getElementById('micOuter');mo.classList.add('listening');
-  document.getElementById('voiceStatus').textContent='Listening...';document.getElementById('voiceSub').textContent='Speak your farming question now';
-  recognition.onresult=e=>{const t=e.results[0][0].transcript;mo.classList.remove('listening');document.getElementById('voiceStatus').textContent='Processing...';processVoiceQuestion(t);isListening=false;};
-  recognition.onerror=e=>{resetVoiceState();if(e.error==='not-allowed')alert('Please allow microphone access in your browser settings.');};
-  recognition.onend=()=>{if(isListening)resetVoiceState();};
+  const recognition=new SpeechRecognition();
+  recognition.lang='en-GH'; recognition.continuous=false; recognition.interimResults=false;
+  const mo=document.getElementById('micOuter');
+  const mi=document.getElementById('micInner');
+  if(mo) mo.classList.add('listening');
+  if(mi) mi.textContent='🎙';
+  const vs=document.getElementById('voiceStatus');
+  if(vs) vs.textContent='Listening...';
+  const vb=document.getElementById('voiceSub');
+  if(vb) vb.textContent='Speak your farming question now';
+  recognition.onresult=e=>{
+    const t=e.results[0][0].transcript;
+    if(mo) mo.classList.remove('listening');
+    if(mi) mi.textContent='🎤';
+    if(vs) vs.textContent='Processing...';
+    processVoiceQuestion(t);
+    isListening=false;
+  };
+  recognition.onerror=e=>{
+    resetVoiceState();
+    if(e.error==='not-allowed') alert('Please allow microphone access in your browser settings.');
+  };
+  recognition.onend=()=>{ if(isListening) resetVoiceState(); };
   recognition.start();
 }
-function replayVoice(){if(lastVoiceAnswer)speakAnswer(lastVoiceAnswer);}
-function stopVoice(){if(window.speechSynthesis)window.speechSynthesis.cancel();stopWave();resetVoiceState();}
+
+function replayVoice(){if(lastVoiceAnswer) speakAnswer(lastVoiceAnswer);}
+function stopVoice(){if(window.speechSynthesis) window.speechSynthesis.cancel();stopWave();resetVoiceState();}
 function resetVoice(){stopVoice();document.getElementById('voiceResponseCard').style.display='none';lastVoiceAnswer='';}
-function voiceQuickAsk(idx){processVoiceQuestion(currentLang==='tw'?QUICK_TW[idx]:QUICK_EN[idx]);}
-</script>
+function voiceQuickAsk(idx){processVoiceQuestion(QUICK_EN[idx]);}</script>
 </body>
 </html>
