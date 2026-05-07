@@ -116,7 +116,10 @@ def init_db():
         has_old_fp = any(c in fp_cols for c in old_fp_cols)
         missing_fp = any(c not in fp_cols for c in ['farm_unit','crop_type','region','email'])
         if has_old_fp or missing_fp:
-            db.executescript("""
+            # Build INSERT only from columns that exist in the old table
+            safe_cols = [c for c in ['session_id','farmer_name','phone','farm_size','crops','ghana_card','ghana_card_valid','soil_type','water_source'] if c in fp_cols]
+            cols_str  = ','.join(safe_cols)
+            db.executescript(f"""
                 CREATE TABLE IF NOT EXISTS farm_profiles_new (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id TEXT UNIQUE NOT NULL,
@@ -129,12 +132,8 @@ def init_db():
                     created_at TEXT DEFAULT (datetime('now')),
                     updated_at TEXT DEFAULT (datetime('now'))
                 );
-                INSERT OR IGNORE INTO farm_profiles_new
-                    (session_id, farmer_name, phone, farm_size, crops,
-                     ghana_card, ghana_card_valid, soil_type, water_source)
-                SELECT session_id, farmer_name, phone, farm_size, crops,
-                       ghana_card, ghana_card_valid, soil_type, water_source
-                FROM farm_profiles;
+                INSERT OR IGNORE INTO farm_profiles_new ({cols_str})
+                SELECT {cols_str} FROM farm_profiles;
                 DROP TABLE farm_profiles;
                 ALTER TABLE farm_profiles_new RENAME TO farm_profiles;
             """)
