@@ -509,8 +509,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       <div class="card">
         <div class="card-title g">🌱 Select crops grown</div>
         <div class="crop-type-row">
-          <div class="ctype on" onclick="selCropType(this,'staples')">🌾 Staples &amp; Vegetables</div>
-          <div class="ctype" onclick="selCropType(this,'fruits')">🍎 Fruits</div>
+          <div class="ctype on" data-type="staples" onclick="selCropType(this,'staples')">🌾 Staples &amp; Vegetables</div>
+          <div class="ctype" data-type="fruits" onclick="selCropType(this,'fruits')">🍎 Fruits</div>
         </div>
         <div class="card-title g" style="margin-bottom:.5rem;">Choose all that apply</div>
         <div class="chips" id="staple-chips">
@@ -1033,13 +1033,19 @@ async function saveCropProfile(){
     farm_unit:document.getElementById('cFarmUnit').value,
     soil_type:document.getElementById('cSoilType').value,
     water_source:document.getElementById('cWaterSource').value,
+    crop_type:document.querySelector('.ctype.on')?document.querySelector('.ctype.on').dataset.type||'staples':'staples',
     crops:selectedCrops.join(','),
   };
-  try{await fetch('/api/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}catch(e){}
-  showSaved('cropSaved','g');
-  // Update diary crop select
-  const sel=document.getElementById('cDiaryCrop');
-  sel.innerHTML='<option value="all">All crops</option>'+selectedCrops.map(c=>`<option value="${c}">${c}</option>`).join('');
+  try{
+    const resp=await fetch('/api/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await resp.json();
+    if(data.success){
+      showSaved('cropSaved','g');
+      // Update diary crop select
+      const sel=document.getElementById('cDiaryCrop');
+      sel.innerHTML='<option value="all">All crops</option>'+selectedCrops.map(c=>`<option value="${c}">${c}</option>`).join('');
+    }
+  }catch(e){alert('Error saving profile. Please try again.');}
 }
 
 async function saveLivestockProfile(){
@@ -1049,25 +1055,37 @@ async function saveLivestockProfile(){
     ghana_card:document.getElementById('lGhanaCard').value.trim(),
     region:document.getElementById('lRegion').value,
     email:document.getElementById('lEmail').value.trim(),
-    animal_type:'profile',total_count:0,sick_count:0,
+    animal_type:'profile',
+    total_count:0,sick_count:0,
   };
-  try{await fetch('/api/livestock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}catch(e){}
-  showSaved('liveProfileSaved','a');
+  try{
+    const resp=await fetch('/api/livestock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await resp.json();
+    if(data.success) showSaved('liveProfileSaved','a');
+  }catch(e){alert('Error saving profile. Please try again.');}
 }
 
 async function saveAnimalDetails(){
   const payload={
     animal_type:selectedAnimal,
+    farmer_name:(document.getElementById('lFarmerName').value||'').trim(),
+    phone:(document.getElementById('lFarmerPhone').value||'').trim(),
+    ghana_card:(document.getElementById('lGhanaCard').value||'').trim(),
+    region:document.getElementById('lRegion').value||'greater_accra',
     total_count:parseInt(document.getElementById('lTotalCount').value)||0,
     sick_count:parseInt(document.getElementById('lSickCount').value)||0,
     housing_type:document.getElementById('lHousing').value,
     purpose:document.getElementById('lPurpose').value,
     feed_source:document.getElementById('lFeed').value,
     water_source:document.getElementById('lWater').value,
-    nearest_vet:document.getElementById('lVet').value.trim(),
+    nearest_vet:(document.getElementById('lVet').value||'').trim(),
   };
-  try{await fetch('/api/livestock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}catch(e){}
-  showSaved('animalSaved','a');
+  try{
+    const resp=await fetch('/api/livestock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await resp.json();
+    if(data.success) showSaved('animalSaved','a');
+    else alert('Error saving. Please try again.');
+  }catch(e){alert('Connection error. Please try again.');}
 }
 
 // ── Calendar helpers ──
