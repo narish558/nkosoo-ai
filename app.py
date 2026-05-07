@@ -572,28 +572,6 @@ def api_save_livestock():
 # ---------------------------------------------------------------------------
 # Usage
 # ---------------------------------------------------------------------------
-    return jsonify({"success":True})
-
-@app.route("/api/yearplan/<int:plan_id>", methods=["DELETE"])
-def api_delete_yearplan(plan_id):
-    sid=get_sid()
-    with get_db() as db:
-        db.execute("DELETE FROM year_plan WHERE id=? AND session_id=?",(plan_id,sid))
-        db.commit()
-    return jsonify({"success":True})
-
-@app.route("/api/yearplan/<int:plan_id>/status", methods=["POST"])
-def api_update_yearplan_status(plan_id):
-    sid=get_sid(); data=request.get_json()
-    status=data.get("status","pending")
-    with get_db() as db:
-        db.execute("UPDATE year_plan SET status=? WHERE id=? AND session_id=?",(status,plan_id,sid))
-        db.commit()
-    return jsonify({"success":True})
-
-# ---------------------------------------------------------------------------
-# Usage
-# ---------------------------------------------------------------------------
 @app.route("/api/usage")
 def api_usage():
     sid=get_sid(); user=get_or_create_user(sid)
