@@ -110,15 +110,42 @@ def init_db():
             created_at TEXT DEFAULT (datetime('now'))
         );
         """)
-        # Migrate existing farm_profiles — add missing columns safely
-        existing = [r[1] for r in db.execute("PRAGMA table_info(farm_profiles)").fetchall()]
-        for col, defn in [
-            ("farm_unit","TEXT"), ("crop_type","TEXT"),
-            ("region","TEXT"), ("email","TEXT"),
-        ]:
-            if col not in existing:
-                try: db.execute(f"ALTER TABLE farm_profiles ADD COLUMN {col} {defn}")
-                except: pass
+        # Migrate farm_profiles — detect old schema and recreate if needed
+        fp_cols = [r[1] for r in db.execute("PRAGMA table_info(farm_profiles)").fetchall()]
+        old_fp_cols = ['farm_name', 'farming_type', 'nearest_market', 'latitude', 'longitude', 'farm_address']
+        has_old_fp = any(c in fp_cols for c in old_fp_cols)
+        missing_fp = any(c not in fp_cols for c in ['farm_unit','crop_type','region','email'])
+        if has_old_fp or missing_fp:
+            db.executescript("""
+                CREATE TABLE IF NOT EXISTS farm_profiles_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT UNIQUE NOT NULL,
+                    farmer_name TEXT, phone TEXT,
+                    farm_size TEXT, farm_unit TEXT, crops TEXT,
+                    crop_type TEXT, ghana_card TEXT,
+                    ghana_card_valid INTEGER DEFAULT 0,
+                    soil_type TEXT, water_source TEXT,
+                    region TEXT, email TEXT,
+                    created_at TEXT DEFAULT (datetime('now')),
+                    updated_at TEXT DEFAULT (datetime('now'))
+                );
+                INSERT OR IGNORE INTO farm_profiles_new
+                    (session_id, farmer_name, phone, farm_size, crops,
+                     ghana_card, ghana_card_valid, soil_type, water_source)
+                SELECT session_id, farmer_name, phone, farm_size, crops,
+                       ghana_card, ghana_card_valid, soil_type, water_source
+                FROM farm_profiles;
+                DROP TABLE farm_profiles;
+                ALTER TABLE farm_profiles_new RENAME TO farm_profiles;
+            """)
+        else:
+            for col, defn in [
+                ("farm_unit","TEXT"),("crop_type","TEXT"),
+                ("region","TEXT"),("email","TEXT"),
+            ]:
+                if col not in fp_cols:
+                    try: db.execute(f"ALTER TABLE farm_profiles ADD COLUMN {col} {defn}")
+                    except: pass
 
         # Migrate livestock_profiles — check if old UNIQUE(session_id,animal_type) exists
         # If so, recreate with UNIQUE(session_id) only
