@@ -117,16 +117,52 @@ def init_db():
             ("region","TEXT"), ("email","TEXT"),
         ]:
             if col not in existing:
-                db.execute(f"ALTER TABLE farm_profiles ADD COLUMN {col} {defn}")
-        # Migrate existing livestock_profiles — add missing columns safely
-        l_existing = [r[1] for r in db.execute("PRAGMA table_info(livestock_profiles)").fetchall()]
-        for col, defn in [
-            ("farmer_name","TEXT"), ("phone","TEXT"),
-            ("ghana_card","TEXT"), ("ghana_card_valid","INTEGER DEFAULT 0"),
-            ("region","TEXT"), ("email","TEXT"),
-        ]:
-            if col not in l_existing:
-                db.execute(f"ALTER TABLE livestock_profiles ADD COLUMN {col} {defn}")
+                try: db.execute(f"ALTER TABLE farm_profiles ADD COLUMN {col} {defn}")
+                except: pass
+
+        # Migrate livestock_profiles — check if old UNIQUE(session_id,animal_type) exists
+        # If so, recreate with UNIQUE(session_id) only
+        live_info = db.execute("PRAGMA index_list(livestock_profiles)").fetchall()
+        live_cols = [r[1] for r in db.execute("PRAGMA table_info(livestock_profiles)").fetchall()]
+        has_old_unique = any('animal_type' in str(i) for i in live_info)
+        # Also check if new columns exist
+        needs_new_cols = any(c not in live_cols for c in ['farmer_name','region','email'])
+        if has_old_unique or needs_new_cols:
+            # Recreate table with correct schema
+            db.executescript("""
+                CREATE TABLE IF NOT EXISTS livestock_profiles_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT UNIQUE NOT NULL,
+                    farmer_name TEXT, phone TEXT,
+                    ghana_card TEXT, ghana_card_valid INTEGER DEFAULT 0,
+                    region TEXT, email TEXT,
+                    animal_type TEXT,
+                    total_count INTEGER DEFAULT 0,
+                    sick_count INTEGER DEFAULT 0,
+                    housing_type TEXT, purpose TEXT,
+                    feed_source TEXT, water_source TEXT,
+                    nearest_vet TEXT, notes TEXT,
+                    created_at TEXT DEFAULT (datetime('now')),
+                    updated_at TEXT DEFAULT (datetime('now'))
+                );
+                INSERT OR IGNORE INTO livestock_profiles_new
+                    (session_id,animal_type,total_count,sick_count,
+                     housing_type,purpose,feed_source,water_source,nearest_vet,notes)
+                SELECT session_id,animal_type,total_count,sick_count,
+                       housing_type,purpose,feed_source,water_source,nearest_vet,notes
+                FROM livestock_profiles;
+                DROP TABLE livestock_profiles;
+                ALTER TABLE livestock_profiles_new RENAME TO livestock_profiles;
+            """)
+        else:
+            for col, defn in [
+                ("farmer_name","TEXT"),("phone","TEXT"),
+                ("ghana_card","TEXT"),("ghana_card_valid","INTEGER DEFAULT 0"),
+                ("region","TEXT"),("email","TEXT"),
+            ]:
+                if col not in live_cols:
+                    try: db.execute(f"ALTER TABLE livestock_profiles ADD COLUMN {col} {defn}")
+                    except: pass
         db.commit()
 
 
@@ -484,36 +520,40 @@ def api_save_profile():
     sid=get_sid(); data=request.get_json()
     ghana_card=data.get("ghana_card","").strip().upper()
     ghana_card_valid=1 if (ghana_card and re.match(r'^GHA-\d{9}-\d$',ghana_card)) else 0
-    with get_db() as db:
-        db.execute("""
-            INSERT INTO farm_profiles
-                (session_id,farmer_name,phone,farm_size,farm_unit,crops,crop_type,
-                 ghana_card,ghana_card_valid,soil_type,water_source,region,email,updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
-            ON CONFLICT(session_id) DO UPDATE SET
-                farmer_name=excluded.farmer_name,
-                phone=excluded.phone,
-                farm_size=excluded.farm_size,
-                farm_unit=excluded.farm_unit,
-                crops=excluded.crops,
-                crop_type=excluded.crop_type,
-                ghana_card=excluded.ghana_card,
-                ghana_card_valid=excluded.ghana_card_valid,
-                soil_type=excluded.soil_type,
-                water_source=excluded.water_source,
-                region=excluded.region,
-                email=excluded.email,
-                updated_at=datetime('now')
-        """,(sid,
-             data.get("farmer_name",""),data.get("phone",""),
-             data.get("farm_size",""),data.get("farm_unit","acres"),
-             data.get("crops",""),data.get("crop_type","staples"),
-             ghana_card,ghana_card_valid,
-             data.get("soil_type",""),data.get("water_source",""),
-             data.get("region","greater_accra"),data.get("email","")
-        ))
-        db.commit()
-    return jsonify({"success":True,"ghana_card_valid":bool(ghana_card_valid)})
+    try:
+        with get_db() as db:
+            # Check if row exists
+            existing=db.execute("SELECT id FROM farm_profiles WHERE session_id=?",(sid,)).fetchone()
+            if existing:
+                db.execute("""
+                    UPDATE farm_profiles SET
+                        farmer_name=?,phone=?,farm_size=?,farm_unit=?,crops=?,crop_type=?,
+                        ghana_card=?,ghana_card_valid=?,soil_type=?,water_source=?,
+                        region=?,email=?,updated_at=datetime('now')
+                    WHERE session_id=?
+                """,(data.get("farmer_name",""),data.get("phone",""),
+                     data.get("farm_size",""),data.get("farm_unit","acres"),
+                     data.get("crops",""),data.get("crop_type","staples"),
+                     ghana_card,ghana_card_valid,
+                     data.get("soil_type",""),data.get("water_source",""),
+                     data.get("region","greater_accra"),data.get("email",""),sid))
+            else:
+                db.execute("""
+                    INSERT INTO farm_profiles
+                        (session_id,farmer_name,phone,farm_size,farm_unit,crops,crop_type,
+                         ghana_card,ghana_card_valid,soil_type,water_source,region,email)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """,(sid,data.get("farmer_name",""),data.get("phone",""),
+                     data.get("farm_size",""),data.get("farm_unit","acres"),
+                     data.get("crops",""),data.get("crop_type","staples"),
+                     ghana_card,ghana_card_valid,
+                     data.get("soil_type",""),data.get("water_source",""),
+                     data.get("region","greater_accra"),data.get("email","")))
+            db.commit()
+        return jsonify({"success":True,"ghana_card_valid":bool(ghana_card_valid)})
+    except Exception as e:
+        print(f"[profile save error] {e}")
+        return jsonify({"success":False,"error":str(e)}),500
 
 # ---------------------------------------------------------------------------
 # Livestock profile
@@ -532,42 +572,45 @@ def api_save_livestock():
     if not animal_type: return jsonify({"error":"animal_type required"}),400
     ghana_card=data.get("ghana_card","").strip().upper()
     ghana_card_valid=1 if (ghana_card and re.match(r'^GHA-\d{9}-\d$',ghana_card)) else 0
-    with get_db() as db:
-        db.execute("""
-            INSERT INTO livestock_profiles
-                (session_id,farmer_name,phone,ghana_card,ghana_card_valid,
-                 region,email,animal_type,total_count,sick_count,
-                 housing_type,purpose,feed_source,water_source,nearest_vet,notes,updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
-            ON CONFLICT(session_id) DO UPDATE SET
-                farmer_name=excluded.farmer_name,
-                phone=excluded.phone,
-                ghana_card=excluded.ghana_card,
-                ghana_card_valid=excluded.ghana_card_valid,
-                region=excluded.region,
-                email=excluded.email,
-                animal_type=excluded.animal_type,
-                total_count=excluded.total_count,
-                sick_count=excluded.sick_count,
-                housing_type=excluded.housing_type,
-                purpose=excluded.purpose,
-                feed_source=excluded.feed_source,
-                water_source=excluded.water_source,
-                nearest_vet=excluded.nearest_vet,
-                notes=excluded.notes,
-                updated_at=datetime('now')
-        """,(sid,
-             data.get("farmer_name",""),data.get("phone",""),
-             ghana_card,ghana_card_valid,
-             data.get("region","greater_accra"),data.get("email",""),
-             animal_type,
-             data.get("total_count",0),data.get("sick_count",0),
-             data.get("housing_type",""),data.get("purpose",""),
-             data.get("feed_source",""),data.get("water_source",""),
-             data.get("nearest_vet",""),data.get("notes","")
-        ))
-        db.commit()
-    return jsonify({"success":True})
+    try:
+        with get_db() as db:
+            existing=db.execute("SELECT id FROM livestock_profiles WHERE session_id=?",(sid,)).fetchone()
+            if existing:
+                db.execute("""
+                    UPDATE livestock_profiles SET
+                        farmer_name=?,phone=?,ghana_card=?,ghana_card_valid=?,
+                        region=?,email=?,animal_type=?,total_count=?,sick_count=?,
+                        housing_type=?,purpose=?,feed_source=?,water_source=?,
+                        nearest_vet=?,notes=?,updated_at=datetime('now')
+                    WHERE session_id=?
+                """,(data.get("farmer_name",""),data.get("phone",""),
+                     ghana_card,ghana_card_valid,
+                     data.get("region","greater_accra"),data.get("email",""),
+                     animal_type,
+                     data.get("total_count",0),data.get("sick_count",0),
+                     data.get("housing_type",""),data.get("purpose",""),
+                     data.get("feed_source",""),data.get("water_source",""),
+                     data.get("nearest_vet",""),data.get("notes",""),sid))
+            else:
+                db.execute("""
+                    INSERT INTO livestock_profiles
+                        (session_id,farmer_name,phone,ghana_card,ghana_card_valid,
+                         region,email,animal_type,total_count,sick_count,
+                         housing_type,purpose,feed_source,water_source,nearest_vet,notes)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """,(sid,data.get("farmer_name",""),data.get("phone",""),
+                     ghana_card,ghana_card_valid,
+                     data.get("region","greater_accra"),data.get("email",""),
+                     animal_type,
+                     data.get("total_count",0),data.get("sick_count",0),
+                     data.get("housing_type",""),data.get("purpose",""),
+                     data.get("feed_source",""),data.get("water_source",""),
+                     data.get("nearest_vet",""),data.get("notes","")))
+            db.commit()
+        return jsonify({"success":True})
+    except Exception as e:
+        print(f"[livestock save error] {e}")
+        return jsonify({"success":False,"error":str(e)}),500
 
 # ---------------------------------------------------------------------------
 # Usage
