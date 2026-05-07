@@ -649,7 +649,134 @@ def api_usage():
                     "free_limit":FREE_DAILY_LIMIT,"diagnose_limit":FREE_DIAGNOSE_LIMIT})
 
 # ---------------------------------------------------------------------------
-# Paystack
+# Admin exports
+# ---------------------------------------------------------------------------
+import csv, io
+
+@app.route("/admin/export/crop-profiles")
+def export_crop_profiles():
+    if not session.get("admin"): return redirect("/admin")
+    with get_db() as db:
+        rows = db.execute("""
+            SELECT farmer_name, phone, ghana_card,
+                   CASE WHEN ghana_card_valid=1 THEN 'Yes' ELSE 'No' END as gc_verified,
+                   region, email, farm_size, farm_unit,
+                   crop_type, crops, soil_type, water_source,
+                   created_at, updated_at
+            FROM farm_profiles
+            ORDER BY created_at DESC
+        """).fetchall()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Full Name","Phone","Ghana Card","GC Verified",
+        "Region","Email","Farm Size","Unit",
+        "Crop Type","Crops","Soil Type","Water Source",
+        "Registered At","Last Updated"
+    ])
+    for r in rows:
+        writer.writerow([
+            r["farmer_name"] or "",
+            r["phone"] or "",
+            r["ghana_card"] or "",
+            r["gc_verified"],
+            GHANA_REGIONS.get(r["region"],{}).get("name",r["region"] or ""),
+            r["email"] or "",
+            r["farm_size"] or "",
+            r["farm_unit"] or "",
+            r["crop_type"] or "",
+            r["crops"] or "",
+            r["soil_type"] or "",
+            r["water_source"] or "",
+            (r["created_at"] or "")[:16],
+            (r["updated_at"] or "")[:16],
+        ])
+    output.seek(0)
+    from flask import Response
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition":"attachment;filename=nkosoo_crop_profiles.csv"}
+    )
+
+@app.route("/admin/export/livestock-profiles")
+def export_livestock_profiles():
+    if not session.get("admin"): return redirect("/admin")
+    with get_db() as db:
+        rows = db.execute("""
+            SELECT farmer_name, phone, ghana_card,
+                   CASE WHEN ghana_card_valid=1 THEN 'Yes' ELSE 'No' END as gc_verified,
+                   region, email, animal_type, total_count, sick_count,
+                   housing_type, purpose, feed_source, water_source,
+                   nearest_vet, created_at, updated_at
+            FROM livestock_profiles
+            WHERE animal_type IS NOT NULL AND animal_type != 'profile'
+            ORDER BY created_at DESC
+        """).fetchall()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Full Name","Phone","Ghana Card","GC Verified",
+        "Region","Email","Animal Type","Total Count","Sick Count",
+        "Housing","Purpose","Feed Source","Water Source",
+        "Nearest Vet","Registered At","Last Updated"
+    ])
+    for r in rows:
+        writer.writerow([
+            r["farmer_name"] or "",
+            r["phone"] or "",
+            r["ghana_card"] or "",
+            r["gc_verified"],
+            GHANA_REGIONS.get(r["region"],{}).get("name",r["region"] or ""),
+            r["email"] or "",
+            (r["animal_type"] or "").capitalize(),
+            r["total_count"] or 0,
+            r["sick_count"] or 0,
+            r["housing_type"] or "",
+            r["purpose"] or "",
+            r["feed_source"] or "",
+            r["water_source"] or "",
+            r["nearest_vet"] or "",
+            (r["created_at"] or "")[:16],
+            (r["updated_at"] or "")[:16],
+        ])
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition":"attachment;filename=nkosoo_livestock_profiles.csv"}
+    )
+
+@app.route("/admin/export/all-farmers")
+def export_all_farmers():
+    if not session.get("admin"): return redirect("/admin")
+    with get_db() as db:
+        rows = db.execute("""
+            SELECT session_id, email, plan, region,
+                   created_at, pro_since
+            FROM users
+            ORDER BY created_at DESC
+        """).fetchall()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Session ID","Email","Plan","Region","Joined","Pro Since"])
+    for r in rows:
+        writer.writerow([
+            r["session_id"],
+            r["email"] or "",
+            r["plan"] or "free",
+            GHANA_REGIONS.get(r["region"],{}).get("name",r["region"] or ""),
+            (r["created_at"] or "")[:16],
+            (r["pro_since"] or "")[:16],
+        ])
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition":"attachment;filename=nkosoo_all_farmers.csv"}
+    )
+
+# ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 @app.route("/api/pay/init", methods=["POST"])
 def pay_init():
@@ -740,6 +867,110 @@ def admin():
 @app.route("/admin/logout")
 def admin_logout():
     session.pop("admin",None); return redirect("/admin")
+
+# ---------------------------------------------------------------------------
+# Admin exports — CSV downloads
+# ---------------------------------------------------------------------------
+import csv, io
+
+def require_admin():
+    return session.get("admin") == True
+
+@app.route("/admin/export/crop-profiles")
+def export_crop_profiles():
+    if not require_admin(): return redirect("/admin")
+    with get_db() as db:
+        rows = db.execute("""
+            SELECT farmer_name, phone, ghana_card,
+                   CASE WHEN ghana_card_valid=1 THEN 'Yes' ELSE 'No' END as gc_verified,
+                   farm_size, farm_unit, crop_type, crops,
+                   soil_type, water_source, region, email,
+                   created_at, updated_at
+            FROM farm_profiles
+            ORDER BY created_at DESC
+        """).fetchall()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Full Name","Phone","Ghana Card","GC Verified",
+                     "Farm Size","Unit","Crop Type","Crops",
+                     "Soil Type","Water Source","Region","Email",
+                     "Registered","Last Updated"])
+    for row in rows:
+        writer.writerow(list(row))
+    output.seek(0)
+    from flask import make_response
+    resp = make_response(output.getvalue())
+    resp.headers["Content-Disposition"] = "attachment; filename=nkosoo_crop_profiles.csv"
+    resp.headers["Content-Type"] = "text/csv; charset=utf-8"
+    return resp
+
+@app.route("/admin/export/livestock-profiles")
+def export_livestock_profiles():
+    if not require_admin(): return redirect("/admin")
+    with get_db() as db:
+        rows = db.execute("""
+            SELECT farmer_name, phone, ghana_card,
+                   CASE WHEN ghana_card_valid=1 THEN 'Yes' ELSE 'No' END as gc_verified,
+                   region, email, animal_type,
+                   total_count, sick_count,
+                   housing_type, purpose, feed_source, water_source,
+                   nearest_vet, created_at, updated_at
+            FROM livestock_profiles
+            WHERE animal_type IS NOT NULL AND animal_type != 'profile'
+            ORDER BY created_at DESC
+        """).fetchall()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Full Name","Phone","Ghana Card","GC Verified",
+                     "Region","Email","Animal Type",
+                     "Total Count","Sick Count",
+                     "Housing","Purpose","Feed Source","Water Source",
+                     "Nearest Vet","Registered","Last Updated"])
+    for row in rows:
+        writer.writerow(list(row))
+    output.seek(0)
+    from flask import make_response
+    resp = make_response(output.getvalue())
+    resp.headers["Content-Disposition"] = "attachment; filename=nkosoo_livestock_profiles.csv"
+    resp.headers["Content-Type"] = "text/csv; charset=utf-8"
+    return resp
+
+@app.route("/admin/export/all-farmers")
+def export_all_farmers():
+    if not require_admin(): return redirect("/admin")
+    with get_db() as db:
+        rows = db.execute("""
+            SELECT
+                COALESCE(fp.farmer_name, lp.farmer_name, 'Unknown') as name,
+                COALESCE(fp.phone, lp.phone, '') as phone,
+                COALESCE(fp.ghana_card, lp.ghana_card, '') as ghana_card,
+                CASE WHEN COALESCE(fp.ghana_card_valid, lp.ghana_card_valid, 0)=1
+                     THEN 'Yes' ELSE 'No' END as gc_verified,
+                COALESCE(fp.region, lp.region, u.region, '') as region,
+                COALESCE(fp.email, lp.email, u.email, '') as email,
+                CASE WHEN fp.session_id IS NOT NULL THEN 'Crop farmer' ELSE '' END as crop_profile,
+                COALESCE(fp.crops,'') as crops,
+                CASE WHEN lp.session_id IS NOT NULL THEN 'Yes' ELSE 'No' END as livestock_profile,
+                COALESCE(lp.animal_type,'') as animal_type,
+                u.plan, u.created_at
+            FROM users u
+            LEFT JOIN farm_profiles fp ON fp.session_id = u.session_id
+            LEFT JOIN livestock_profiles lp ON lp.session_id = u.session_id
+            ORDER BY u.created_at DESC
+        """).fetchall()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Full Name","Phone","Ghana Card","GC Verified",
+                     "Region","Email","Crop Profile","Crops",
+                     "Livestock Profile","Animal Type","Plan","Joined"])
+    for row in rows:
+        writer.writerow(list(row))
+    output.seek(0)
+    from flask import make_response
+    resp = make_response(output.getvalue())
+    resp.headers["Content-Disposition"] = "attachment; filename=nkosoo_all_farmers.csv"
+    resp.headers["Content-Type"] = "text/csv; charset=utf-8"
+    return resp
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
