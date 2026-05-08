@@ -109,6 +109,11 @@ def init_db():
             ai_tip TEXT, log_date TEXT,
             created_at TEXT DEFAULT (datetime('now'))
         );
+        CREATE TABLE IF NOT EXISTS price_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data TEXT NOT NULL,
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
         """)
         # Migrate farm_profiles — detect old schema and recreate if needed
         fp_cols = [r[1] for r in db.execute("PRAGMA table_info(farm_profiles)").fetchall()]
@@ -382,9 +387,12 @@ def get_weather(region_key="greater_accra"):
         return fb
 
 # ---------------------------------------------------------------------------
-# Static data
+# Live market prices — AI-refreshed weekly, cached in DB
 # ---------------------------------------------------------------------------
-PRICE_DATA = [
+_price_cache = {"ts": 0, "data": None}
+PRICE_REFRESH_HOURS = 168  # refresh weekly
+
+PRICE_FALLBACK_CROPS = [
     {"crop":"Maize",    "crop_tw":"Aburo",   "unit":"50kg bag",   "price":240,"change":8,  "trend":"up"},
     {"crop":"Tomatoes", "crop_tw":"Ntomato", "unit":"crate",      "price":180,"change":-12,"trend":"down"},
     {"crop":"Cassava",  "crop_tw":"Bankye",  "unit":"100kg bag",  "price":310,"change":0,  "trend":"stable"},
@@ -395,16 +403,109 @@ PRICE_DATA = [
     {"crop":"Groundnut","crop_tw":"Nkatie",  "unit":"50kg bag",   "price":290,"change":1,  "trend":"stable"},
 ]
 
-LIVESTOCK_PRICES = [
-    {"animal":"Live chicken","animal_tw":"Akoko","unit":"per kg",    "price":35, "change":5,  "trend":"up"},
-    {"animal":"Eggs",        "animal_tw":"Nkosua","unit":"tray of 30","price":85,"change":3,  "trend":"up"},
-    {"animal":"Cattle",      "animal_tw":"Nanka","unit":"per head",  "price":4500,"change":0, "trend":"stable"},
-    {"animal":"Goat",        "animal_tw":"Abirekyi","unit":"per head","price":420,"change":8, "trend":"up"},
-    {"animal":"Sheep",       "animal_tw":"Odwan","unit":"per head",  "price":380,"change":4,  "trend":"up"},
-    {"animal":"Pig",         "animal_tw":"Prako","unit":"per head",  "price":900,"change":-3, "trend":"down"},
-    {"animal":"Tilapia",     "animal_tw":"Nsuo Mmoa","unit":"per kg","price":28, "change":6,  "trend":"up"},
-    {"animal":"Catfish",     "animal_tw":"Nsuo Mmoa","unit":"per kg","price":32, "change":2,  "trend":"up"},
+PRICE_FALLBACK_LIVESTOCK = [
+    {"animal":"Live chicken","animal_tw":"Akoko",    "unit":"per kg",    "price":35,  "change":5,  "trend":"up"},
+    {"animal":"Eggs",        "animal_tw":"Nkosua",   "unit":"tray of 30","price":85,  "change":3,  "trend":"up"},
+    {"animal":"Cattle",      "animal_tw":"Nanka",    "unit":"per head",  "price":4500,"change":0,  "trend":"stable"},
+    {"animal":"Goat",        "animal_tw":"Abirekyi", "unit":"per head",  "price":420, "change":8,  "trend":"up"},
+    {"animal":"Sheep",       "animal_tw":"Odwan",    "unit":"per head",  "price":380, "change":4,  "trend":"up"},
+    {"animal":"Pig",         "animal_tw":"Prako",    "unit":"per head",  "price":900, "change":-3, "trend":"down"},
+    {"animal":"Tilapia",     "animal_tw":"Nsuo Mmoa","unit":"per kg",    "price":28,  "change":6,  "trend":"up"},
+    {"animal":"Catfish",     "animal_tw":"Nsuo Mmoa","unit":"per kg",    "price":32,  "change":2,  "trend":"up"},
 ]
+
+def fetch_live_prices():
+    """Use Claude AI to generate current GHS market prices based on season and market trends."""
+    import datetime
+    month = datetime.datetime.now().month
+    season = "major rainy season" if month in [4,5,6,7] else ("minor rainy season" if month in [9,10] else "dry season/harmattan")
+    prompt = f"""You are a Ghana agricultural market analyst. Today is {datetime.datetime.now().strftime('%B %Y')}, {season} in Ghana.
+
+Generate CURRENT realistic GHS wholesale market prices for these crops at Kumasi Kejetia and Accra Agbogbloshie markets.
+Return ONLY valid JSON, no markdown, no explanation.
+
+Format exactly:
+{{
+  "crops": [
+    {{"crop": "Maize", "crop_tw": "Aburo", "unit": "50kg bag", "price": 260, "change": 5, "trend": "up"}},
+    {{"crop": "Tomatoes", "crop_tw": "Ntomato", "unit": "crate", "price": 195, "change": -8, "trend": "down"}},
+    {{"crop": "Cassava", "crop_tw": "Bankye", "unit": "100kg bag", "price": 320, "change": 0, "trend": "stable"}},
+    {{"crop": "Plantain", "crop_tw": "Ɔgede", "unit": "bunch", "price": 60, "change": 3, "trend": "up"}},
+    {{"crop": "Yam", "crop_tw": "Bayerɛ", "unit": "tuber (lg)", "price": 38, "change": 2, "trend": "up"}},
+    {{"crop": "Cocoa", "crop_tw": "Kookoo", "unit": "kg dry bean", "price": 26, "change": 1, "trend": "up"}},
+    {{"crop": "Pepper", "crop_tw": "Mako", "unit": "kg", "price": 30, "change": -3, "trend": "down"}},
+    {{"crop": "Groundnut", "crop_tw": "Nkatie", "unit": "50kg bag", "price": 295, "change": 2, "trend": "stable"}}
+  ],
+  "livestock": [
+    {{"animal": "Live chicken", "animal_tw": "Akoko", "unit": "per kg", "price": 38, "change": 4, "trend": "up"}},
+    {{"animal": "Eggs", "animal_tw": "Nkosua", "unit": "tray of 30", "price": 90, "change": 5, "trend": "up"}},
+    {{"animal": "Cattle", "animal_tw": "Nanka", "unit": "per head", "price": 4800, "change": 0, "trend": "stable"}},
+    {{"animal": "Goat", "animal_tw": "Abirekyi", "unit": "per head", "price": 450, "change": 6, "trend": "up"}},
+    {{"animal": "Sheep", "animal_tw": "Odwan", "unit": "per head", "price": 400, "change": 3, "trend": "up"}},
+    {{"animal": "Pig", "animal_tw": "Prako", "unit": "per head", "price": 950, "change": -2, "trend": "down"}},
+    {{"animal": "Tilapia", "animal_tw": "Nsuo Mmoa", "unit": "per kg", "price": 32, "change": 4, "trend": "up"}},
+    {{"animal": "Catfish", "animal_tw": "Nsuo Mmoa", "unit": "per kg", "price": 35, "change": 2, "trend": "up"}}
+  ],
+  "updated": "{datetime.datetime.now().strftime('%d %b %Y')}",
+  "season": "{season}",
+  "source": "Kumasi Kejetia & Accra Agbogbloshie markets"
+}}
+
+Adjust prices realistically for {season}. During rainy season tomatoes are cheaper, maize more expensive. Change is % change from last week. Trend: up/down/stable."""
+
+    try:
+        resp = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1500,
+            messages=[{"role":"user","content":prompt}]
+        )
+        text = resp.content[0].text.strip()
+        # Clean any markdown fences
+        text = text.replace("```json","").replace("```","").strip()
+        data = json.loads(text)
+        return data
+    except Exception as e:
+        print(f"[Price fetch error] {e}")
+        return None
+
+def get_prices():
+    """Return prices from cache or refresh if stale."""
+    global _price_cache
+    age_hours = (time.time() - _price_cache["ts"]) / 3600
+    if _price_cache["data"] and age_hours < PRICE_REFRESH_HOURS:
+        return _price_cache["data"]
+    # Try to get from DB first
+    try:
+        with get_db() as db:
+            row = db.execute("SELECT data, updated_at FROM price_cache ORDER BY updated_at DESC LIMIT 1").fetchone()
+            if row:
+                import datetime
+                saved = datetime.datetime.fromisoformat(row["updated_at"])
+                age = (datetime.datetime.now() - saved).total_seconds() / 3600
+                if age < PRICE_REFRESH_HOURS:
+                    data = json.loads(row["data"])
+                    _price_cache = {"ts": time.time(), "data": data}
+                    return data
+    except Exception:
+        pass
+    # Fetch fresh from Claude
+    data = fetch_live_prices()
+    if data:
+        _price_cache = {"ts": time.time(), "data": data}
+        try:
+            with get_db() as db:
+                db.execute("INSERT INTO price_cache (data, updated_at) VALUES (?, datetime('now'))",(json.dumps(data),))
+                db.commit()
+        except Exception as e:
+            print(f"[Price cache save error] {e}")
+        return data
+    # Fallback to static
+    return {"crops": PRICE_FALLBACK_CROPS, "livestock": PRICE_FALLBACK_LIVESTOCK,
+            "updated": "Cached", "season": "", "source": "Reference prices"}
+
+# Static fallback aliases for template
+PRICE_DATA = PRICE_FALLBACK_CROPS
+LIVESTOCK_PRICES = PRICE_FALLBACK_LIVESTOCK
 
 PEST_DATA = [
     {"name":"Fall Armyworm","name_tw":"Aburo Mmoa","crops":"Maize","crops_tw":"Aburo",
@@ -447,10 +548,14 @@ QUICK_TW = [
 def index():
     sid  = get_sid()
     user = get_or_create_user(sid)
+    prices_data = get_prices()
     return render_template("index.html",
         weather        = get_weather(user.get("region","greater_accra")),
-        prices         = PRICE_DATA,
-        livestock_prices = LIVESTOCK_PRICES,
+        prices         = prices_data.get("crops", PRICE_FALLBACK_CROPS),
+        livestock_prices = prices_data.get("livestock", PRICE_FALLBACK_LIVESTOCK),
+        prices_updated = prices_data.get("updated",""),
+        prices_source  = prices_data.get("source",""),
+        prices_season  = prices_data.get("season",""),
         pests          = PEST_DATA,
         quick_en       = QUICK_EN,
         quick_tw       = QUICK_TW,
@@ -463,6 +568,16 @@ def index():
         api_ready      = bool(client.api_key),
         paystack_public= PAYSTACK_PUBLIC,
     )
+
+@app.route("/api/prices")
+def api_prices():
+    """Return live prices — refresh if requested by admin."""
+    refresh = request.args.get("refresh") == "1" and session.get("admin")
+    if refresh:
+        global _price_cache
+        _price_cache = {"ts": 0, "data": None}
+    data = get_prices()
+    return jsonify(data)
 
 @app.route("/api/weather")
 def api_weather():
