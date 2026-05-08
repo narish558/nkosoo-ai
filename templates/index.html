@@ -407,16 +407,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
   <!-- ══ PRICES ══ -->
   <div id="panel-prices" class="panel">
-    <div class="card">
+    <div class="region-bar" style="margin-bottom:1rem;">
+      <span style="font-size:13px;font-weight:500;color:var(--ts);">📊 Market prices</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+        {% if prices_updated %}
+        <span style="font-size:11px;color:var(--ts);">Updated: <strong>{{ prices_updated }}</strong></span>
+        {% endif %}
+        {% if prices_source %}
+        <span class="live-badge">{{ prices_source }}</span>
+        {% endif %}
+        <button class="refresh-btn" style="font-size:11px;padding:6px 12px;" onclick="refreshPrices()">🔄 Refresh</button>
+      </div>
+    </div>
+    {% if prices_season %}
+    <div class="advice-crop" style="margin-bottom:1rem;font-size:12px;">
+      📅 Prices reflect <strong>{{ prices_season }}</strong> conditions in Ghana
+    </div>
+    {% endif %}
+    <div class="card" id="cropPricesCard">
       <div class="pst pst-g">🌾 Crop prices — GHS</div>
-      <table class="price-table">
+      <table class="price-table" id="cropPricesTable">
         <thead><tr><th>Crop</th><th>Unit</th><th>Price</th><th>Change</th></tr></thead>
         <tbody>{% for p in prices %}<tr><td><strong>{{ p.crop }}</strong></td><td style="color:var(--ts)">{{ p.unit }}</td><td class="price-value">GHS {{ p.price }}</td><td>{% if p.trend=='up' %}<span class="badge b-ok">▲ {{ p.change }}%</span>{% elif p.trend=='down' %}<span class="badge b-danger">▼ {{ p.change|abs }}%</span>{% else %}<span class="badge b-gray">Stable</span>{% endif %}</td></tr>{% endfor %}</tbody>
       </table>
     </div>
-    <div class="card">
+    <div class="card" id="livePricesCard">
       <div class="pst pst-a">🐄 Livestock prices — GHS</div>
-      <table class="price-table">
+      <table class="price-table" id="livePricesTable">
         <thead><tr><th>Animal</th><th>Unit</th><th>Price</th><th>Change</th></tr></thead>
         <tbody>{% for lp in livestock_prices %}<tr><td><strong>{{ lp.animal }}</strong></td><td style="color:var(--ts)">{{ lp.unit }}</td><td class="price-value">GHS {{ lp.price }}</td><td>{% if lp.trend=='up' %}<span class="badge b-ok">▲ {{ lp.change }}%</span>{% elif lp.trend=='down' %}<span class="badge b-danger">▼ {{ lp.change|abs }}%</span>{% else %}<span class="badge b-gray">Stable</span>{% endif %}</td></tr>{% endfor %}</tbody>
       </table>
@@ -840,6 +857,33 @@ let selectedMediaType='image/jpeg';
 let conversationHistory=[];
 
 // ── Language ──
+// ── Live prices refresh ──
+async function refreshPrices(){
+  const btn=document.querySelector('#panel-prices .refresh-btn');
+  if(!btn)return;
+  btn.disabled=true; btn.textContent='⏳ Fetching...';
+  try{
+    const data=await(await fetch('/api/prices')).json();
+    const crops=data.crops||[];
+    const cropTbody=document.querySelector('#cropPricesTable tbody');
+    if(cropTbody) cropTbody.innerHTML=crops.map(p=>`
+      <tr><td><strong>${p.crop}</strong></td><td style="color:var(--ts)">${p.unit}</td>
+      <td class="price-value">GHS ${p.price}</td>
+      <td>${p.trend==='up'?`<span class="badge b-ok">▲ ${p.change}%</span>`:
+           p.trend==='down'?`<span class="badge b-danger">▼ ${Math.abs(p.change)}%</span>`:
+           `<span class="badge b-gray">Stable</span>`}</td></tr>`).join('');
+    const live=data.livestock||[];
+    const liveTbody=document.querySelector('#livePricesTable tbody');
+    if(liveTbody) liveTbody.innerHTML=live.map(p=>`
+      <tr><td><strong>${p.animal}</strong></td><td style="color:var(--ts)">${p.unit}</td>
+      <td class="price-value">GHS ${p.price}</td>
+      <td>${p.trend==='up'?`<span class="badge b-ok">▲ ${p.change}%</span>`:
+           p.trend==='down'?`<span class="badge b-danger">▼ ${Math.abs(p.change)}%</span>`:
+           `<span class="badge b-gray">Stable</span>`}</td></tr>`).join('');
+    btn.textContent='✅ Updated'; setTimeout(()=>{btn.textContent='🔄 Refresh';btn.disabled=false;},2500);
+  }catch(e){btn.textContent='⚠ Error';btn.disabled=false;}
+}
+
 function setLang(lang){
   currentLang=lang;
   document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim().toLowerCase()===lang));
