@@ -865,8 +865,13 @@ def admin():
             try:
                 agro_total    = db.execute("SELECT COUNT(*) FROM agronomists WHERE active=1").fetchone()[0]
                 agro_verified = db.execute("SELECT COUNT(*) FROM agronomists WHERE verified=1 AND active=1").fetchone()[0]
+                pending_agros = db.execute("""
+                    SELECT id,name,phone,speciality,region,qualifications,fee,consult_type
+                    FROM agronomists WHERE verified=0 AND active=1
+                    ORDER BY created_at DESC
+                """).fetchall()
             except Exception:
-                agro_total=0; agro_verified=0
+                agro_total=0; agro_verified=0; pending_agros=[]
     except Exception as e:
         return f"<h2>Admin Error</h2><pre>{e}</pre><p><a href='/admin/logout'>Sign out</a></p>", 500
     return render_template("admin.html",
@@ -877,7 +882,8 @@ def admin():
         avg_farm_size=avg_farm_size,
         livestock_cnt=livestock_cnt, livestock_verified=livestock_verified,
         sick_animals=sick_animals, animal_stats=animal_stats,
-        agro_total=agro_total, agro_verified=agro_verified)
+        agro_total=agro_total, agro_verified=agro_verified,
+        pending_agros=pending_agros)
 
 @app.route("/admin/logout")
 def admin_logout():
