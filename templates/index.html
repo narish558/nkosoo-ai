@@ -1002,14 +1002,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   <div style="margin-top:4px;">© 2025 Nkɔsoɔ AI · All rights reserved</div>
 </footer>
 
-<script>
-const QUICK_EN={{ quick_en|tojson }};
-const QUICK_TW={{ quick_tw|tojson }};
-const WEATHER_DATA={advice:{en:{{ weather.advice|tojson }},tw:{{ weather.advice_tw|tojson }}},adviceLive:{en:{{ weather.advice_livestock|tojson }},tw:{{ weather.advice_livestock_tw|tojson }}},risk:{en:{{ weather.risk|tojson }},tw:{{ weather.risk_tw|tojson }}},risk_level:'{{ weather.risk_level }}'};
-const USER_PLAN='{{ user.plan }}';
-const FREE_LIMIT={{ free_limit }};
-let usedToday={{ used_today }};
+
+<!-- App data passed safely from Flask -->
+<script id="app-data" type="application/json">
+{
+  "quick_en": {{ quick_en|tojson }},
+  "quick_tw": {{ quick_tw|tojson }},
+  "weather": {
+    "advice": {{ weather.advice|tojson }},
+    "advice_tw": {{ weather.advice_tw|tojson }},
+    "advice_livestock": {{ weather.advice_livestock|tojson }},
+    "advice_livestock_tw": {{ weather.advice_livestock_tw|tojson }},
+    "risk": {{ weather.risk|tojson }},
+    "risk_tw": {{ weather.risk_tw|tojson }},
+    "risk_level": {{ weather.risk_level|tojson }}
+  },
+  "user_plan": {{ user.plan|tojson }},
+  "free_limit": {{ free_limit }},
+  "used_today": {{ used_today }}
+}
+</script>
+
 {% raw %}
+<script>
+// Read all Flask data safely from the JSON script tag
+const _d = JSON.parse(document.getElementById('app-data').textContent);
+const QUICK_EN = _d.quick_en;
+const QUICK_TW = _d.quick_tw;
+const WEATHER_DATA = {
+  advice:     { en: _d.weather.advice,            tw: _d.weather.advice_tw },
+  adviceLive: { en: _d.weather.advice_livestock,  tw: _d.weather.advice_livestock_tw },
+  risk:       { en: _d.weather.risk,              tw: _d.weather.risk_tw },
+  risk_level: _d.weather.risk_level
+};
+const USER_PLAN = _d.user_plan;
+const FREE_LIMIT = _d.free_limit;
+let usedToday = _d.used_today;
 let currentLang='en';
 let currentWeather=JSON.parse(JSON.stringify(WEATHER_DATA));
 let selectedAnimal='poultry';
