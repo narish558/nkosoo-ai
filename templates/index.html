@@ -4,6 +4,20 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Nkɔsoɔ AI — Ghana Farming Assistant</title>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js',new Date());
+  gtag('config','G-XXXXXXXXXX');
+  // Track tab clicks
+  function trackTab(name){gtag('event','tab_view',{event_category:'navigation',event_label:name});}
+  // Track profile saves
+  function trackSave(type){gtag('event','profile_save',{event_category:'engagement',event_label:type});}
+  // Track upgrade clicks
+  function trackUpgrade(){gtag('event','upgrade_click',{event_category:'monetisation',event_label:'pro_upgrade'});}
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -11,13 +25,38 @@
   --a50:#FAEEDA;--a100:#FAC775;--a600:#C4873A;--a900:#633806;
   --r50:#FCEBEB;--r600:#A32D2D;
   --blue:#185FA5;--blue50:#E6F1FB;
+  --teal:#0F6E56;--teal50:#E1F5EE;--teal100:#9FE1CB;
   --tp:#1a1a18;--ts:#5F5E5A;--tt:#9C9B97;
   --bd:#d6d4cc;--bg:#f7f6f2;--card:#ffffff;--muted:#f1efe8;
   --rm:8px;--rl:12px;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tp);min-height:100vh;display:flex;flex-direction:column;}
 
-/* ── TOPBAR ── */
+/* ── PERSISTENT BANNER ── */
+.persist-banner{
+  background:linear-gradient(135deg,var(--g900),var(--g600));
+  color:#fff;padding:.875rem 1rem;
+  display:flex;align-items:center;gap:10px;
+  position:relative;
+}
+.persist-banner.hidden{display:none;}
+.pb-icon{font-size:22px;flex-shrink:0;}
+.pb-text{flex:1;font-size:13px;line-height:1.5;}
+.pb-text strong{font-weight:600;color:var(--g100);}
+.pb-cta{
+  padding:7px 14px;border:none;border-radius:var(--rm);
+  background:var(--g300);color:var(--g900);
+  font-size:12px;font-weight:700;cursor:pointer;
+  font-family:inherit;white-space:nowrap;flex-shrink:0;
+}
+.pb-cta:hover{background:#fff;}
+.pb-close{
+  position:absolute;top:6px;right:8px;
+  background:none;border:none;color:rgba(255,255,255,0.5);
+  font-size:16px;cursor:pointer;padding:2px 6px;
+  line-height:1;
+}
+.pb-close:hover{color:#fff;}
 .topbar{background:var(--card);border-bottom:1px solid var(--bd);padding:0 1rem;display:flex;align-items:center;gap:10px;height:56px;position:sticky;top:0;z-index:10;}
 .logo{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--a600),var(--g600));display:flex;align-items:center;justify-content:center;font-size:20px;}
 .app-title{font-size:16px;font-weight:600;color:var(--tp);}
@@ -49,7 +88,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .tab-btn.crop.active{background:var(--g50);color:var(--g600);}
 .tab-btn.live.active{background:var(--a50);color:var(--a600);}
 .tab-btn.voice.active{background:var(--blue50);color:var(--blue);}
+.tab-btn.teal.active{background:var(--teal50);color:var(--teal);}
 .tab-btn.shared.active{background:var(--muted);color:var(--tp);}
+
+/* ── AGRONOMIST ── */
+.agro-filter{display:flex;gap:6px;margin-bottom:1rem;overflow-x:auto;flex-wrap:wrap;}
+.agro-chip{padding:5px 13px;border:1px solid var(--bd);border-radius:20px;font-size:12px;font-weight:500;color:var(--ts);cursor:pointer;background:var(--card);white-space:nowrap;}
+.agro-chip.on{border-color:var(--teal);background:var(--teal50);color:var(--teal);}
+.agro-card{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:1.25rem;margin-bottom:.875rem;display:flex;align-items:flex-start;gap:14px;}
+.agro-avatar{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;flex-shrink:0;color:#fff;}
+.agro-name{font-size:15px;font-weight:600;color:var(--tp);margin-bottom:3px;}
+.agro-title{font-size:12px;color:var(--ts);margin-bottom:4px;}
+.agro-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+.agro-tag{font-size:10px;padding:2px 8px;border-radius:20px;background:var(--teal50);color:var(--teal);font-weight:500;}
+.agro-tag.region{background:var(--g50);color:var(--g600);}
+.agro-tag.verified{background:var(--g50);color:var(--g600);}
+.agro-stars{font-size:12px;color:#EF9F27;margin-bottom:6px;}
+.agro-stars span{color:var(--ts);font-size:11px;}
+.agro-fee{font-size:14px;font-weight:600;color:var(--teal);}
+.agro-fee-lbl{font-size:10px;color:var(--ts);}
+.agro-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;}
+.book-btn{padding:7px 16px;border:1px solid var(--teal);border-radius:var(--rm);background:var(--teal50);color:var(--teal);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.book-btn:hover{background:var(--teal100);}
+.wa-btn{padding:7px 16px;border:none;border-radius:var(--rm);background:#25D366;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.agro-register-card{background:var(--teal50);border:1px solid var(--teal100);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;text-align:center;}
+.agro-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.625rem;margin-bottom:1rem;}
+.agro-stat{background:var(--teal50);border-radius:var(--rm);padding:.75rem;text-align:center;}
+.agro-stat-val{font-size:22px;font-weight:600;color:var(--teal);}
+.agro-stat-lbl{font-size:10px;color:var(--ts);margin-top:2px;}
 
 /* ── SUB TABS ── */
 .stabs{display:flex;gap:6px;margin-bottom:1rem;overflow-x:auto;padding-bottom:2px;}
@@ -323,6 +389,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 </div>
 {% endif %}
 
+{% if user.plan != 'pro' %}
+<!-- PERSISTENT REGISTRATION BANNER -->
+<div class="persist-banner" id="persistBanner">
+  <div class="pb-icon">🌱</div>
+  <div class="pb-text">
+    <strong>Save your farm profile</strong> — unlock your personalised AI planting calendar, farm diary, and advice tailored to your crops and region. <strong>Free — takes 2 minutes.</strong>
+  </div>
+  <button class="pb-cta" onclick="dismissBannerAndGo()">Save profile →</button>
+  <button class="pb-close" onclick="dismissBanner()" aria-label="Close">✕</button>
+</div>
+{% endif %}
+
 <!-- UPGRADE MODAL -->
 <div class="modal-overlay" id="upgradeModal">
   <div class="modal">
@@ -368,6 +446,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <button class="tab-btn crop" onclick="showTab('diagnose')">📷 Diagnose</button>
     <button class="tab-btn crop" onclick="showTab('mycrops')">🌾 My Crops</button>
     <button class="tab-btn live" onclick="showTab('livestock')">🐄 Livestock</button>
+    <button class="tab-btn teal" onclick="showTab('agronomy')">🔬 Experts</button>
     <button class="tab-btn voice" onclick="showTab('voice')">🎤 Voice</button>
     <button class="tab-btn shared" onclick="showTab('chat')">🤖 Ask AI</button>
   </div>
@@ -698,6 +777,100 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     </div>
   </div>
 
+  <!-- ══ AGRONOMY ══ -->
+  <div id="panel-agronomy" class="panel">
+
+    <!-- Stats -->
+    <div class="agro-stats">
+      <div class="agro-stat"><div class="agro-stat-val" id="agroCount">—</div><div class="agro-stat-lbl">Verified experts</div></div>
+      <div class="agro-stat"><div class="agro-stat-val" id="agroRegions">16</div><div class="agro-stat-lbl">Regions covered</div></div>
+      <div class="agro-stat"><div class="agro-stat-val" id="agroSpecialities">6</div><div class="agro-stat-lbl">Specialities</div></div>
+    </div>
+
+    <!-- Filter chips -->
+    <div class="agro-filter" id="agroFilter">
+      <div class="agro-chip on" onclick="filterAgro(this,'all')">All experts</div>
+      <div class="agro-chip" onclick="filterAgro(this,'crops')">🌾 Crops</div>
+      <div class="agro-chip" onclick="filterAgro(this,'livestock')">🐄 Livestock</div>
+      <div class="agro-chip" onclick="filterAgro(this,'soil')">🪨 Soil science</div>
+      <div class="agro-chip" onclick="filterAgro(this,'aquaculture')">🐟 Aquaculture</div>
+      <div class="agro-chip" onclick="filterAgro(this,'pest')">🐛 Pest management</div>
+    </div>
+
+    <!-- Expert listings -->
+    <div id="agroList">
+      <p style="font-size:13px;color:var(--ts);text-align:center;padding:2rem 0;">
+        <span class="loading"></span> Loading verified experts...
+      </p>
+    </div>
+
+    <!-- Register as agronomist -->
+    <div class="agro-register-card">
+      <div style="font-size:24px;margin-bottom:.5rem;">🔬</div>
+      <div style="font-size:15px;font-weight:600;color:var(--teal);margin-bottom:.375rem;">Are you an agronomist or vet?</div>
+      <div style="font-size:13px;color:var(--ts);margin-bottom:.875rem;line-height:1.5;">Join our verified expert directory. Connect with farmers across Ghana who need your expertise.</div>
+      <button class="book-btn" onclick="showAgroRegister()" style="width:100%;padding:10px;">Register as an expert →</button>
+    </div>
+
+    <!-- Register modal -->
+    <div id="agroRegisterModal" style="display:none;">
+      <div class="card" style="border-color:var(--teal100);">
+        <div class="card-title" style="color:var(--teal);">🔬 Register as a verified expert</div>
+        <div class="form-row">
+          <div class="fg"><div class="lbl">Full name</div><input class="inp" type="text" id="agroName" placeholder="e.g. Dr. Kofi Asante"/></div>
+          <div class="fg"><div class="lbl">Phone / WhatsApp</div><input class="inp" type="tel" id="agroPhone" placeholder="e.g. 0244123456"/></div>
+        </div>
+        <div class="form-row">
+          <div class="fg">
+            <div class="lbl">Speciality</div>
+            <select class="sel" id="agroSpec">
+              <option value="">Select...</option>
+              <option value="crops">Crop farming & agronomy</option>
+              <option value="livestock">Livestock & veterinary</option>
+              <option value="soil">Soil science & fertilizer</option>
+              <option value="aquaculture">Aquaculture & fish farming</option>
+              <option value="pest">Pest & disease management</option>
+              <option value="general">General agriculture</option>
+            </select>
+          </div>
+          <div class="fg">
+            <div class="lbl">Region</div>
+            <select class="sel" id="agroRegion">
+              {% for key,r in regions.items() %}<option value="{{ key }}">{{ r.name }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:.75rem;">
+          <div class="lbl">Qualifications / Institution</div>
+          <input class="inp" type="text" id="agroQual" placeholder="e.g. BSc Agriculture, KNUST · 10 years experience"/>
+        </div>
+        <div class="form-row">
+          <div class="fg"><div class="lbl">Consultation fee (GHS)</div><input class="inp" type="number" id="agroFee" placeholder="e.g. 80" min="0"/></div>
+          <div class="fg">
+            <div class="lbl">Consultation type</div>
+            <select class="sel" id="agroConsultType">
+              <option value="call">Phone / video call</option>
+              <option value="visit">Farm visit</option>
+              <option value="both">Both available</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:.875rem;">
+          <div class="lbl">Ghana Card number</div>
+          <input class="inp" type="text" id="agroGhanaCard" placeholder="GHA-XXXXXXXXX-X" maxlength="15" oninput="validateGC(this,'agroGCStatus','g')"/>
+          <div id="agroGCStatus" class="gc-status" style="display:none;"></div>
+          <div class="hint">Required for verification. Stored securely and encrypted.</div>
+        </div>
+        <div style="display:flex;gap:.75rem;">
+          <button class="save-btn g" style="background:var(--teal);" onclick="submitAgroRegistration()">✓ Submit for verification</button>
+          <button class="save-btn g" style="background:var(--muted);color:var(--ts);flex:0 0 auto;width:auto;padding:0 16px;" onclick="hideAgroRegister()">Cancel</button>
+        </div>
+        <div class="saved-ok g" id="agroRegSaved" style="border-color:var(--teal100);background:var(--teal50);color:var(--teal);">✅ Registration submitted! We will verify and publish your profile within 24 hours.</div>
+      </div>
+    </div>
+
+  </div>
+
   <!-- ══ VOICE ══ -->
   <div id="panel-voice" class="panel">
     <div class="card">
@@ -827,7 +1000,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <footer class="footer">
   <div>Nkɔsoɔ AI &mdash; Crops · Livestock · Aquaculture &mdash; Ghana 🌿</div>
   <div>Built by <a href="https://www.dranytech.com" target="_blank" rel="noopener">DranyTech</a><span class="footer-divider">|</span>Powered by <a href="https://www.anthropic.com" target="_blank" rel="noopener">Anthropic Claude AI</a></div>
-  <div style="margin-top:4px;">© 2026 Nkɔsoɔ AI · All rights reserved</div>
+  <div style="margin-top:4px;">© 2025 Nkɔsoɔ AI · All rights reserved</div>
 </footer>
 
 <script>
@@ -897,10 +1070,13 @@ function setLang(lang){
 
 // ── Tabs ──
 function showTab(name){
-  const names=['weather','prices','pests','diagnose','mycrops','livestock','voice','chat'];
+  const names=['weather','prices','pests','diagnose','mycrops','livestock','agronomy','voice','chat'];
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',names[i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name));
+  if(name==='agronomy') loadAgronomists();
+  if(typeof gtag!=='undefined') trackTab(name);
 }
+
 
 function showSubPanel(tab,sub,btn){
   const prefix=tab+'-';
@@ -908,10 +1084,63 @@ function showSubPanel(tab,sub,btn){
   btn.classList.add('on');
   document.querySelectorAll(`#panel-${tab} .sub-panel`).forEach(p=>p.classList.toggle('active',p.id===prefix+sub));
 }
+function openUpgrade(){
+  document.getElementById('upgradeModal').classList.add('open');
+  if(typeof gtag!=='undefined') trackUpgrade();
+}
+function closeUpgrade(){document.getElementById('upgradeModal').classList.remove('open');}
+
+// ── Persistent banner ──
+function dismissBanner(){
+  const b=document.getElementById('persistBanner');
+  if(b){b.classList.add('hidden');sessionStorage.setItem('bannerDismissed','1');}
+}
+function dismissBannerAndGo(){
+  dismissBanner();
+  showTab('mycrops');
+  // Scroll to profile sub-panel
+  setTimeout(()=>{
+    const el=document.getElementById('mycrops-profile');
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  },200);
+}
+// Auto-hide if dismissed this session
+(function(){
+  if(sessionStorage.getItem('bannerDismissed')==='1'){
+    const b=document.getElementById('persistBanner');
+    if(b) b.classList.add('hidden');
+  }
+  // Rotate banner message every 30 seconds
+  const msgs=[
+    {icon:'🌱',text:'<strong>Save your farm profile</strong> — unlock your personalised AI planting calendar, farm diary, and advice tailored to your crops and region. <strong>Free — takes 2 minutes.</strong>',cta:'Save profile →'},
+    {icon:'📅',text:'<strong>Get your AI planting calendar</strong> — select your crops and generate a colour-coded calendar with fertilizer, spray, and harvest dates. <strong>Completely free.</strong>',cta:'Get my calendar →'},
+    {icon:'📞',text:'<strong>Save your phone number</strong> — get weekly crop price alerts and farming tips delivered directly to you. <strong>Free — no spam.</strong>',cta:'Save profile →'},
+    {icon:'🐄',text:'<strong>Livestock farmer?</strong> — save your animal profile to get a personalised vaccination calendar and health log. <strong>Free for all 6 animal types.</strong>',cta:'Add livestock →'},
+  ];
+  let msgIdx=0;
+  setInterval(()=>{
+    const b=document.getElementById('persistBanner');
+    if(!b||b.classList.contains('hidden')) return;
+    msgIdx=(msgIdx+1)%msgs.length;
+    const m=msgs[msgIdx];
+    b.querySelector('.pb-icon').textContent=m.icon;
+    b.querySelector('.pb-text').innerHTML=m.text;
+    b.querySelector('.pb-cta').textContent=m.cta;
+    if(m.cta.includes('livestock')){
+      b.querySelector('.pb-cta').onclick=()=>{dismissBanner();showTab('livestock');};
+    } else {
+      b.querySelector('.pb-cta').onclick=dismissBannerAndGo;
+    }
+  },30000);
+})();
+  const prefix=tab+'-';
+  document.querySelectorAll(`#panel-${tab} .stab`).forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll(`#panel-${tab} .sub-panel`).forEach(p=>p.classList.toggle('active',p.id===prefix+sub));
+}
 
 // ── Upgrade ──
-function openUpgrade(){document.getElementById('upgradeModal').classList.add('open');}
-function closeUpgrade(){document.getElementById('upgradeModal').classList.remove('open');}
+
 async function startPayment(){
   const email=document.getElementById('payEmail').value.trim();
   if(!email||!email.includes('@')){alert('Please enter a valid email.');return;}
@@ -1085,6 +1314,7 @@ async function saveCropProfile(){
     const data=await resp.json();
     if(data.success){
       showSaved('cropSaved','g');
+      if(typeof gtag!=='undefined') trackSave('crop');
       const sel=document.getElementById('cDiaryCrop');
       sel.innerHTML='<option value="all">All crops</option>'+selectedCrops.map(c=>`<option value="${c}">${c}</option>`).join('');
     } else {
@@ -1106,7 +1336,7 @@ async function saveLivestockProfile(){
   try{
     const resp=await fetch('/api/livestock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const data=await resp.json();
-    if(data.success) showSaved('liveProfileSaved','a');
+    if(data.success){showSaved('liveProfileSaved','a');if(typeof gtag!=='undefined') trackSave('livestock');}
   }catch(e){alert('Error saving profile. Please try again.');}
 }
 
@@ -1476,6 +1706,97 @@ function toggleVoice(){
 function replayVoice(){if(lastVoiceAnswer) speakAnswer(lastVoiceAnswer);}
 function stopVoice(){if(window.speechSynthesis) window.speechSynthesis.cancel();stopWave();resetVoiceState();}
 function resetVoice(){stopVoice();document.getElementById('voiceResponseCard').style.display='none';lastVoiceAnswer='';}
-function voiceQuickAsk(idx){processVoiceQuestion(QUICK_EN[idx]);}</script>
+function voiceQuickAsk(idx){processVoiceQuestion(QUICK_EN[idx]);}
+
+// ── Agronomist Directory ──
+let agroData=[], agroCurrentFilter='all';
+
+async function loadAgronomists(){
+  try{
+    const data=await(await fetch('/api/agronomists')).json();
+    agroData=data;
+    document.getElementById('agroCount').textContent=data.length||'0';
+    renderAgronomists();
+  }catch(e){
+    document.getElementById('agroList').innerHTML='<p style="font-size:13px;color:var(--ts);text-align:center;padding:1rem;">No experts listed yet. Be the first to register.</p>';
+  }
+}
+
+function renderAgronomists(){
+  const SPEC_ICONS={crops:'🌾',livestock:'🐄',soil:'🪨',aquaculture:'🐟',pest:'🐛',general:'🌿'};
+  const COLORS=['#0F6E56','#3B6D11','#185FA5','#C4873A','#6D2E46','#854F0B'];
+  const filtered=agroCurrentFilter==='all'?agroData:agroData.filter(a=>a.speciality===agroCurrentFilter);
+  if(!filtered.length){
+    document.getElementById('agroList').innerHTML='<p style="font-size:13px;color:var(--ts);text-align:center;padding:1rem 0;">No experts found for this speciality yet. Register below to be first.</p>';
+    return;
+  }
+  document.getElementById('agroList').innerHTML=filtered.map((a,i)=>{
+    const icon=SPEC_ICONS[a.speciality]||'🔬';
+    const color=COLORS[i%COLORS.length];
+    const initials=(a.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const rating=parseFloat(a.rating)||5;
+    const stars='★'.repeat(Math.round(rating))+'☆'.repeat(5-Math.round(rating));
+    const consultLabel=a.consult_type==='visit'?'Farm visit':a.consult_type==='both'?'Call or farm visit':'Phone / video call';
+    const waPhone=(a.phone||'').replace(/^0/,'233').replace(/\D/g,'');
+    const waMsg=encodeURIComponent(`Hi ${a.name||''}, I found your profile on Nkɔsoɔ AI and would like to book a consultation.`);
+    return `<div class="agro-card">
+      <div class="agro-avatar" style="background:${color};">${initials}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="agro-name">${a.name||'Expert'}</div>
+        <div class="agro-title">${a.qualifications||'Agricultural expert'}</div>
+        <div class="agro-tags">
+          <span class="agro-tag">${icon} ${(a.speciality||'general').charAt(0).toUpperCase()+(a.speciality||'general').slice(1)}</span>
+          <span class="agro-tag region">📍 ${a.region_name||'Ghana'}</span>
+          ${a.ghana_card_valid?'<span class="agro-tag verified">🇬🇭 Verified</span>':''}
+          <span class="agro-tag" style="background:var(--muted);color:var(--ts);">${consultLabel}</span>
+        </div>
+        <div class="agro-stars">${stars} <span>${rating.toFixed(1)} · ${a.consult_count||0} consultations</span></div>
+        <div><span class="agro-fee">GHS ${a.fee||0}</span> <span class="agro-fee-lbl">/ session</span></div>
+      </div>
+      <div class="agro-actions">
+        <button class="wa-btn" onclick="window.open('https://wa.me/${waPhone}?text=${waMsg}','_blank')">💬 WhatsApp</button>
+        <button class="book-btn" onclick="window.open('tel:${a.phone||''}')">📞 Call</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterAgro(btn,spec){
+  document.querySelectorAll('.agro-chip').forEach(c=>c.classList.remove('on'));
+  btn.classList.add('on');
+  agroCurrentFilter=spec;
+  renderAgronomists();
+}
+
+function showAgroRegister(){
+  document.getElementById('agroRegisterModal').style.display='block';
+  document.getElementById('agroRegisterModal').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function hideAgroRegister(){document.getElementById('agroRegisterModal').style.display='none';}
+
+async function submitAgroRegistration(){
+  const name=document.getElementById('agroName').value.trim();
+  const phone=document.getElementById('agroPhone').value.trim();
+  const spec=document.getElementById('agroSpec').value;
+  if(!name||!phone||!spec){alert('Please fill in your name, phone number, and speciality.');return;}
+  const payload={
+    name,phone,
+    speciality:spec,
+    region:document.getElementById('agroRegion').value,
+    qualifications:document.getElementById('agroQual').value.trim(),
+    fee:parseFloat(document.getElementById('agroFee').value)||0,
+    consult_type:document.getElementById('agroConsultType').value,
+    ghana_card:document.getElementById('agroGhanaCard').value.trim(),
+  };
+  try{
+    const resp=await fetch('/api/agronomists',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await resp.json();
+    if(data.success){
+      const s=document.getElementById('agroRegSaved');
+      s.classList.add('show');
+      setTimeout(()=>{s.classList.remove('show');hideAgroRegister();loadAgronomists();},4000);
+    } else {alert('Error: '+(data.error||'Please try again.'));}
+  }catch(e){alert('Connection error. Please try again.');}
+}</script>
 </body>
 </html>

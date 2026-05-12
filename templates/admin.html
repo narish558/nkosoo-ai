@@ -93,6 +93,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     <div class="metric"><div class="metric-label">Avg farm size</div><div class="metric-value" style="font-size:18px;">{{ avg_farm_size }} ac</div></div>
   </div>
 
+  <!-- AGRONOMISTS -->
+  <div class="section-title" style="color:#0F6E56;">🔬 Agronomist directory</div>
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-label">Total experts</div><div class="metric-value" style="color:#0F6E56;">{{ agro_total }}</div></div>
+    <div class="metric"><div class="metric-label">Verified experts</div><div class="metric-value" style="color:#0F6E56;">{{ agro_verified }}</div></div>
+    <div class="metric"><div class="metric-label">Pending verification</div><div class="metric-value">{{ agro_total - agro_verified }}</div></div>
+  </div>
+
   <!-- LIVESTOCK PROFILES -->
   <div class="section-title a">🐄 Livestock profiles</div>
   <div class="metric-grid">
@@ -154,7 +162,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 </div>
 
 <div class="footer-admin">
-  Nkɔsoɔ AI Admin · Built by <a href="https://www.dranytech.com" target="_blank">DranyTech</a> · © 2026
+  Nkɔsoɔ AI Admin · Built by <a href="https://www.dranytech.com" target="_blank">DranyTech</a> · © 2025
 </div>
 
 </body>
