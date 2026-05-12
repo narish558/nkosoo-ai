@@ -36,8 +36,8 @@ PAYSTACK_SECRET = os.environ.get("PAYSTACK_SECRET_KEY","")
 PAYSTACK_PUBLIC = os.environ.get("PAYSTACK_PUBLIC_KEY","")
 ADMIN_PASSWORD  = os.environ.get("ADMIN_PASSWORD","nkosoo2024")
 
-FREE_DAILY_LIMIT    = 5
-FREE_DIAGNOSE_LIMIT = 3
+FREE_DAILY_LIMIT    = 3
+FREE_DIAGNOSE_LIMIT = 1
 
 # ---------------------------------------------------------------------------
 # Database
@@ -113,6 +113,23 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             data TEXT NOT NULL,
             updated_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS agronomists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            speciality TEXT,
+            region TEXT,
+            qualifications TEXT,
+            fee REAL DEFAULT 0,
+            consult_type TEXT DEFAULT 'call',
+            ghana_card TEXT,
+            ghana_card_valid INTEGER DEFAULT 0,
+            rating REAL DEFAULT 5.0,
+            consult_count INTEGER DEFAULT 0,
+            verified INTEGER DEFAULT 0,
+            active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT (datetime('now'))
         );
         """)
         # Migrate farm_profiles — detect old schema and recreate if needed
@@ -569,6 +586,10 @@ def index():
         paystack_public= PAYSTACK_PUBLIC,
     )
 
+@app.route("/ecosystem")
+def ecosystem():
+    return render_template("ecosystem.html")
+
 @app.route("/api/prices")
 def api_prices():
     """Return live prices — refresh if requested by admin."""
@@ -840,6 +861,12 @@ def admin():
                     livestock_verified = 0
             except Exception:
                 livestock_cnt=0; sick_animals=0; animal_stats=[]; livestock_verified=0
+            # Agronomist stats
+            try:
+                agro_total    = db.execute("SELECT COUNT(*) FROM agronomists WHERE active=1").fetchone()[0]
+                agro_verified = db.execute("SELECT COUNT(*) FROM agronomists WHERE verified=1 AND active=1").fetchone()[0]
+            except Exception:
+                agro_total=0; agro_verified=0
     except Exception as e:
         return f"<h2>Admin Error</h2><pre>{e}</pre><p><a href='/admin/logout'>Sign out</a></p>", 500
     return render_template("admin.html",
@@ -849,18 +876,105 @@ def admin():
         regions=GHANA_REGIONS, profiles=profiles, verified=verified,
         avg_farm_size=avg_farm_size,
         livestock_cnt=livestock_cnt, livestock_verified=livestock_verified,
-        sick_animals=sick_animals, animal_stats=animal_stats)
+        sick_animals=sick_animals, animal_stats=animal_stats,
+        agro_total=agro_total, agro_verified=agro_verified)
 
 @app.route("/admin/logout")
 def admin_logout():
     session.pop("admin",None); return redirect("/admin")
 
 # ---------------------------------------------------------------------------
-# Admin exports — CSV downloads
+# Agronomist directory
+# ---------------------------------------------------------------------------
+@app.route("/api/agronomists", methods=["GET"])
+def api_get_agronomists():
+    with get_db() as db:
+        rows = db.execute("""
+            SELECT a.*, r.name as region_name
+            FROM agronomists a
+            LEFT JOIN (VALUES
+                ('greater_accra','Greater Accra'),('ashanti','Ashanti (Kumasi)'),
+                ('northern','Northern (Tamale)'),('central','Central (Cape Coast)'),
+                ('bono','Bono (Sunyani)'),('eastern','Eastern (Koforidua)'),
+                ('volta','Volta (Ho)'),('upper_west','Upper West (Wa)'),
+                ('upper_east','Upper East (Bolgatanga)'),('western','Western (Takoradi)'),
+                ('oti','Oti (Dambai)'),('bono_east','Bono East (Techiman)'),
+                ('ahafo','Ahafo (Goaso)'),('western_north','Western North (Sefwi)'),
+                ('north_east','North East (Nalerigu)'),('savannah','Savannah (Damongo)')
+            ) AS r(key,name) ON a.region=r.key
+            WHERE a.active=1
+            ORDER BY a.verified DESC, a.rating DESC, a.created_at DESC
+        """).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+@app.route("/api/agronomists", methods=["POST"])
+def api_save_agronomist():
+    data = request.get_json()
+    name = data.get("name","").strip()
+    phone = data.get("phone","").strip()
+    if not name or not phone:
+        return jsonify({"error":"Name and phone required"}), 400
+    ghana_card = data.get("ghana_card","").strip().upper()
+    ghana_card_valid = 1 if (ghana_card and re.match(r'^GHA-\d{9}-\d$', ghana_card)) else 0
+    try:
+        with get_db() as db:
+            db.execute("""
+                INSERT INTO agronomists
+                    (name,phone,speciality,region,qualifications,fee,consult_type,
+                     ghana_card,ghana_card_valid,verified,active)
+                VALUES (?,?,?,?,?,?,?,?,?,0,1)
+            """,(name, phone,
+                 data.get("speciality","general"),
+                 data.get("region","greater_accra"),
+                 data.get("qualifications",""),
+                 float(data.get("fee",0) or 0),
+                 data.get("consult_type","call"),
+                 ghana_card, ghana_card_valid))
+            db.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"[agronomist save error] {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# --------------------------------------------------------------------------- — CSV downloads
 # ---------------------------------------------------------------------------
 
 def require_admin():
     return session.get("admin") == True
+
+@app.route("/admin/agronomists/verify/<int:agro_id>")
+def admin_verify_agronomy(agro_id):
+    if not session.get("admin"): return redirect("/admin")
+    with get_db() as db:
+        db.execute("UPDATE agronomists SET verified=1 WHERE id=?",(agro_id,))
+        db.commit()
+    return redirect("/admin")
+
+@app.route("/admin/export/agronomists")
+def export_agronomists():
+    if not session.get("admin"): return redirect("/admin")
+    with get_db() as db:
+        rows = db.execute("""
+            SELECT name,phone,speciality,region,qualifications,fee,
+                   consult_type,ghana_card,
+                   CASE WHEN ghana_card_valid=1 THEN 'Yes' ELSE 'No' END as gc_verified,
+                   CASE WHEN verified=1 THEN 'Yes' ELSE 'Pending' END as verified,
+                   rating,consult_count,created_at
+            FROM agronomists WHERE active=1 ORDER BY created_at DESC
+        """).fetchall()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Name","Phone","Speciality","Region","Qualifications","Fee (GHS)",
+                     "Consult type","Ghana Card","GC Verified","Verified","Rating","Consultations","Registered At"])
+    for r in rows:
+        writer.writerow([r["name"],r["phone"],r["speciality"],
+                         GHANA_REGIONS.get(r["region"],{}).get("name",r["region"] or ""),
+                         r["qualifications"],r["fee"],r["consult_type"],
+                         r["ghana_card"] or "",r["gc_verified"],r["verified"],
+                         r["rating"],r["consult_count"],(r["created_at"] or "")[:16]])
+    output.seek(0)
+    return Response(output.getvalue(), mimetype="text/csv",
+        headers={"Content-Disposition":"attachment;filename=nkosoo_agronomists.csv"})
 
 @app.route("/admin/export/crop-profiles")
 def export_crop_profiles():
