@@ -7,16 +7,15 @@
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script>
+{% raw %}
   window.dataLayer=window.dataLayer||[];
   function gtag(){dataLayer.push(arguments);}
   gtag('js',new Date());
   gtag('config','G-XXXXXXXXXX');
-  // Track tab clicks
   function trackTab(name){gtag('event','tab_view',{event_category:'navigation',event_label:name});}
-  // Track profile saves
   function trackSave(type){gtag('event','profile_save',{event_category:'engagement',event_label:type});}
-  // Track upgrade clicks
   function trackUpgrade(){gtag('event','upgrade_click',{event_category:'monetisation',event_label:'pro_upgrade'});}
+{% endraw %}
 </script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -1010,6 +1009,7 @@ const WEATHER_DATA={advice:{en:{{ weather.advice|tojson }},tw:{{ weather.advice_
 const USER_PLAN='{{ user.plan }}';
 const FREE_LIMIT={{ free_limit }};
 let usedToday={{ used_today }};
+{% raw %}
 let currentLang='en';
 let currentWeather=JSON.parse(JSON.stringify(WEATHER_DATA));
 let selectedAnimal='poultry';
@@ -1797,6 +1797,8 @@ async function submitAgroRegistration(){
       setTimeout(()=>{s.classList.remove('show');hideAgroRegister();loadAgronomists();},4000);
     } else {alert('Error: '+(data.error||'Please try again.'));}
   }catch(e){alert('Connection error. Please try again.');}
-}</script>
+}
+{% endraw %}
+</script>
 </body>
 </html>
