@@ -1106,12 +1106,6 @@ function showTab(name){
 }
 
 
-function showSubPanel(tab,sub,btn){
-  const prefix=tab+'-';
-  document.querySelectorAll(`#panel-${tab} .stab`).forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  document.querySelectorAll(`#panel-${tab} .sub-panel`).forEach(p=>p.classList.toggle('active',p.id===prefix+sub));
-}
 function openUpgrade(){
   document.getElementById('upgradeModal').classList.add('open');
   if(typeof gtag!=='undefined') trackUpgrade();
@@ -1161,6 +1155,8 @@ function dismissBannerAndGo(){
     }
   },30000);
 })();
+
+function showSubPanel(tab,sub,btn){
   const prefix=tab+'-';
   document.querySelectorAll(`#panel-${tab} .stab`).forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
