@@ -276,7 +276,7 @@ def log_usage(sid, type_, question=None):
         db.execute("INSERT INTO usage (session_id,type,question) VALUES (?,?,?)",
                    (sid,type_,question[:300] if question else None)); db.commit()
 
-def is_pro(user): return user.get("plan")=="pro"
+def is_pro(user): return (user["plan"] if user else "free") == "pro"
 
 # ---------------------------------------------------------------------------
 # AI Prompts
@@ -596,7 +596,7 @@ def index():
     user_registered = session.get("registered", False) or (user["registered"] == 1 if user and "registered" in user.keys() else False)
     user_name = session.get("user_name","") or (user["name"] if user and user["name"] else "")
     return render_template("index.html",
-        weather        = get_weather(user.get("region","greater_accra")),
+        weather        = get_weather(user["region"] if user and user["region"] else "greater_accra"),
         prices         = prices_data.get("crops", PRICE_FALLBACK_CROPS),
         livestock_prices = prices_data.get("livestock", PRICE_FALLBACK_LIVESTOCK),
         prices_updated = prices_data.get("updated",""),
