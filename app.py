@@ -24,7 +24,7 @@ Environment variables:
   SECRET_KEY
 """
 
-import os, json, time, re, sqlite3, requests, anthropic, csv, io
+import os, json, time, re, sqlite3, requests, anthropic, csv, io, hashlib
 from flask import (Flask, render_template, request, jsonify,
                    stream_with_context, Response, session, redirect, make_response)
 
@@ -57,9 +57,12 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id TEXT UNIQUE NOT NULL,
-            email TEXT, plan TEXT DEFAULT 'free',
+            name TEXT, phone TEXT, email TEXT,
+            password_hash TEXT,
+            plan TEXT DEFAULT 'free',
             region TEXT DEFAULT 'greater_accra',
             lang TEXT DEFAULT 'en',
+            registered INTEGER DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now')),
             pro_since TEXT, paystack_ref TEXT
         );
@@ -132,7 +135,16 @@ def init_db():
             created_at TEXT DEFAULT (datetime('now'))
         );
         """)
-        # Migrate farm_profiles — detect old schema and recreate if needed
+        # Migrate users table — add new columns if missing
+        u_cols = [r[1] for r in db.execute("PRAGMA table_info(users)").fetchall()]
+        for col, defn in [
+            ("name","TEXT"), ("phone","TEXT"),
+            ("password_hash","TEXT"), ("registered","INTEGER DEFAULT 0"),
+        ]:
+            if col not in u_cols:
+                try: db.execute(f"ALTER TABLE users ADD COLUMN {col} {defn}")
+                except: pass
+        db.commit()
         fp_cols = [r[1] for r in db.execute("PRAGMA table_info(farm_profiles)").fetchall()]
         old_fp_cols = ['farm_name', 'farming_type', 'nearest_market', 'latitude', 'longitude', 'farm_address']
         has_old_fp = any(c in fp_cols for c in old_fp_cols)
@@ -223,6 +235,16 @@ def get_sid():
     if "sid" not in session:
         import uuid; session["sid"] = str(uuid.uuid4())
     return session["sid"]
+
+def hash_password(pw):
+    return hashlib.sha256(pw.strip().encode()).hexdigest()
+
+def is_registered():
+    """Check if current session user is registered."""
+    sid = get_sid()
+    with get_db() as db:
+        u = db.execute("SELECT registered FROM users WHERE session_id=?", (sid,)).fetchone()
+        return u and u["registered"] == 1
 
 def get_or_create_user(sid):
     with get_db() as db:
@@ -566,6 +588,8 @@ def index():
     sid  = get_sid()
     user = get_or_create_user(sid)
     prices_data = get_prices()
+    user_registered = session.get("registered", False) or user.get("registered", 0) == 1
+    user_name = session.get("user_name", user.get("name",""))
     return render_template("index.html",
         weather        = get_weather(user.get("region","greater_accra")),
         prices         = prices_data.get("crops", PRICE_FALLBACK_CROPS),
@@ -578,6 +602,8 @@ def index():
         quick_tw       = QUICK_TW,
         regions        = GHANA_REGIONS,
         user           = user,
+        user_registered = user_registered,
+        user_name      = user_name,
         used_today     = get_usage_today(sid),
         used_diagnose  = get_diagnose_month(sid),
         free_limit     = FREE_DAILY_LIMIT,
@@ -679,6 +705,8 @@ def api_get_profile():
 
 @app.route("/api/profile", methods=["POST"])
 def api_save_profile():
+    if not is_registered():
+        return jsonify({"success":False,"error":"Please create a free account to save your farm profile.","gate":"register"}), 401
     sid=get_sid(); data=request.get_json()
     ghana_card=data.get("ghana_card","").strip().upper()
     ghana_card_valid=1 if (ghana_card and re.match(r'^GHA-\d{9}-\d$',ghana_card)) else 0
@@ -729,6 +757,8 @@ def api_get_livestock():
 
 @app.route("/api/livestock", methods=["POST"])
 def api_save_livestock():
+    if not is_registered():
+        return jsonify({"success":False,"error":"Please create a free account to save your livestock profile.","gate":"register"}), 401
     sid=get_sid(); data=request.get_json()
     animal_type=data.get("animal_type","")
     if not animal_type: return jsonify({"error":"animal_type required"}),400
@@ -835,6 +865,7 @@ def admin():
     try:
         with get_db() as db:
             total        = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+            registered   = db.execute("SELECT COUNT(*) FROM users WHERE registered=1").fetchone()[0]
             pro          = db.execute("SELECT COUNT(*) FROM users WHERE plan='pro'").fetchone()[0]
             q_today      = db.execute("SELECT COUNT(*) FROM usage WHERE type='chat' AND date(created_at)=date('now')").fetchone()[0]
             d_today      = db.execute("SELECT COUNT(*) FROM usage WHERE type='diagnose' AND date(created_at)=date('now')").fetchone()[0]
@@ -875,7 +906,7 @@ def admin():
     except Exception as e:
         return f"<h2>Admin Error</h2><pre>{e}</pre><p><a href='/admin/logout'>Sign out</a></p>", 500
     return render_template("admin.html",
-        total_users=total, pro_users=pro, total_revenue=pro*30,
+        total_users=total, registered_users=registered, pro_users=pro, total_revenue=pro*30,
         questions_today=q_today, diagnoses_today=d_today, voice_today=voice_today,
         top_questions=top_q, recent_users=users, region_stats=region_stats,
         regions=GHANA_REGIONS, profiles=profiles, verified=verified,
@@ -890,7 +921,91 @@ def admin_logout():
     session.pop("admin",None); return redirect("/admin")
 
 # ---------------------------------------------------------------------------
-# Agronomist directory
+# Auth — register / login / logout
+# ---------------------------------------------------------------------------
+@app.route("/register", methods=["GET","POST"])
+def register():
+    if request.method == "GET":
+        return render_template("register.html", regions=GHANA_REGIONS)
+    data = request.get_json() or request.form
+    name  = (data.get("name","") or "").strip()
+    phone = (data.get("phone","") or "").strip()
+    region= (data.get("region","") or "greater_accra").strip()
+    email = (data.get("email","") or "").strip()
+    pw    = (data.get("password","") or "").strip()
+    if not name or not phone or not pw:
+        return jsonify({"success":False,"error":"Name, phone and password are required."}), 400
+    if len(pw) < 6:
+        return jsonify({"success":False,"error":"Password must be at least 6 characters."}), 400
+    pw_hash = hash_password(pw)
+    sid = get_sid()
+    try:
+        with get_db() as db:
+            # Check if phone already registered
+            existing = db.execute("SELECT id FROM users WHERE phone=? AND registered=1",(phone,)).fetchone()
+            if existing:
+                return jsonify({"success":False,"error":"This phone number is already registered. Please log in."}), 409
+            db.execute("""
+                UPDATE users SET name=?,phone=?,email=?,region=?,
+                    password_hash=?,registered=1
+                WHERE session_id=?
+            """,(name,phone,email,region,pw_hash,sid))
+            if db.execute("SELECT changes()").fetchone()[0] == 0:
+                db.execute("""
+                    INSERT INTO users (session_id,name,phone,email,region,password_hash,registered)
+                    VALUES (?,?,?,?,?,?,1)
+                """,(sid,name,phone,email,region,pw_hash))
+            db.commit()
+        session["registered"] = True
+        session["user_name"]   = name
+        return jsonify({"success":True,"name":name})
+    except Exception as e:
+        print(f"[register error] {e}")
+        return jsonify({"success":False,"error":"Registration failed. Please try again."}), 500
+
+@app.route("/login", methods=["GET","POST"])
+def login():
+    if request.method == "GET":
+        return render_template("login.html")
+    data  = request.get_json() or request.form
+    phone = (data.get("phone","") or "").strip()
+    pw    = (data.get("password","") or "").strip()
+    if not phone or not pw:
+        return jsonify({"success":False,"error":"Phone and password are required."}), 400
+    pw_hash = hash_password(pw)
+    try:
+        with get_db() as db:
+            u = db.execute("""
+                SELECT session_id,name,plan,region
+                FROM users WHERE phone=? AND password_hash=? AND registered=1
+            """,(phone,pw_hash)).fetchone()
+            if not u:
+                return jsonify({"success":False,"error":"Incorrect phone or password."}), 401
+            # Link this browser session to registered user
+            old_sid = u["session_id"]
+            new_sid = get_sid()
+            if old_sid != new_sid:
+                # Merge sessions — update all tables to new sid
+                try:
+                    db.execute("UPDATE users SET session_id=? WHERE session_id=?",(new_sid,old_sid))
+                    for tbl in ["usage","payments","farm_profiles","livestock_profiles","health_logs"]:
+                        db.execute(f"UPDATE {tbl} SET session_id=? WHERE session_id=?",(new_sid,old_sid))
+                    db.commit()
+                except: pass
+            session["registered"] = True
+            session["user_name"]   = u["name"]
+        return jsonify({"success":True,"name":u["name"],"plan":u["plan"]})
+    except Exception as e:
+        print(f"[login error] {e}")
+        return jsonify({"success":False,"error":"Login failed. Please try again."}), 500
+
+@app.route("/logout")
+def logout():
+    session.pop("registered", None)
+    session.pop("user_name", None)
+    return redirect("/")
+
+# ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 @app.route("/api/agronomists", methods=["GET"])
 def api_get_agronomists():
