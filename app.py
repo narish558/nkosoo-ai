@@ -242,16 +242,8 @@ def hash_password(pw):
     return hashlib.sha256(pw.strip().encode()).hexdigest()
 
 def is_registered():
-    """Check if current session user is registered."""
-    if session.get("registered"):
-        return True
-    sid = get_sid()
-    try:
-        with get_db() as db:
-            u = db.execute("SELECT registered FROM users WHERE session_id=?",(sid,)).fetchone()
-            return bool(u and u["registered"] == 1)
-    except:
-        return False
+    """Check if current session user is explicitly registered (session-based only)."""
+    return session.get("registered", False) is True
 
 def get_or_create_user(sid):
     with get_db() as db:
@@ -596,8 +588,8 @@ def index():
         sid  = get_sid()
         user = get_or_create_user(sid)
         prices_data = get_prices()
-        user_registered = session.get("registered", False) or (user["registered"] == 1 if user and "registered" in user.keys() else False)
-        user_name = session.get("user_name","") or (user["name"] if user and user["name"] else "")
+        user_registered = session.get("registered", False) is True
+        user_name = session.get("user_name", "")
         return render_template("index.html",
             weather          = get_weather(user["region"] if user and user["region"] else "greater_accra"),
             prices           = prices_data.get("crops", PRICE_FALLBACK_CROPS),
@@ -1020,8 +1012,7 @@ def login():
 
 @app.route("/logout")
 def logout():
-    session.pop("registered", None)
-    session.pop("user_name", None)
+    session.clear()
     return redirect("/")
 
 # ---------------------------------------------------------------------------
