@@ -465,6 +465,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     </div>
     {% endif %}
   </div>
+{% if request.args.get('payment')=='success' %}
 <div class="container" style="padding-bottom:0;">
   <div class="pay-success-banner">&#10003; Payment confirmed! You are now on Pro. Enjoy unlimited access.</div>
 </div>
