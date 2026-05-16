@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sign In — Nkɔsoɔ AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f6f2;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{background:#1A4D15;padding:0 1.25rem;height:52px;display:flex;align-items:center;gap:10px;}
+.logo-icon{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:17px;}
+.logo-title{font-size:16px;font-weight:600;color:#fff;}
+.logo-sub{font-size:11px;color:#7EC850;}
+.back{margin-left:auto;font-size:12px;color:rgba(255,255,255,0.6);text-decoration:none;}
+.back:hover{color:#fff;}
+
+.wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:1.5rem 1rem;}
+.card{background:#fff;border:0.5px solid #d6d4cc;border-radius:16px;padding:1.75rem 1.5rem;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,0.06);}
+
+.card-icon{width:52px;height:52px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 1rem;}
+.card-title{font-size:20px;font-weight:600;color:#1a1a18;text-align:center;margin-bottom:4px;}
+.card-sub{font-size:13px;color:#5F5E5A;text-align:center;margin-bottom:1.5rem;}
+
+.fg{margin-bottom:1rem;}
+.lbl{font-size:12px;font-weight:500;color:#374151;margin-bottom:5px;}
+.inp{width:100%;padding:10px 12px;border:1px solid #d6d4cc;border-radius:8px;font-size:14px;color:#1a1a18;background:#fff;font-family:inherit;outline:none;transition:border-color .15s;}
+.inp:focus{border-color:#3B6D11;box-shadow:0 0 0 3px rgba(59,109,17,0.08);}
+
+.submit-btn{width:100%;padding:12px;border:none;border-radius:10px;background:#3B6D11;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:.5rem;transition:background .15s;}
+.submit-btn:hover{background:#1A4D15;}
+.submit-btn:disabled{background:#9C9B97;cursor:not-allowed;}
+
+.err{background:#FCEBEB;border:1px solid #FFCDD2;border-radius:8px;padding:10px 12px;font-size:13px;color:#A32D2D;margin-bottom:1rem;display:none;}
+.err.show{display:block;}
+
+.divider{text-align:center;font-size:12px;color:#9C9B97;margin:1.25rem 0;position:relative;}
+.divider::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:#d6d4cc;}
+.divider span{background:#fff;padding:0 10px;position:relative;}
+.reg-link{text-align:center;font-size:13px;color:#5F5E5A;}
+.reg-link a{color:#3B6D11;font-weight:500;text-decoration:none;}
+.footer{text-align:center;font-size:11px;color:#9C9B97;padding:1rem;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-icon">🌿</div>
+  <div>
+    <div class="logo-title">Nkɔsoɔ AI</div>
+    <div class="logo-sub">Ghana's farming assistant</div>
+  </div>
+  <a href="/" class="back">← Back to app</a>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="card-icon">👤</div>
+    <div class="card-title">Welcome back</div>
+    <div class="card-sub">Sign in to access your farm profile, calendars, and expert directory.</div>
+
+    <div class="err" id="errMsg"></div>
+
+    <div class="fg">
+      <div class="lbl">Phone number</div>
+      <input class="inp" type="tel" id="loginPhone" placeholder="e.g. 0244123456" autocomplete="tel"/>
+    </div>
+    <div class="fg">
+      <div class="lbl">Password</div>
+      <input class="inp" type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password"/>
+    </div>
+
+    <button class="submit-btn" id="loginBtn" onclick="doLogin()">Sign in →</button>
+
+    <div class="divider"><span>don't have an account?</span></div>
+    <div class="reg-link"><a href="/register">Create a free account</a></div>
+  </div>
+</div>
+
+<div class="footer">Nkɔsoɔ AI · Built by DranyTech · © 2025</div>
+
+<script>
+async function doLogin(){
+  const phone=document.getElementById('loginPhone').value.trim();
+  const pw=document.getElementById('loginPassword').value.trim();
+  const err=document.getElementById('errMsg');
+  const btn=document.getElementById('loginBtn');
+
+  err.classList.remove('show');
+  if(!phone||!pw){err.textContent='Please enter your phone number and password.';err.classList.add('show');return;}
+
+  btn.disabled=true; btn.textContent='Signing in...';
+  try{
+    const resp=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({phone,password:pw})});
+    const data=await resp.json();
+    if(data.success){
+      btn.textContent='✅ Welcome back!';
+      setTimeout(()=>{ window.location.href='/'; },1000);
+    } else {
+      err.textContent=data.error||'Sign in failed. Please try again.';
+      err.classList.add('show');
+      btn.disabled=false; btn.textContent='Sign in →';
+    }
+  }catch(e){
+    err.textContent='Connection error. Please try again.';
+    err.classList.add('show');
+    btn.disabled=false; btn.textContent='Sign in →';
+  }
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter') doLogin();});
+</script>
+</body>
+</html>

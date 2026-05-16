@@ -112,15 +112,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     </div>
   </div>
 
-  <!-- ── OVERVIEW ── -->
-  <div class="st">📊 Platform overview</div>
+  <div class="st" style="margin-top:.5rem;">📊 Platform overview</div>
   <div class="mg">
-    <div class="m"><div class="ml">Total farmers</div><div class="mv g">{{ total_users }}</div></div>
+    <div class="m"><div class="ml">Total sessions</div><div class="mv g">{{ total_users }}</div><div class="ms">anonymous + registered</div></div>
+    <div class="m"><div class="ml">Registered farmers</div><div class="mv g" style="font-size:28px;">{{ registered_users }}</div><div class="ms">with name + phone</div></div>
     <div class="m"><div class="ml">Pro subscribers</div><div class="mv b">{{ pro_users }}</div></div>
     <div class="m"><div class="ml">Monthly revenue</div><div class="mv g" style="font-size:18px;">GHS {{ total_revenue }}</div><div class="ms">{{ pro_users }} × GHS 30</div></div>
     <div class="m"><div class="ml">Questions today</div><div class="mv">{{ questions_today }}</div></div>
-    <div class="m"><div class="ml">Diagnoses today</div><div class="mv">{{ diagnoses_today }}</div></div>
-    <div class="m"><div class="ml">Voice sessions</div><div class="mv b">{{ voice_today }}</div><div class="ms">today</div></div>
+    <div class="m"><div class="ml">Voice sessions</div><div class="mv b">{{ voice_today }}</div></div>
   </div>
 
   <!-- ── CROP PROFILES ── -->
