@@ -590,32 +590,38 @@ QUICK_TW = [
 # ---------------------------------------------------------------------------
 @app.route("/")
 def index():
-    sid  = get_sid()
-    user = get_or_create_user(sid)
-    prices_data = get_prices()
-    user_registered = session.get("registered", False) or (user["registered"] == 1 if user and "registered" in user.keys() else False)
-    user_name = session.get("user_name","") or (user["name"] if user and user["name"] else "")
-    return render_template("index.html",
-        weather        = get_weather(user["region"] if user and user["region"] else "greater_accra"),
-        prices         = prices_data.get("crops", PRICE_FALLBACK_CROPS),
-        livestock_prices = prices_data.get("livestock", PRICE_FALLBACK_LIVESTOCK),
-        prices_updated = prices_data.get("updated",""),
-        prices_source  = prices_data.get("source",""),
-        prices_season  = prices_data.get("season",""),
-        pests          = PEST_DATA,
-        quick_en       = QUICK_EN,
-        quick_tw       = QUICK_TW,
-        regions        = GHANA_REGIONS,
-        user           = user,
-        user_registered = user_registered,
-        user_name      = user_name,
-        used_today     = get_usage_today(sid),
-        used_diagnose  = get_diagnose_month(sid),
-        free_limit     = FREE_DAILY_LIMIT,
-        diagnose_limit = FREE_DIAGNOSE_LIMIT,
-        api_ready      = bool(client.api_key),
-        paystack_public= PAYSTACK_PUBLIC,
-    )
+    try:
+        sid  = get_sid()
+        user = get_or_create_user(sid)
+        prices_data = get_prices()
+        user_registered = session.get("registered", False) or (user["registered"] == 1 if user and "registered" in user.keys() else False)
+        user_name = session.get("user_name","") or (user["name"] if user and user["name"] else "")
+        return render_template("index.html",
+            weather          = get_weather(user["region"] if user and user["region"] else "greater_accra"),
+            prices           = prices_data.get("crops", PRICE_FALLBACK_CROPS),
+            livestock_prices = prices_data.get("livestock", PRICE_FALLBACK_LIVESTOCK),
+            prices_updated   = prices_data.get("updated",""),
+            prices_source    = prices_data.get("source",""),
+            prices_season    = prices_data.get("season",""),
+            pests            = PEST_DATA,
+            quick_en         = QUICK_EN,
+            quick_tw         = QUICK_TW,
+            regions          = GHANA_REGIONS,
+            user             = user,
+            user_registered  = user_registered,
+            user_name        = user_name,
+            used_today       = get_usage_today(sid),
+            used_diagnose    = get_diagnose_month(sid),
+            free_limit       = FREE_DAILY_LIMIT,
+            diagnose_limit   = FREE_DIAGNOSE_LIMIT,
+            api_ready        = bool(client.api_key),
+            paystack_public  = PAYSTACK_PUBLIC,
+        )
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[INDEX ERROR] {e}\n{tb}")
+        return f"<pre>INDEX ERROR:\n{tb}</pre>", 500
 
 @app.route("/ecosystem")
 def ecosystem():
