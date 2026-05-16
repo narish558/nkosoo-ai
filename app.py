@@ -241,10 +241,15 @@ def hash_password(pw):
 
 def is_registered():
     """Check if current session user is registered."""
+    if session.get("registered"):
+        return True
     sid = get_sid()
-    with get_db() as db:
-        u = db.execute("SELECT registered FROM users WHERE session_id=?", (sid,)).fetchone()
-        return u and u["registered"] == 1
+    try:
+        with get_db() as db:
+            u = db.execute("SELECT registered FROM users WHERE session_id=?",(sid,)).fetchone()
+            return bool(u and u["registered"] == 1)
+    except:
+        return False
 
 def get_or_create_user(sid):
     with get_db() as db:
@@ -588,8 +593,8 @@ def index():
     sid  = get_sid()
     user = get_or_create_user(sid)
     prices_data = get_prices()
-    user_registered = session.get("registered", False) or user.get("registered", 0) == 1
-    user_name = session.get("user_name", user.get("name",""))
+    user_registered = session.get("registered", False) or (user["registered"] == 1 if user and "registered" in user.keys() else False)
+    user_name = session.get("user_name","") or (user["name"] if user and user["name"] else "")
     return render_template("index.html",
         weather        = get_weather(user.get("region","greater_accra")),
         prices         = prices_data.get("crops", PRICE_FALLBACK_CROPS),
@@ -945,12 +950,12 @@ def register():
             existing = db.execute("SELECT id FROM users WHERE phone=? AND registered=1",(phone,)).fetchone()
             if existing:
                 return jsonify({"success":False,"error":"This phone number is already registered. Please log in."}), 409
-            db.execute("""
+            cur = db.execute("""
                 UPDATE users SET name=?,phone=?,email=?,region=?,
                     password_hash=?,registered=1
                 WHERE session_id=?
             """,(name,phone,email,region,pw_hash,sid))
-            if db.execute("SELECT changes()").fetchone()[0] == 0:
+            if cur.rowcount == 0:
                 db.execute("""
                     INSERT INTO users (session_id,name,phone,email,region,password_hash,registered)
                     VALUES (?,?,?,?,?,?,1)
