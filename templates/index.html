@@ -41,7 +41,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .auth-btn{font-size:11px;color:#fff;text-decoration:none;padding:5px 10px;border-radius:6px;background:var(--g600);font-weight:500;white-space:nowrap;}
 .auth-btn:hover{background:var(--g900);}
 
-/* ── GATE MODAL ── */
+/* ── PRO LOCK BAR ── */
+.pro-lock-bar{
+  background:linear-gradient(135deg,#1A2E4A,#2E5F8A);
+  color:#fff;padding:.75rem 1rem;border-radius:var(--rl);
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:1rem;flex-wrap:wrap;
+}
+.pro-lock-bar span{font-size:13px;}
+.pro-lock-bar strong{color:#7EC850;}
+.pro-lock-btn{
+  padding:7px 14px;border:none;border-radius:var(--rm);
+  background:#7EC850;color:#1A4D15;
+  font-size:12px;font-weight:700;cursor:pointer;
+  font-family:inherit;white-space:nowrap;
+}
+.pro-lock-btn:hover{background:#fff;}
 .gate-modal{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem;}
 .gate-modal.open{display:flex;}
 .gate-card{background:#fff;border-radius:16px;padding:1.75rem 1.5rem;width:100%;max-width:360px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.18);}
@@ -629,6 +644,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
   <!-- ══ DIAGNOSE ══ -->
   <div id="panel-diagnose" class="panel">
+    {% if user.plan != 'pro' %}
+    <div class="pro-lock-bar">
+      <span>📷 Photo diagnosis is a <strong>Pro feature</strong></span>
+      <button class="pro-lock-btn" onclick="openUpgrade()">Upgrade — GHS 30/month</button>
+    </div>
+    {% endif %}
     <div class="card">
       <div class="card-title">📷 AI photo diagnosis</div>
       <div class="diag-mode-toggle">
@@ -961,6 +982,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
   <!-- ══ VOICE ══ -->
   <div id="panel-voice" class="panel">
+    {% if user.plan != 'pro' %}
+    <div class="pro-lock-bar">
+      <span>🎤 Voice interface is a <strong>Pro feature</strong></span>
+      <button class="pro-lock-btn" onclick="openUpgrade()">Upgrade — GHS 30/month</button>
+    </div>
+    {% endif %}
     <div class="card">
       <div class="card-title b">🎤 Voice farming assistant</div>
 
@@ -1108,6 +1135,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   },
   "user_plan": {{ user.plan|tojson }},
   "free_limit": {{ free_limit }},
+  "anon_limit": 1,
+  "user_registered": {{ "true" if user_registered else "false" }},
   "used_today": {{ used_today }}
 }
 </script>
@@ -1126,6 +1155,9 @@ const WEATHER_DATA = {
 };
 const USER_PLAN = _d.user_plan;
 const FREE_LIMIT = _d.free_limit;
+const ANON_LIMIT = _d.anon_limit || 1;
+const USER_REGISTERED = _d.user_registered || false;
+const EFFECTIVE_LIMIT = USER_REGISTERED ? FREE_LIMIT : ANON_LIMIT;
 let usedToday = _d.used_today;
 let currentLang='en';
 let currentWeather=JSON.parse(JSON.stringify(WEATHER_DATA));
@@ -1321,7 +1353,15 @@ async function sendMessage(){
     const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:conversationHistory,lang:currentLang})});
     if(!resp.ok){
       const err=await resp.json();
-      if(err.error==='limit_reached'){aiDiv.textContent=currentLang==='tw'?(err.message_tw||err.message):err.message;updateUsageBar(FREE_LIMIT);setTimeout(openUpgrade,1500);}
+      if(err.error==='limit_reached'){
+        if(err.gate==='register'){
+          document.getElementById('gateModal').classList.add('open');
+        } else {
+          aiDiv.textContent=currentLang==='tw'?(err.message_tw||err.message):err.message;
+          updateUsageBar(FREE_LIMIT);
+          setTimeout(openUpgrade,1500);
+        }
+      }
       else{aiDiv.textContent='⚠ '+(err.error||'Error');}
       sendBtn.disabled=false;return;
     }
