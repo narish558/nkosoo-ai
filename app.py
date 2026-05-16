@@ -36,8 +36,10 @@ PAYSTACK_SECRET = os.environ.get("PAYSTACK_SECRET_KEY","")
 PAYSTACK_PUBLIC = os.environ.get("PAYSTACK_PUBLIC_KEY","")
 ADMIN_PASSWORD  = os.environ.get("ADMIN_PASSWORD","nkosoo2024")
 
-FREE_DAILY_LIMIT    = 3
-FREE_DIAGNOSE_LIMIT = 1
+FREE_DAILY_LIMIT    = 3   # registered free users
+ANON_DAILY_LIMIT    = 1   # anonymous users (no account)
+FREE_DIAGNOSE_LIMIT = 1   # diagnose — Pro only (set high so gate handles it)
+FREE_VOICE_LIMIT    = 0   # voice — Pro only
 
 # ---------------------------------------------------------------------------
 # Database
@@ -656,12 +658,20 @@ def api_chat():
     if not messages: return jsonify({"error":"No messages"}),400
     if not client.api_key: return jsonify({"error":"ANTHROPIC_API_KEY not set"}),500
     if not is_pro(user):
-        used=get_usage_today(sid)
-        if used>=FREE_DAILY_LIMIT:
-            return jsonify({"error":"limit_reached",
-                "message":f"You have used all {FREE_DAILY_LIMIT} free questions today. Upgrade to Pro.",
-                "message_tw":f"Woafa wo nsɛmmisa {FREE_DAILY_LIMIT} nyinaa nnɛ.",
-                "used":used,"limit":FREE_DAILY_LIMIT}),429
+        used = get_usage_today(sid)
+        registered = is_registered()
+        limit = FREE_DAILY_LIMIT if registered else ANON_DAILY_LIMIT
+        if used >= limit:
+            if not registered:
+                return jsonify({"error":"limit_reached","gate":"register",
+                    "message":"You have used your 1 free question today. Create a free account to get 3 questions per day.",
+                    "message_tw":"Wo nsɛmmisa koro no wie. Yɛ account ama wo nsɛmmisa 3 da biara.",
+                    "used":used,"limit":limit}),429
+            else:
+                return jsonify({"error":"limit_reached","gate":"upgrade",
+                    "message":f"You have used all {FREE_DAILY_LIMIT} free questions today. Upgrade to Pro for unlimited access.",
+                    "message_tw":f"Woafa wo nsɛmmisa {FREE_DAILY_LIMIT} nyinaa nnɛ. Yi wo ho akɔ Pro.",
+                    "used":used,"limit":limit}),429
     log_usage(sid,"chat",messages[-1].get("content",""))
     system=SYSTEM_TW if lang=="tw" else SYSTEM_EN
     def generate():
@@ -680,10 +690,8 @@ def api_diagnose():
     sid=get_sid(); user=get_or_create_user(sid)
     if not client.api_key: return jsonify({"error":"ANTHROPIC_API_KEY not set"}),500
     if not is_pro(user):
-        used=get_diagnose_month(sid)
-        if used>=FREE_DIAGNOSE_LIMIT:
-            return jsonify({"error":"limit_reached",
-                "message":f"You have used all {FREE_DIAGNOSE_LIMIT} free diagnoses. Upgrade to Pro."}),429
+        return jsonify({"error":"pro_required","gate":"upgrade",
+            "message":"Photo diagnosis is a Pro feature. Upgrade to Pro for GHS 30/month to diagnose crop and animal diseases with AI."}),429
     data=request.get_json()
     image_b64=data.get("image"); media_type=data.get("media_type","image/jpeg")
     lang=data.get("lang","en"); mode=data.get("mode","crop")
