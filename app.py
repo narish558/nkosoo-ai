@@ -1010,8 +1010,48 @@ def login():
         print(f"[login error] {e}")
         return jsonify({"success":False,"error":"Login failed. Please try again."}), 500
 
-@app.route("/logout")
-def logout():
+@app.route("/forgot-password", methods=["GET","POST"])
+def forgot_password():
+    if request.method=="GET":
+        return render_template("forgot_password.html", regions=GHANA_REGIONS)
+    data = request.get_json() or request.form
+    phone  = (data.get("phone","") or "").strip()
+    region = (data.get("region","") or "").strip()
+    new_pw = (data.get("new_password","") or "").strip()
+    if not phone or not region or not new_pw:
+        return jsonify({"success":False,"error":"All fields are required."}),400
+    if len(new_pw) < 6:
+        return jsonify({"success":False,"error":"Password must be at least 6 characters."}),400
+    try:
+        with get_db() as db:
+            u = db.execute(
+                "SELECT id FROM users WHERE phone=? AND region=? AND registered=1",
+                (phone, region)
+            ).fetchone()
+            if not u:
+                return jsonify({"success":False,"error":"No account found with that phone number and region. Please check your details."}),404
+            db.execute(
+                "UPDATE users SET password_hash=? WHERE phone=? AND region=?",
+                (hash_password(new_pw), phone, region)
+            )
+            db.commit()
+        return jsonify({"success":True})
+    except Exception as e:
+        print(f"[forgot password error] {e}")
+        return jsonify({"success":False,"error":"Reset failed. Please try again."}),500
+
+@app.route("/admin/reset-password/<int:user_id>", methods=["POST"])
+def admin_reset_password(user_id):
+    if not session.get("admin"): return redirect("/admin")
+    new_pw = request.form.get("new_password","").strip()
+    if not new_pw or len(new_pw) < 6:
+        return redirect("/admin")
+    with get_db() as db:
+        db.execute("UPDATE users SET password_hash=? WHERE id=?",(hash_password(new_pw), user_id))
+        db.commit()
+    return redirect("/admin")
+
+# ---------------------------------------------------------------------------
     session.clear()
     return redirect("/")
 
