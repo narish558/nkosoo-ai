@@ -583,6 +583,10 @@ QUICK_TW = [
 # Main route
 # ---------------------------------------------------------------------------
 @app.route("/")
+def landing():
+    return render_template("landing.html")
+
+@app.route("/app")
 def index():
     try:
         sid  = get_sid()
@@ -969,7 +973,7 @@ def register():
             db.commit()
         session["registered"] = True
         session["user_name"]   = name
-        return jsonify({"success":True,"name":name})
+        return jsonify({"success":True,"name":name,"redirect":"/app"})
     except Exception as e:
         print(f"[register error] {e}")
         return jsonify({"success":False,"error":"Registration failed. Please try again."}), 500
@@ -1005,7 +1009,7 @@ def login():
                 except: pass
             session["registered"] = True
             session["user_name"]   = u["name"]
-        return jsonify({"success":True,"name":u["name"],"plan":u["plan"]})
+        return jsonify({"success":True,"name":u["name"],"plan":u["plan"],"redirect":"/app"})
     except Exception as e:
         print(f"[login error] {e}")
         return jsonify({"success":False,"error":"Login failed. Please try again."}), 500
