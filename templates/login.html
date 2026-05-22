@@ -49,7 +49,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     <div class="logo-title">Nkɔsoɔ AI</div>
     <div class="logo-sub">Ghana's farming assistant</div>
   </div>
-  <a href="/" class="back">← Back to app</a>
+  <a href="/app" class="back">← Back to app</a>
 </div>
 
 <div class="wrap">
@@ -99,7 +99,7 @@ async function doLogin(){
     const data=await resp.json();
     if(data.success){
       btn.textContent='✅ Welcome back!';
-      setTimeout(()=>{ window.location.href='/'; },1000);
+      setTimeout(()=>{ window.location.href=data.redirect||'/app'; },1000);
     } else {
       err.textContent=data.error||'Sign in failed. Please try again.';
       err.classList.add('show');

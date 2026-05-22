@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Nkɔsoɔ AI — Ghana's Agricultural Ecosystem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --g900:#1A4D15;--g600:#3B6D11;--g300:#7EC850;--g100:#C0DD97;--g50:#EAF3DE;
+  --a900:#633806;--a600:#C4873A;--a300:#E8A84E;--a50:#FAEEDA;
+  --b600:#185FA5;--b50:#E6F1FB;
+  --p600:#534AB7;--p50:#EEEDFE;
+  --t600:#0F6E56;--t50:#E1F5EE;
+  --r600:#A32D2D;--r50:#FCEBEB;
+  --dark:#0e1a0c;--card:#fff;--bg:#f5f3ee;
+  --ts:#5F5E5A;--bd:#d6d4cc;
+  --rm:10px;--rl:16px;
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:#1a1a18;
+  min-height:100vh;
+}
+
+/* ── HEADER ── */
+.header{
+  background:var(--dark);
+  padding:0 2rem;
+  height:64px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+.logo-circle{
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,var(--a600),var(--g600));
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;
+}
+.logo-text{font-family:'Playfair Display',serif;font-size:20px;color:#fff;letter-spacing:.02em;}
+.logo-sub{font-size:11px;color:var(--g300);letter-spacing:.06em;text-transform:uppercase;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.live-pill{
+  font-size:11px;padding:5px 12px;border-radius:20px;
+  background:rgba(122,200,80,0.15);color:var(--g300);
+  border:1px solid rgba(122,200,80,0.3);font-weight:500;
+  display:flex;align-items:center;gap:5px;
+}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--g300);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.try-btn{
+  padding:8px 18px;border:none;border-radius:var(--rm);
+  background:var(--g600);color:#fff;font-size:13px;font-weight:500;
+  cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;
+  display:inline-block;
+}
+
+/* ── HERO ── */
+.hero{
+  background:var(--dark);
+  padding:4rem 2rem 3rem;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 30% 50%,rgba(59,109,17,0.18) 0%,transparent 60%),
+             radial-gradient(ellipse at 70% 50%,rgba(196,135,58,0.12) 0%,transparent 60%);
+}
+.hero-badge{
+  display:inline-block;font-size:11px;font-weight:500;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--g300);border:1px solid rgba(122,200,80,0.3);
+  padding:5px 14px;border-radius:20px;margin-bottom:1.5rem;
+  position:relative;
+}
+.hero h1{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2rem,5vw,3.5rem);
+  color:#fff;
+  line-height:1.15;
+  margin-bottom:1rem;
+  position:relative;
+}
+.hero h1 span{color:var(--g300);}
+.hero p{
+  font-size:16px;color:rgba(255,255,255,0.6);
+  max-width:560px;margin:0 auto 2rem;
+  line-height:1.7;position:relative;
+}
+.hero-stats{
+  display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;
+  position:relative;margin-bottom:2.5rem;
+}
+.stat{text-align:center;}
+.stat-val{font-family:'Playfair Display',serif;font-size:2rem;color:#fff;line-height:1;}
+.stat-lbl{font-size:11px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;}
+.hero-cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;position:relative;}
+.btn-primary{
+  padding:12px 28px;border:none;border-radius:var(--rm);
+  background:var(--g600);color:#fff;font-size:14px;font-weight:500;
+  cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;
+  display:inline-block;transition:background .2s;
+}
+.btn-primary:hover{background:var(--g900);}
+.btn-outline{
+  padding:12px 28px;border:1px solid rgba(255,255,255,0.2);border-radius:var(--rm);
+  background:transparent;color:#fff;font-size:14px;font-weight:500;
+  cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;
+  display:inline-block;transition:border-color .2s;
+}
+.btn-outline:hover{border-color:rgba(255,255,255,0.5);}
+
+/* ── MAIN TABS ── */
+.container{max-width:960px;margin:0 auto;padding:2rem 1.5rem;}
+.section-label{
+  font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ts);margin-bottom:1rem;
+}
+.main-tabs{
+  display:flex;gap:6px;background:var(--card);
+  border:1px solid var(--bd);border-radius:var(--rl);
+  padding:6px;overflow-x:auto;margin-bottom:1.5rem;
+}
+.mt{
+  flex:1;min-width:90px;padding:10px 8px;border:none;
+  border-radius:var(--rm);background:transparent;
+  font-size:12px;color:var(--ts);cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-weight:500;
+  white-space:nowrap;transition:all .15s;
+}
+.mt:hover{background:var(--bg);}
+.mt.g.on{background:var(--g50);color:var(--g600);}
+.mt.a.on{background:var(--a50);color:var(--a600);}
+.mt.t.on{background:var(--t50);color:var(--t600);}
+.mt.b.on{background:var(--b50);color:var(--b600);}
+.mt.p.on{background:var(--p50);color:var(--p600);}
+.mt.r.on{background:var(--r50);color:var(--r600);}
+.mt.gr.on{background:#f1efe8;color:#444441;}
+
+/* ── PANELS ── */
+.panel{display:none;animation:fadeIn .2s ease;}
+.panel.on{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+/* ── CARDS ── */
+.card{
+  background:var(--card);border:1px solid var(--bd);
+  border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;
+}
+.card-title{
+  font-size:11px;font-weight:500;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ts);margin-bottom:.875rem;
+}
+
+/* ── HERO CARD ── */
+.hero-card{
+  display:flex;align-items:flex-start;gap:16px;
+  background:var(--card);border:1px solid var(--bd);
+  border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;
+}
+.hero-icon{
+  width:52px;height:52px;border-radius:var(--rm);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;flex-shrink:0;
+}
+.hero-card-title{font-family:'Playfair Display',serif;font-size:17px;color:#1a1a18;margin-bottom:4px;}
+.hero-card-sub{font-size:13px;color:var(--ts);line-height:1.55;}
+.badge{
+  display:inline-block;font-size:10px;padding:3px 10px;
+  border-radius:20px;font-weight:500;margin:3px 3px 0 0;
+}
+.bg{background:var(--g50);color:var(--g600);}
+.ba{background:var(--a50);color:var(--a600);}
+.bb{background:var(--b50);color:var(--b600);}
+.bp{background:var(--p50);color:var(--p600);}
+.bt{background:var(--t50);color:var(--t600);}
+.br{background:var(--r50);color:var(--r600);}
+.bgr{background:#f1efe8;color:#444441;}
+
+/* ── FEATURE GRID ── */
+.feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:.625rem;margin-bottom:1rem;}
+@media(max-width:520px){.feat-grid{grid-template-columns:1fr;}}
+.feat{
+  background:#fafaf8;border:1px solid var(--bd);
+  border-radius:var(--rm);padding:.875rem;
+}
+.feat-title{font-size:13px;font-weight:500;color:#1a1a18;margin-bottom:4px;}
+.feat-desc{font-size:12px;color:var(--ts);line-height:1.5;}
+.feat-icon{font-size:18px;margin-bottom:6px;}
+
+/* ── PRICE TABLE ── */
+.price-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;border-bottom:1px solid var(--bd);font-size:13px;
+}
+.price-row:last-child{border-bottom:none;}
+.price-name{font-weight:500;}
+.price-unit{font-size:11px;color:var(--ts);}
+.price-val{font-size:15px;font-weight:500;}
+.up{color:var(--g600);font-size:11px;font-weight:500;}
+.dn{color:var(--r600);font-size:11px;font-weight:500;}
+.st{color:var(--ts);font-size:11px;}
+
+/* ── EXPERT CARDS ── */
+.expert{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 0;border-bottom:1px solid var(--bd);
+}
+.expert:last-child{border-bottom:none;}
+.avatar{
+  width:42px;height:42px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:500;flex-shrink:0;
+}
+.expert-name{font-size:14px;font-weight:500;margin-bottom:2px;}
+.expert-spec{font-size:12px;color:var(--ts);margin-bottom:3px;}
+.stars{color:#EF9F27;font-size:12px;}
+.stars span{color:var(--ts);}
+.fee{font-size:14px;font-weight:500;color:var(--g600);}
+.book-btn{
+  padding:6px 14px;border:1px solid var(--g600);border-radius:var(--rm);
+  background:var(--g50);color:var(--g600);font-size:12px;font-weight:500;
+  cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;
+}
+.book-btn:hover{background:var(--g100);}
+.book-btn.a{border-color:var(--a600);background:var(--a50);color:var(--a600);}
+
+/* ── COURSE ITEMS ── */
+.course{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 0;border-bottom:1px solid var(--bd);
+}
+.course:last-child{border-bottom:none;}
+.course-icon{
+  width:44px;height:44px;border-radius:var(--rm);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;
+}
+.course-name{font-size:13px;font-weight:500;margin-bottom:3px;}
+.course-meta{font-size:11px;color:var(--ts);}
+.enrol-btn{
+  padding:6px 14px;border:1px solid var(--b600);border-radius:var(--rm);
+  background:var(--b50);color:var(--b600);font-size:12px;font-weight:500;
+  cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;
+}
+
+/* ── PRODUCT GRID ── */
+.prod-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;}
+@media(max-width:520px){.prod-grid{grid-template-columns:1fr;}}
+.prod{
+  background:var(--card);border:1px solid var(--bd);
+  border-radius:var(--rl);padding:1rem;
+}
+.prod-emoji{font-size:28px;margin-bottom:.5rem;}
+.prod-name{font-size:13px;font-weight:500;margin-bottom:2px;}
+.prod-seller{font-size:11px;color:var(--ts);margin-bottom:.5rem;}
+.prod-price{font-size:16px;font-weight:500;color:var(--g600);margin-bottom:.625rem;}
+.add-btn{
+  width:100%;padding:7px;border:none;border-radius:var(--rm);
+  background:var(--g600);color:#fff;font-size:12px;font-weight:500;
+  cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s;
+}
+.add-btn:hover{background:var(--g900);}
+
+/* ── MARKETPLACE ── */
+.mkt-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 0;border-bottom:1px solid var(--bd);
+}
+.mkt-item:last-child{border-bottom:none;}
+.mkt-icon{
+  width:44px;height:44px;border-radius:var(--rm);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;
+}
+.mkt-name{font-size:13px;font-weight:500;margin-bottom:2px;}
+.mkt-farmer{font-size:11px;color:var(--ts);margin-bottom:2px;}
+.mkt-avail{font-size:11px;color:var(--ts);}
+.mkt-price{font-size:15px;font-weight:500;color:var(--g600);white-space:nowrap;}
+.order-btn{
+  padding:7px 14px;border:none;border-radius:var(--rm);
+  background:var(--g600);color:#fff;font-size:12px;font-weight:500;
+  cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;
+  transition:background .15s;
+}
+.order-btn:hover{background:var(--g900);}
+
+/* ── DASHBOARD ── */
+.dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.625rem;margin-bottom:1rem;}
+@media(max-width:520px){.dash-grid{grid-template-columns:1fr 1fr;}}
+.dmet{
+  background:#fafaf8;border:1px solid var(--bd);
+  border-radius:var(--rm);padding:.875rem;text-align:center;
+}
+.dmet-val{font-family:'Playfair Display',serif;font-size:22px;color:#1a1a18;}
+.dmet-lbl{font-size:10px;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;margin-top:3px;}
+.export-row{display:flex;gap:8px;flex-wrap:wrap;}
+.exp-btn{
+  padding:8px 16px;border-radius:var(--rm);font-size:12px;
+  font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;border:1px solid;
+}
+
+/* ── SUB TABS ── */
+.sub-tabs{display:flex;gap:6px;margin-bottom:1rem;overflow-x:auto;}
+.stab{
+  padding:6px 14px;border:1px solid var(--bd);border-radius:var(--rm);
+  background:var(--card);font-size:12px;font-weight:500;color:var(--ts);
+  cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;
+  transition:all .15s;
+}
+.stab:hover{background:var(--bg);}
+.stab.g.on{background:var(--g50);color:var(--g600);border-color:var(--g100);}
+.stab.a.on{background:var(--a50);color:var(--a600);border-color:var(--a300);}
+.stab.b.on{background:var(--b50);color:var(--b600);}
+.stab.r.on{background:var(--r50);color:var(--r600);}
+
+/* ── VERIFIED PILL ── */
+.verified{color:var(--g600);font-weight:500;}
+
+/* ── FOOTER ── */
+.footer{
+  background:var(--dark);color:rgba(255,255,255,0.4);
+  text-align:center;padding:2rem;font-size:12px;line-height:2;
+}
+.footer a{color:var(--g300);text-decoration:none;}
+.footer-logo{font-family:'Playfair Display',serif;font-size:18px;color:#fff;display:block;margin-bottom:.5rem;}
+
+/* ── COMING SOON ── */
+.coming{
+  background:#fafaf8;border:1px solid var(--bd);border-radius:var(--rl);
+  padding:2rem;text-align:center;color:var(--ts);font-size:13px;
+}
+.coming-icon{font-size:32px;margin-bottom:.5rem;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo-circle">🌿</div>
+  <div>
+    <div class="logo-text">Nkɔsoɔ AI</div>
+    <div class="logo-sub">Ghana's Agricultural Ecosystem</div>
+  </div>
+  <div class="header-right">
+    <div class="live-pill"><div class="live-dot"></div> Live prototype</div>
+    <a href="https://nkosoo-ai.onrender.com" target="_blank" class="try-btn">Try live app →</a>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">🌿 Built by DranyTech — Ghana</div>
+  <h1>Ghana's complete<br><span>agricultural ecosystem</span></h1>
+  <p>Farmers. Livestock keepers. Agronomists. Students. Input sellers. Buyers. All connected. All verified. All on one platform.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-val">2M+</div><div class="stat-lbl">Target farmers</div></div>
+    <div class="stat"><div class="stat-val">16</div><div class="stat-lbl">Ghana regions</div></div>
+    <div class="stat"><div class="stat-val">6</div><div class="stat-lbl">User types</div></div>
+    <div class="stat"><div class="stat-val">4</div><div class="stat-lbl">Languages</div></div>
+  </div>
+  <div class="hero-cta">
+    <a href="https://nkosoo-ai.onrender.com" target="_blank" class="btn-primary">🌐 Open live app</a>
+    <a href="#explore" class="btn-outline">Explore ecosystem ↓</a>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="container" id="explore">
+  <div class="section-label">Explore the ecosystem</div>
+
+  <div class="main-tabs">
+    <button class="mt g on" onclick="showPanel('farmers',this)">🌾 Farmers</button>
+    <button class="mt a"    onclick="showPanel('livestock',this)">🐄 Livestock</button>
+    <button class="mt t"    onclick="showPanel('agronomy',this)">🔬 Agronomists</button>
+    <button class="mt b"    onclick="showPanel('students',this)">🎓 Students</button>
+    <button class="mt p"    onclick="showPanel('inputs',this)">🛒 Farm inputs</button>
+    <button class="mt r"    onclick="showPanel('marketplace',this)">🏪 Marketplace</button>
+    <button class="mt gr"   onclick="showPanel('dashboard',this)">📊 Dashboard</button>
+  </div>
+
+  <!-- ══ FARMERS ══ -->
+  <div class="panel on" id="p-farmers">
+    <div class="hero-card">
+      <div class="hero-icon" style="background:var(--g50);">🌾</div>
+      <div>
+        <div class="hero-card-title">My Crops — Farmer profile</div>
+        <div class="hero-card-sub">Ghana Card verified · All 16 regions · AI planting calendar per crop · Farm diary with AI tips</div>
+      </div>
+    </div>
+    <div class="feat-grid">
+      <div class="feat"><div class="feat-icon">🇬🇭</div><div class="feat-title">Ghana Card verification</div><div class="feat-desc">GHA-123456789-0 format · Live validation · Encrypted · Builds trusted farmer identity</div></div>
+      <div class="feat"><div class="feat-icon">🌱</div><div class="feat-title">Crop selector</div><div class="feat-desc">14 staples & vegetables + 9 fruits · Tap to select all crops grown on your farm</div></div>
+      <div class="feat"><div class="feat-icon">📅</div><div class="feat-title">AI planting calendar</div><div class="feat-desc">One calendar per crop · Unique colour per crop · Click generate · Fertilize, spray, harvest dates</div></div>
+      <div class="feat"><div class="feat-icon">📔</div><div class="feat-title">Farm diary</div><div class="feat-desc">Log daily entries · Category + crop filter · AI tip generated for every entry</div></div>
+      <div class="feat"><div class="feat-icon">🎤</div><div class="feat-title">Voice interface</div><div class="feat-desc">English — speak & hear. Twi, Dagbani, Hausa — type & hear. No literacy needed.</div></div>
+      <div class="feat"><div class="feat-icon">📷</div><div class="feat-title">AI photo diagnosis</div><div class="feat-desc">Upload crop photo · Claude Vision identifies disease in seconds · Treatment with local products</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Crop market prices — GHS (AI-refreshed weekly)</div>
+      <div class="price-row"><div><div class="price-name">Maize</div><div class="price-unit">50kg bag</div></div><div class="price-val">GHS 260</div><div class="up">▲ 5%</div></div>
+      <div class="price-row"><div><div class="price-name">Tomatoes</div><div class="price-unit">crate</div></div><div class="price-val">GHS 175</div><div class="dn">▼ 8%</div></div>
+      <div class="price-row"><div><div class="price-name">Yam</div><div class="price-unit">tuber (large)</div></div><div class="price-val">GHS 38</div><div class="up">▲ 3%</div></div>
+      <div class="price-row"><div><div class="price-name">Groundnut</div><div class="price-unit">50kg bag</div></div><div class="price-val">GHS 295</div><div class="st">— Stable</div></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <span class="badge bg">🌤 Live weather · 16 regions</span>
+      <span class="badge bg">🐛 Pest & disease alerts</span>
+      <span class="badge bg">🤖 AI chat in English & Twi</span>
+      <span class="badge bg">📈 Market price trends</span>
+    </div>
+  </div>
+
+  <!-- ══ LIVESTOCK ══ -->
+  <div class="panel" id="p-livestock">
+    <div class="hero-card">
+      <div class="hero-icon" style="background:var(--a50);">🐄</div>
+      <div>
+        <div class="hero-card-title">Livestock — 6 animal types</div>
+        <div class="hero-card-sub">Ghana Card linked to livestock ownership · AI vaccination calendar · Health log · Livestock diary</div>
+      </div>
+    </div>
+    <div class="feat-grid">
+      <div class="feat"><div class="feat-icon">🐔</div><div class="feat-title">Poultry</div><div class="feat-desc">Chicken · Turkey · Guinea fowl · Layers and broilers · Newcastle vaccine calendar</div></div>
+      <div class="feat"><div class="feat-icon">🐄</div><div class="feat-title">Cattle</div><div class="feat-desc">Beef and dairy · FMD vaccination · Deworming · Body condition scoring</div></div>
+      <div class="feat"><div class="feat-icon">🐐</div><div class="feat-title">Goats</div><div class="feat-desc">Meat and dairy · PPR vaccination · Tick and parasite control · Breeding records</div></div>
+      <div class="feat"><div class="feat-icon">🐑</div><div class="feat-title">Sheep</div><div class="feat-desc">Meat and wool · Deworming schedule · Health check reminders</div></div>
+      <div class="feat"><div class="feat-icon">🐖</div><div class="feat-title">Pigs</div><div class="feat-desc">Pork and breeding · ASF monitoring alerts · Feed conversion assessment</div></div>
+      <div class="feat"><div class="feat-icon">🐟</div><div class="feat-title">Aquaculture</div><div class="feat-desc">Tilapia and catfish · Water quality checks · Pond inspection · Feeding schedule</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Livestock prices — GHS (AI-refreshed weekly)</div>
+      <div class="price-row"><div><div class="price-name">Live chicken</div><div class="price-unit">per kg</div></div><div class="price-val">GHS 38</div><div class="up">▲ 4%</div></div>
+      <div class="price-row"><div><div class="price-name">Eggs</div><div class="price-unit">tray of 30</div></div><div class="price-val">GHS 90</div><div class="up">▲ 5%</div></div>
+      <div class="price-row"><div><div class="price-name">Goat</div><div class="price-unit">per head</div></div><div class="price-val">GHS 450</div><div class="up">▲ 6%</div></div>
+      <div class="price-row"><div><div class="price-name">Tilapia</div><div class="price-unit">per kg</div></div><div class="price-val">GHS 32</div><div class="up">▲ 4%</div></div>
+      <div class="price-row"><div><div class="price-name">Pig</div><div class="price-unit">per head</div></div><div class="price-val">GHS 950</div><div class="dn">▼ 2%</div></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <span class="badge ba">🔬 AI photo diagnosis for animals</span>
+      <span class="badge ba">💉 Vaccination reminders</span>
+      <span class="badge ba">📔 Livestock diary with AI tips</span>
+    </div>
+  </div>
+
+  <!-- ══ AGRONOMISTS ══ -->
+  <div class="panel" id="p-agronomy">
+    <div class="hero-card">
+      <div class="hero-icon" style="background:var(--t50);">🔬</div>
+      <div>
+        <div class="hero-card-title">Verified agronomist directory</div>
+        <div class="hero-card-sub">Credential-verified experts · Book paid consultations · Video call or farm visit · 10% platform commission</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Available agronomists — May 2026</div>
+      <div class="expert">
+        <div class="avatar" style="background:var(--t50);color:var(--t600);">KA</div>
+        <div style="flex:1;">
+          <div class="expert-name">Dr. Kofi Asante</div>
+          <div class="expert-spec">Crop pathology · KNUST · Ashanti region</div>
+          <div class="stars">★★★★★ <span>4.9 · 38 consultations</span></div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="fee">GHS 80/session</div>
+          <button class="book-btn">Book call</button>
+        </div>
+      </div>
+      <div class="expert">
+        <div class="avatar" style="background:var(--p50);color:var(--p600);">AM</div>
+        <div style="flex:1;">
+          <div class="expert-name">Abena Mensah</div>
+          <div class="expert-spec">Livestock & veterinary · Northern region</div>
+          <div class="stars">★★★★★ <span>4.7 · 24 consultations</span></div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="fee">GHS 60/session</div>
+          <button class="book-btn">Book call</button>
+        </div>
+      </div>
+      <div class="expert">
+        <div class="avatar" style="background:var(--a50);color:var(--a600);">YD</div>
+        <div style="flex:1;">
+          <div class="expert-name">Yaw Darko</div>
+          <div class="expert-spec">Soil science · Aquaculture · Volta region</div>
+          <div class="stars">★★★★☆ <span>4.5 · 17 consultations</span></div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="fee">GHS 70/session</div>
+          <button class="book-btn">Book call</button>
+        </div>
+      </div>
+      <div class="expert">
+        <div class="avatar" style="background:var(--g50);color:var(--g600);">EB</div>
+        <div style="flex:1;">
+          <div class="expert-name">Esi Boateng</div>
+          <div class="expert-spec">Organic farming · Pest management · Central region</div>
+          <div class="stars">★★★★★ <span>4.8 · 31 consultations</span></div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="fee">GHS 65/session</div>
+          <button class="book-btn">Book call</button>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <span class="badge bt">Credentials verified</span>
+      <span class="badge bt">MoMo payment</span>
+      <span class="badge bt">Video call or farm visit</span>
+      <span class="badge bt">10% platform commission</span>
+    </div>
+  </div>
+
+  <!-- ══ STUDENTS ══ -->
+  <div class="panel" id="p-students">
+    <div class="hero-card">
+      <div class="hero-icon" style="background:var(--b50);">🎓</div>
+      <div>
+        <div class="hero-card-title">Student &amp; learning hub</div>
+        <div class="hero-card-sub">Agri courses · Research library · Internships with verified farms · KNUST & UDS partnership</div>
+      </div>
+    </div>
+    <div class="sub-tabs">
+      <button class="stab b on" onclick="showSub('courses',this,'b')">Courses</button>
+      <button class="stab b" onclick="showSub('internships',this,'b')">Internships</button>
+      <button class="stab b" onclick="showSub('research',this,'b')">Research library</button>
+    </div>
+    <div id="sub-courses" class="card">
+      <div class="card-title">Featured agri courses</div>
+      <div class="course">
+        <div class="course-icon" style="background:var(--g50);">🌱</div>
+        <div style="flex:1;">
+          <div class="course-name">Modern crop farming in Ghana</div>
+          <div class="course-meta">12 lessons · Beginner · Certificate · Twi available</div>
+        </div>
+        <button class="enrol-btn">Enrol free</button>
+      </div>
+      <div class="course">
+        <div class="course-icon" style="background:var(--a50);">🐔</div>
+        <div style="flex:1;">
+          <div class="course-name">Poultry management fundamentals</div>
+          <div class="course-meta">8 lessons · Beginner · KNUST accredited</div>
+        </div>
+        <button class="enrol-btn">Enrol free</button>
+      </div>
+      <div class="course">
+        <div class="course-icon" style="background:var(--t50);">🔬</div>
+        <div style="flex:1;">
+          <div class="course-name">Soil health and fertilizer use</div>
+          <div class="course-meta">10 lessons · Intermediate · MoFA certified</div>
+        </div>
+        <button class="enrol-btn">Enrol free</button>
+      </div>
+      <div class="course">
+        <div class="course-icon" style="background:var(--b50);">🐟</div>
+        <div style="flex:1;">
+          <div class="course-name">Aquaculture basics — tilapia & catfish</div>
+          <div class="course-meta">6 lessons · Beginner · UDS partnership</div>
+        </div>
+        <button class="enrol-btn">Enrol free</button>
+      </div>
+    </div>
+    <div id="sub-internships" class="card" style="display:none;">
+      <div class="card-title">Farm internship placements</div>
+      <div class="course">
+        <div class="course-icon" style="background:var(--g50);">🚜</div>
+        <div style="flex:1;">
+          <div class="course-name">Crop farm internship — Ashanti region</div>
+          <div class="course-meta">3 months · GHS 800/month stipend · Ghana Card required</div>
+        </div>
+        <button class="enrol-btn">Apply</button>
+      </div>
+      <div class="course">
+        <div class="course-icon" style="background:var(--a50);">🐄</div>
+        <div style="flex:1;">
+          <div class="course-name">Livestock farm placement — Northern region</div>
+          <div class="course-meta">2 months · GHS 600/month · Certificate</div>
+        </div>
+        <button class="enrol-btn">Apply</button>
+      </div>
+    </div>
+    <div id="sub-research" class="card" style="display:none;">
+      <div class="card-title">Research library</div>
+      <div class="course">
+        <div class="course-icon" style="background:var(--p50);">📄</div>
+        <div style="flex:1;">
+          <div class="course-name">Ghana crop yield data 2020–2025 — MoFA</div>
+          <div class="course-meta">Public dataset · CSV download · 16 regions</div>
+        </div>
+        <button class="enrol-btn">Download</button>
+      </div>
+      <div class="course">
+        <div class="course-icon" style="background:var(--t50);">🌍</div>
+        <div style="flex:1;">
+          <div class="course-name">West Africa pest calendar — FAO</div>
+          <div class="course-meta">2025 edition · Crop specific · Seasonal alerts</div>
+        </div>
+        <button class="enrol-btn">Download</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <span class="badge bb">KNUST partnership</span>
+      <span class="badge bb">UDS partnership</span>
+      <span class="badge bb">MoFA certified courses</span>
+    </div>
+  </div>
+
+  <!-- ══ FARM INPUTS ══ -->
+  <div class="panel" id="p-inputs">
+    <div class="hero-card">
+      <div class="hero-icon" style="background:var(--p50);">🛒</div>
+      <div>
+        <div class="hero-card-title">Farm inputs &amp; accessories</div>
+        <div class="hero-card-sub">Seeds · Fertilizer · Tools · Animal feed · Verified sellers only · MoMo & card payment</div>
+      </div>
+    </div>
+    <div class="sub-tabs">
+      <button class="stab g on" onclick="showInputSub('seeds',this)">Seeds</button>
+      <button class="stab g" onclick="showInputSub('fertilizer',this)">Fertilizer</button>
+      <button class="stab g" onclick="showInputSub('feed',this)">Animal feed</button>
+    </div>
+    <div id="isub-seeds" class="prod-grid" style="margin-bottom:1rem;">
+      <div class="prod"><div class="prod-emoji">🌽</div><div class="prod-name">Obatanpa maize seed</div><div class="prod-seller">SEEDCO Ghana · Verified ✓</div><div class="prod-price">GHS 85 / 5kg</div><button class="add-btn">Add to cart</button></div>
+      <div class="prod"><div class="prod-emoji">🍅</div><div class="prod-name">Roma tomato seed</div><div class="prod-seller">Advanta Seeds · Verified ✓</div><div class="prod-price">GHS 45 / 1kg</div><button class="add-btn">Add to cart</button></div>
+      <div class="prod"><div class="prod-emoji">🥬</div><div class="prod-name">Cassava cuttings</div><div class="prod-seller">CSIR-CROPS · Government ✓</div><div class="prod-price">GHS 30 / bundle</div><button class="add-btn">Add to cart</button></div>
+      <div class="prod"><div class="prod-emoji">🌶️</div><div class="prod-name">Hybrid pepper seed</div><div class="prod-seller">AgroPlus Ghana · Verified ✓</div><div class="prod-price">GHS 55 / 500g</div><button class="add-btn">Add to cart</button></div>
+    </div>
+    <div id="isub-fertilizer" class="prod-grid" style="margin-bottom:1rem;display:none;">
+      <div class="prod"><div class="prod-emoji">🧪</div><div class="prod-name">NPK 15-15-15</div><div class="prod-seller">Yara Ghana · Verified ✓</div><div class="prod-price">GHS 320 / 50kg</div><button class="add-btn">Add to cart</button></div>
+      <div class="prod"><div class="prod-emoji">🌿</div><div class="prod-name">Sulphate of ammonia</div><div class="prod-seller">Dizengoff Ghana · Verified ✓</div><div class="prod-price">GHS 180 / 25kg</div><button class="add-btn">Add to cart</button></div>
+      <div class="prod"><div class="prod-emoji">💧</div><div class="prod-name">Neem-based spray</div><div class="prod-seller">OrganicFarm GH · Verified ✓</div><div class="prod-price">GHS 65 / litre</div><button class="add-btn">Add to cart</button></div>
+      <div class="prod"><div class="prod-emoji">🧫</div><div class="prod-name">Compost blend</div><div class="prod-seller">GreenGrow Ghana · Verified ✓</div><div class="prod-price">GHS 120 / 25kg</div><button class="add-btn">Add to cart</button></div>
+    </div>
+    <div id="isub-feed" class="prod-grid" style="margin-bottom:1rem;display:none;">
+      <div class="prod"><div class="prod-emoji">🐔</div><div class="prod-name">Chick starter feed</div><div class="prod-seller">Antrak Agro · Verified ✓</div><div class="prod-price">GHS 210 / 50kg</div><button class="add-btn" style="background:var(--a600);">Add to cart</button></div>
+      <div class="prod"><div class="prod-emoji">🐄</div><div class="prod-name">Dairy cattle ration</div><div class="prod-seller">AgriFeed GH · Verified ✓</div><div class="prod-price">GHS 380 / 50kg</div><button class="add-btn" style="background:var(--a600);">Add to cart</button></div>
+      <div class="prod"><div class="prod-emoji">🐟</div><div class="prod-name">Tilapia pellet feed</div><div class="prod-seller">AquaGrow Ghana · Verified ✓</div><div class="prod-price">GHS 165 / 25kg</div><button class="add-btn" style="background:var(--a600);">Add to cart</button></div>
+      <div class="prod"><div class="prod-emoji">🐖</div><div class="prod-name">Pig grower ration</div><div class="prod-seller">PorkPro Ghana · Verified ✓</div><div class="prod-price">GHS 290 / 50kg</div><button class="add-btn" style="background:var(--a600);">Add to cart</button></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <span class="badge bp">Verified sellers only</span>
+      <span class="badge bp">MoMo & card payment</span>
+      <span class="badge bp">Direct from supplier</span>
+      <span class="badge bp">5% platform commission</span>
+    </div>
+  </div>
+
+  <!-- ══ MARKETPLACE ══ -->
+  <div class="panel" id="p-marketplace">
+    <div class="hero-card">
+      <div class="hero-icon" style="background:var(--r50);">🏪</div>
+      <div>
+        <div class="hero-card-title">Farmer marketplace</div>
+        <div class="hero-card-sub">Buy direct from Ghana Card verified farmers · No middlemen · No hidden fees · MoMo payment · 5% commission</div>
+      </div>
+    </div>
+    <div class="sub-tabs">
+      <button class="stab r on" onclick="showMktSub('crops',this)">Crops</button>
+      <button class="stab r" onclick="showMktSub('livestock',this)">Livestock</button>
+      <button class="stab r" onclick="showMktSub('wholesale',this)">Wholesale</button>
+    </div>
+    <div id="msub-crops" class="card">
+      <div class="card-title">Fresh produce available now</div>
+      <div class="mkt-item">
+        <div class="mkt-icon" style="background:var(--g50);">🌽</div>
+        <div style="flex:1;">
+          <div class="mkt-name">Maize — 50kg bags</div>
+          <div class="mkt-farmer">Kwame Asante · Ashanti · <span class="verified">✓ Ghana Card verified</span></div>
+          <div class="mkt-avail">12 bags available · Pickup or delivery</div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="mkt-price">GHS 255</div>
+          <button class="order-btn">Order</button>
+        </div>
+      </div>
+      <div class="mkt-item">
+        <div class="mkt-icon" style="background:var(--r50);">🍅</div>
+        <div style="flex:1;">
+          <div class="mkt-name">Tomatoes — crates</div>
+          <div class="mkt-farmer">Ama Boateng · Greater Accra · <span class="verified">✓ Ghana Card verified</span></div>
+          <div class="mkt-avail">8 crates · Delivery available · 24hr</div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="mkt-price">GHS 175</div>
+          <button class="order-btn">Order</button>
+        </div>
+      </div>
+      <div class="mkt-item">
+        <div class="mkt-icon" style="background:var(--a50);">🥜</div>
+        <div style="flex:1;">
+          <div class="mkt-name">Groundnuts — 50kg bags</div>
+          <div class="mkt-farmer">Ibrahim Sulemana · Northern · <span class="verified">✓ Ghana Card verified</span></div>
+          <div class="mkt-avail">20 bags available · Farm pickup</div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="mkt-price">GHS 290</div>
+          <button class="order-btn">Order</button>
+        </div>
+      </div>
+      <div class="mkt-item">
+        <div class="mkt-icon" style="background:#EAF3DE;">🍌</div>
+        <div style="flex:1;">
+          <div class="mkt-name">Plantain — bunches</div>
+          <div class="mkt-farmer">Akosua Darko · Bono · <span class="verified">✓ Ghana Card verified</span></div>
+          <div class="mkt-avail">30 bunches · Delivery GHS 20</div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="mkt-price">GHS 58</div>
+          <button class="order-btn">Order</button>
+        </div>
+      </div>
+    </div>
+    <div id="msub-livestock" class="card" style="display:none;">
+      <div class="card-title">Livestock available now</div>
+      <div class="mkt-item">
+        <div class="mkt-icon" style="background:var(--a50);">🐔</div>
+        <div style="flex:1;">
+          <div class="mkt-name">Live broilers — per kg</div>
+          <div class="mkt-farmer">Kojo Mensah · Eastern · <span class="verified">✓ Ghana Card verified</span></div>
+          <div class="mkt-avail">200kg available · Farm pickup</div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="mkt-price">GHS 38/kg</div>
+          <button class="order-btn">Order</button>
+        </div>
+      </div>
+      <div class="mkt-item">
+        <div class="mkt-icon" style="background:var(--g50);">🐟</div>
+        <div style="flex:1;">
+          <div class="mkt-name">Fresh tilapia — per kg</div>
+          <div class="mkt-farmer">AquaFarm Volta · Volta · <span class="verified">✓ Ghana Card verified</span></div>
+          <div class="mkt-avail">50kg available · Delivery available</div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="mkt-price">GHS 32/kg</div>
+          <button class="order-btn">Order</button>
+        </div>
+      </div>
+      <div class="mkt-item">
+        <div class="mkt-icon" style="background:var(--t50);">🥚</div>
+        <div style="flex:1;">
+          <div class="mkt-name">Fresh eggs — trays of 30</div>
+          <div class="mkt-farmer">Esi's Poultry · Ashanti · <span class="verified">✓ Ghana Card verified</span></div>
+          <div class="mkt-avail">100 trays · Delivery available</div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="mkt-price">GHS 88</div>
+          <button class="order-btn">Order</button>
+        </div>
+      </div>
+    </div>
+    <div id="msub-wholesale" class="card" style="display:none;">
+      <div class="card-title">Wholesale — bulk orders for schools, hotels, restaurants</div>
+      <div class="mkt-item">
+        <div class="mkt-icon" style="background:var(--g50);">🏫</div>
+        <div style="flex:1;">
+          <div class="mkt-name">Weekly vegetable supply — schools</div>
+          <div class="mkt-farmer">Nkɔsoɔ Farmers Co-op · Ashanti</div>
+          <div class="mkt-avail">Min. order 100kg · Weekly delivery · Contract available</div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="mkt-price">Negotiate</div>
+          <button class="order-btn">Contact</button>
+        </div>
+      </div>
+      <div class="mkt-item">
+        <div class="mkt-icon" style="background:var(--a50);">🍽️</div>
+        <div style="flex:1;">
+          <div class="mkt-name">Restaurant supply pack — mixed produce</div>
+          <div class="mkt-farmer">FreshDirect GH · Greater Accra</div>
+          <div class="mkt-avail">Weekly delivery · Tomatoes, peppers, onions, plantain</div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="mkt-price">From GHS 800</div>
+          <button class="order-btn">Order</button>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <span class="badge br">Ghana Card verified farmers only</span>
+      <span class="badge br">MoMo payment escrow</span>
+      <span class="badge br">5% commission</span>
+      <span class="badge br">Zero middlemen</span>
+    </div>
+  </div>
+
+  <!-- ══ DASHBOARD ══ -->
+  <div class="panel" id="p-dashboard">
+    <div class="hero-card">
+      <div class="hero-icon" style="background:#f1efe8;">📊</div>
+      <div>
+        <div class="hero-card-title">Admin dashboard — full ecosystem view</div>
+        <div class="hero-card-sub">All 6 user types · Revenue · Ghana Card verification rates · CSV export · Real-time analytics</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Platform overview — at scale</div>
+      <div class="dash-grid">
+        <div class="dmet"><div class="dmet-val" style="color:var(--g600);">1,240</div><div class="dmet-lbl">Crop farmers</div></div>
+        <div class="dmet"><div class="dmet-val" style="color:var(--a600);">680</div><div class="dmet-lbl">Livestock farmers</div></div>
+        <div class="dmet"><div class="dmet-val" style="color:var(--t600);">38</div><div class="dmet-lbl">Agronomists</div></div>
+        <div class="dmet"><div class="dmet-val" style="color:var(--b600);">620</div><div class="dmet-lbl">Students</div></div>
+        <div class="dmet"><div class="dmet-val" style="color:var(--p600);">145</div><div class="dmet-lbl">Input sellers</div></div>
+        <div class="dmet"><div class="dmet-val" style="color:var(--r600);">892</div><div class="dmet-lbl">Marketplace orders</div></div>
+      </div>
+      <div style="background:#fafaf8;border-radius:var(--rm);padding:1rem;margin-bottom:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
+          <div>
+            <div style="font-size:11px;color:var(--ts);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Monthly revenue</div>
+            <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--g600);">GHS 48,200</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;color:var(--ts);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Ghana Card verified</div>
+            <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--g600);">74%</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;color:var(--ts);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Pro subscribers</div>
+            <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--b600);">310</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Export farmer data — CSV</div>
+      <div class="export-row">
+        <button class="exp-btn" style="background:var(--g50);color:var(--g600);border-color:var(--g100);">⬇ Crop profiles</button>
+        <button class="exp-btn" style="background:var(--a50);color:var(--a600);border-color:var(--a300);">⬇ Livestock profiles</button>
+        <button class="exp-btn" style="background:var(--t50);color:var(--t600);border-color:#9FE1CB;">⬇ Agronomists</button>
+        <button class="exp-btn" style="background:var(--b50);color:var(--b600);border-color:#B5D4F4;">⬇ Students</button>
+        <button class="exp-btn" style="background:#f1efe8;color:#444441;border-color:var(--bd);">⬇ All users</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <span class="badge bg">Built by DranyTech</span>
+      <span class="badge bgr">Powered by Anthropic Claude AI</span>
+      <span class="badge bg">Live at nkosoo-ai.onrender.com</span>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- FOOTER -->
+<div class="footer">
+  <span class="footer-logo">Nkɔsoɔ AI</span>
+  Ghana's Agricultural Ecosystem — Crops · Livestock · Agronomists · Students · Inputs · Marketplace<br>
+  Built by <a href="https://www.dranytech.com" target="_blank">DranyTech</a> · Powered by <a href="https://www.anthropic.com" target="_blank">Anthropic Claude AI</a><br>
+  <a href="https://nkosoo-ai.onrender.com" target="_blank">nkosoo-ai.onrender.com</a> · © 2026 Nkɔsoɔ AI · All rights reserved
+</div>
+
+<script>
+{% raw %}
+function showPanel(id, btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.mt').forEach(b=>b.classList.remove('on'));
+  document.getElementById('p-'+id).classList.add('on');
+  btn.classList.add('on');
+}
+function showSub(id, btn, theme){
+  ['courses','internships','research'].forEach(s=>{
+    const el=document.getElementById('sub-'+s);
+    if(el) el.style.display=s===id?'block':'none';
+  });
+  btn.closest('.sub-tabs').querySelectorAll('.stab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function showInputSub(id, btn){
+  ['seeds','fertilizer','feed'].forEach(s=>{
+    const el=document.getElementById('isub-'+s);
+    if(el) el.style.display=s===id?'grid':'none';
+  });
+  btn.closest('.sub-tabs').querySelectorAll('.stab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function showMktSub(id, btn){
+  ['crops','livestock','wholesale'].forEach(s=>{
+    const el=document.getElementById('msub-'+s);
+    if(el) el.style.display=s===id?'block':'none';
+  });
+  btn.closest('.sub-tabs').querySelectorAll('.stab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+// Smooth scroll
+document.querySelector('[href="#explore"]').addEventListener('click',e=>{
+  e.preventDefault();
+  document.getElementById('explore').scrollIntoView({behavior:'smooth'});
+});
+{% endraw %}
+</script>
+</body>
+</html>

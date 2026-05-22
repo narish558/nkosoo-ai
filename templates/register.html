@@ -57,7 +57,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     <div class="logo-title">Nkɔsoɔ AI</div>
     <div class="logo-sub">Ghana's farming assistant</div>
   </div>
-  <a href="/" class="back">← Back to app</a>
+  <a href="/app" class="back">← Back to app</a>
 </div>
 
 <div class="wrap">
@@ -101,7 +101,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   </div>
 </div>
 
-<div class="footer">Nkɔsoɔ AI · Built by DranyTech · © 2025</div>
+<div class="footer">Nkɔsoɔ AI · Built by DranyTech · © 2026</div>
 
 <script>
 async function doRegister(){
@@ -125,7 +125,7 @@ async function doRegister(){
     const data=await resp.json();
     if(data.success){
       btn.textContent='✅ Account created!';
-      setTimeout(()=>{ window.location.href='/'; },1200);
+      setTimeout(()=>{ window.location.href=data.redirect||'/app'; },1200);
     } else {
       err.textContent=data.error||'Registration failed. Please try again.';
       err.classList.add('show');
