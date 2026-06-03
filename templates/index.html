@@ -7,6 +7,96 @@
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script>
+// ── CREDIT ACCESS ──────────────────────────────────────────
+async function downloadCreditProfile(){
+  const r=await fetch('/api/credit/profile');
+  if(r.status===401){
+    const d=await r.json();
+    if(d.gate==='register') document.getElementById('gateModal').classList.add('open');
+    return;
+  }
+  if(!r.ok){alert('Could not generate PDF. Please complete your farm profile first.');return;}
+  const blob=await r.blob();
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='Nkosoo_AI_Credit_Profile.pdf'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function loadCreditScore(){
+  const r=await fetch('/api/credit/score');
+  if(r.status===401){document.getElementById('gateModal').classList.add('open');return;}
+  const d=await r.json();
+  if(!d.success) return;
+  const card=document.getElementById('creditScoreCard');
+  card.style.display='block';
+  document.getElementById('creditScoreNum').textContent=d.score;
+  document.getElementById('creditRating').textContent=d.rating;
+  document.getElementById('creditRating').style.color=d.color;
+  document.getElementById('creditScoreBar').style.width=d.score+'%';
+  document.getElementById('creditScoreBar').style.background=d.color;
+  document.getElementById('creditScoreMsg').textContent=d.message;
+}
+
+async function loadLenders(){
+  const region=document.getElementById('lenderRegionFilter').value;
+  const url='/api/credit/lenders'+(region?'?region='+region:'');
+  const r=await fetch(url); const d=await r.json();
+  const list=document.getElementById('lendersList');
+  if(!d.lenders||!d.lenders.length){
+    list.innerHTML='<div style="text-align:center;padding:1rem;color:var(--ts);font-size:13px;">No lenders found for this region.</div>';
+    return;
+  }
+  list.innerHTML=d.lenders.map(l=>`
+    <div style="background:#fff;border:1px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:.5rem;">
+        <div>
+          <div style="font-size:13px;font-weight:500;color:#1A1A18;">${l.name}${l.verified?'<span style="font-size:9px;padding:2px 7px;border-radius:20px;background:#EAF3DE;color:#3B6D11;margin-left:6px;font-weight:500;">Verified</span>':''}</div>
+          <div style="font-size:11px;color:var(--ts);margin-top:2px;">${l.loan_types||''}</div>
+        </div>
+        <div style="font-size:12px;font-weight:500;color:#C4873A;white-space:nowrap;">GHS ${(l.loan_min||0).toLocaleString()}–${(l.loan_max||0).toLocaleString()}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px;color:var(--ts);margin-bottom:.75rem;">
+        <div>📊 ${l.interest_rate||'Negotiated'}</div>
+        <div>📍 ${l.region==='national'?'All Ghana':l.region}</div>
+        <div colspan="2">📋 ${l.requirements||'Contact lender'}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${l.whatsapp?`<a href="https://wa.me/233${l.whatsapp.replace(/^0/,'').replace(/\s/,'')}" target="_blank" style="font-size:11px;padding:5px 10px;border-radius:6px;background:#25D366;color:#fff;text-decoration:none;font-weight:500;">💬 WhatsApp</a>`:''}
+        ${l.phone?`<a href="tel:${l.phone}" style="font-size:11px;padding:5px 10px;border-radius:6px;background:#E8EDF5;color:#1A2E4A;text-decoration:none;">📞 Call</a>`:''}
+        ${l.website?`<a href="https://${l.website}" target="_blank" style="font-size:11px;padding:5px 10px;border-radius:6px;background:var(--muted);color:var(--ts);text-decoration:none;">🌐 Website</a>`:''}
+      </div>
+    </div>`).join('');
+}
+
+async function submitCreditApp(){
+  const lender=document.getElementById('applyLender').value;
+  const amount=document.getElementById('applyAmount').value;
+  const purpose=document.getElementById('applyPurpose').value.trim();
+  const msg=document.getElementById('applyMsg');
+  if(!lender){msg.textContent='Please select a lender.';msg.style.display='block';msg.style.color='#A32D2D';return;}
+  const r=await fetch('/api/credit/apply',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({lender_name:lender,amount_requested:amount,purpose})});
+  if(r.status===401){document.getElementById('gateModal').classList.add('open');return;}
+  const d=await r.json();
+  msg.style.display='block';
+  if(d.success){
+    msg.textContent='✅ '+d.message;msg.style.color='#2C7A3F';
+    document.getElementById('applyLender').value='';
+    document.getElementById('applyAmount').value='';
+    document.getElementById('applyPurpose').value='';
+  } else {
+    msg.textContent='❌ '+(d.error||'Please try again.');msg.style.color='#A32D2D';
+  }
+}
+
+// Load lenders when credit tab opens
+const _origShowTab=showTab;
+function showTab(name){
+  _origShowTab(name);
+  if(name==='credit'){loadLenders();loadCreditScore();}
+}
+
 {% raw %}
   window.dataLayer=window.dataLayer||[];
   function gtag(){dataLayer.push(arguments);}
@@ -167,6 +257,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .tab-btn.voice.active{background:var(--blue50);color:var(--blue);}
 .tab-btn.teal.active{background:var(--teal50);color:var(--teal);}
 .tab-btn.shared.active{background:var(--muted);color:var(--tp);}
+.tab-btn.credit.active{background:#E8EDF5;color:#1A2E4A;}
 
 @media(min-width:700px){
   .tab-btn{min-width:80px;padding:9px 6px;}
@@ -555,6 +646,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <button class="tab-btn teal" onclick="showTab('agronomy')"><span class="tab-icon">🔬</span><span class="tab-lbl">Experts</span></button>
     <button class="tab-btn voice" onclick="showTab('voice')"><span class="tab-icon">🎤</span><span class="tab-lbl">Voice</span></button>
     <button class="tab-btn shared" onclick="showTab('chat')"><span class="tab-icon">🤖</span><span class="tab-lbl">Ask AI</span></button>
+    <button class="tab-btn credit" onclick="showTab('credit')"><span class="tab-icon">💳</span><span class="tab-lbl">Credit</span></button>
   </div>
 
   <!-- ══ WEATHER ══ -->
@@ -1222,7 +1314,7 @@ function setLang(lang){
 
 // ── Tabs ──
 function showTab(name){
-  const names=['weather','prices','pests','diagnose','mycrops','livestock','agronomy','voice','chat'];
+  const names=['weather','prices','pests','diagnose','mycrops','livestock','agronomy','voice','chat','credit'];
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',names[i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name));
   if(name==='agronomy') loadAgronomists();
@@ -1958,6 +2050,109 @@ async function submitAgroRegistration(){
 }
 {% endraw %}
 </script>
+<!-- ══ CREDIT ACCESS ══ -->
+  <div id="panel-credit" class="panel">
+    <div class="sec-head">
+      <div class="sec-icon" style="background:#E8EDF5;">💳</div>
+      <div>
+        <div class="sec-title">Credit Access</div>
+        <div class="sec-sub">Download your credit profile · find lenders · apply for agricultural loans</div>
+      </div>
+    </div>
+
+    <!-- Credit score card -->
+    <div id="creditScoreCard" style="background:#1A2E4A;border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
+        <div style="font-size:13px;font-weight:500;color:#fff;">Your Farming Activity Score</div>
+        <div id="creditRating" style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.12);color:#7EC850;">Loading...</div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:.75rem;">
+        <div id="creditScoreNum" style="font-size:44px;font-weight:500;color:#7EC850;line-height:1;">0</div>
+        <div style="font-size:16px;color:rgba(255,255,255,0.4);padding-bottom:6px;">/100</div>
+      </div>
+      <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;margin-bottom:.75rem;">
+        <div id="creditScoreBar" style="height:6px;background:#7EC850;border-radius:3px;width:0%;transition:width .8s ease;"></div>
+      </div>
+      <div id="creditScoreMsg" style="font-size:11px;color:rgba(255,255,255,0.5);line-height:1.5;"></div>
+    </div>
+
+    <!-- Phase A — Credit Profile Download -->
+    <div class="card" style="margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem;">
+        <div style="width:36px;height:36px;border-radius:8px;background:#E8EDF5;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📄</div>
+        <div>
+          <div style="font-size:14px;font-weight:500;color:#1A1A18;">Farm Credit Profile</div>
+          <div style="font-size:11px;color:var(--ts);">A verified PDF summary of your farm — accepted by lenders</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--ts);line-height:1.6;margin-bottom:.875rem;">
+        Your credit profile includes your Ghana Card, farm size, crops, livestock assets, and region — everything a lender needs to assess your loan application.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="save-btn" onclick="downloadCreditProfile()" style="background:#1A2E4A;">📄 Download Credit Profile PDF</button>
+        <button class="save-btn" onclick="loadCreditScore()" style="background:transparent;color:#1A2E4A;border:1px solid #1A2E4A;">📊 View My Score</button>
+      </div>
+    </div>
+
+    <!-- Phase B — Lender Directory -->
+    <div class="card" style="margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem;">
+        <div style="width:36px;height:36px;border-radius:8px;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏦</div>
+        <div>
+          <div style="font-size:14px;font-weight:500;color:#1A1A18;">Agricultural Lenders</div>
+          <div style="font-size:11px;color:var(--ts);">Verified microfinance and agri-lenders across Ghana</div>
+        </div>
+      </div>
+      <div style="margin-bottom:.75rem;">
+        <select id="lenderRegionFilter" onchange="loadLenders()" style="width:100%;padding:9px 12px;border:1px solid var(--bd);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;">
+          <option value="">All regions</option>
+          {% for key,r in regions.items() %}<option value="{{ key }}">{{ r.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div id="lendersList" style="display:flex;flex-direction:column;gap:8px;">
+        <div style="text-align:center;padding:1rem;color:var(--ts);font-size:13px;">Loading lenders...</div>
+      </div>
+    </div>
+
+    <!-- Phase C — Apply for Credit -->
+    <div class="card" style="margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem;">
+        <div style="width:36px;height:36px;border-radius:8px;background:#FBF1E8;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📝</div>
+        <div>
+          <div style="font-size:14px;font-weight:500;color:#1A1A18;">Apply for a Loan</div>
+          <div style="font-size:11px;color:var(--ts);">Submit your interest — we record it and guide you</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:.75rem;">
+        <select id="applyLender" style="width:100%;padding:9px 12px;border:1px solid var(--bd);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;">
+          <option value="">Select a lender</option>
+          <option value="Opportunity International Ghana">Opportunity International Ghana</option>
+          <option value="Sinapi Aba Trust">Sinapi Aba Trust</option>
+          <option value="Advans Ghana">Advans Ghana</option>
+          <option value="ARB Apex Bank">ARB Apex Bank</option>
+        </select>
+        <input id="applyAmount" type="number" placeholder="Loan amount needed (GHS)" style="width:100%;padding:9px 12px;border:1px solid var(--bd);border-radius:8px;font-size:13px;font-family:inherit;"/>
+        <textarea id="applyPurpose" placeholder="What will you use the loan for? e.g. Buy fertilizer for maize farm, purchase 100 broiler chicks..." style="width:100%;padding:9px 12px;border:1px solid var(--bd);border-radius:8px;font-size:13px;font-family:inherit;resize:none;height:80px;"></textarea>
+      </div>
+      <div id="applyMsg" style="font-size:12px;margin-bottom:.5rem;display:none;"></div>
+      <button class="save-btn" onclick="submitCreditApp()" style="background:#C4873A;">📝 Submit Application</button>
+    </div>
+
+    <!-- Phase D — Credit score info -->
+    <div class="card" style="background:#F4F6FA;border:1px solid #E8EDF5;">
+      <div style="font-size:13px;font-weight:500;color:#1A2E4A;margin-bottom:.5rem;">💡 How to improve your score</div>
+      <div style="font-size:12px;color:var(--ts);line-height:1.65;">
+        ✅ Register a free account (+15 pts)<br>
+        ✅ Validate your Ghana Card (+25 pts)<br>
+        ✅ Save your farm profile with size and crops (+20 pts)<br>
+        ✅ Add soil type and water source (+10 pts)<br>
+        ✅ Add a livestock profile (+10 pts)<br>
+        ✅ Log 5+ diary entries (+10 pts)<br>
+        ✅ Ask 10+ AI farming questions (+10 pts)
+      </div>
+    </div>
+  </div>
+
 <!-- GATE MODAL -->
 <div class="gate-modal" id="gateModal">
   <div class="gate-card">
