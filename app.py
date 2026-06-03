@@ -1268,6 +1268,46 @@ def api_credit_profile():
         print(f"[credit pdf error] {e}")
         return jsonify({"error":"Could not generate PDF. Please try again."}),500
 
+@app.route("/register-lender", methods=["GET","POST"])
+def register_lender():
+    if request.method=="GET":
+        return render_template("lender_register.html", regions=GHANA_REGIONS)
+    return redirect("/register-lender")
+
+@app.route("/api/lenders/register", methods=["POST"])
+def api_register_lender():
+    data = request.get_json() or {}
+    name         = (data.get("name","") or "").strip()
+    phone        = (data.get("phone","") or "").strip()
+    whatsapp     = (data.get("whatsapp","") or "").strip()
+    email        = (data.get("email","") or "").strip()
+    website      = (data.get("website","") or "").strip()
+    region       = (data.get("region","national") or "national").strip()
+    loan_min     = data.get("loan_min", 0)
+    loan_max     = data.get("loan_max", 0)
+    interest_rate= (data.get("interest_rate","") or "").strip()
+    requirements = (data.get("requirements","") or "").strip()
+    loan_types   = (data.get("loan_types","") or "").strip()
+    if not name or not phone:
+        return jsonify({"success":False,"error":"Institution name and phone are required."}),400
+    try:
+        with get_db() as db:
+            existing = db.execute(
+                "SELECT id FROM lenders WHERE phone=? AND active=1",(phone,)).fetchone()
+            if existing:
+                return jsonify({"success":False,"error":"A lender with this phone number is already registered."}),409
+            db.execute("""INSERT INTO lenders
+                (name,phone,whatsapp,email,website,region,loan_min,loan_max,
+                 interest_rate,requirements,loan_types,verified,active)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,0,1)""",
+                (name,phone,whatsapp,email,website,region,
+                 loan_min,loan_max,interest_rate,requirements,loan_types))
+            db.commit()
+        return jsonify({"success":True})
+    except Exception as e:
+        print(f"[lender register error] {e}")
+        return jsonify({"success":False,"error":"Registration failed. Please try again."}),500
+
 @app.route("/api/credit/lenders", methods=["GET"])
 def api_get_lenders():
     """Get lenders directory — Phase B."""
