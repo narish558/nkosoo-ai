@@ -225,22 +225,42 @@ footer a{color:#2C7A3F;text-decoration:none;}
 </div>
 
 {% if pending_lenders %}
-<div class="card">
-  <div class="card-title">🏦 Lenders pending verification ({{ pending_lenders|length }})</div>
+<div class="card" style="border-left:3px solid #C4873A;">
+  <div class="card-title">🏦 Lenders awaiting verification — {{ pending_lenders|length }} pending
+    <span class="badge badge-amber" style="margin-left:6px;">Action required</span>
+  </div>
+  <p style="font-size:12px;color:#8A9099;margin-bottom:.875rem;">These institutions submitted registration forms and are waiting for your review. Click ✓ Verify to make them live in the farmer-facing lender directory.</p>
   <table>
-    <thead><tr><th>Name</th><th>Phone</th><th>Region</th><th>Loan range</th><th>Action</th></tr></thead>
+    <thead><tr><th>Institution</th><th>Phone / WhatsApp</th><th>Region</th><th>Loan range</th><th>Interest</th><th>Loan types</th><th>Action</th></tr></thead>
     <tbody>
     {% for l in pending_lenders %}
     <tr>
-      <td><strong>{{ l.name }}</strong></td>
-      <td>{{ l.phone }}</td>
-      <td>{{ l.region|title }}</td>
-      <td>GHS {{ l.loan_min|int }}–{{ l.loan_max|int }}</td>
-      <td><a href="/admin/lenders/verify/{{ l.id }}" class="btn btn-green">✓ Verify</a></td>
+      <td>
+        <strong>{{ l.name }}</strong>
+        {% if l.email %}<div style="font-size:11px;color:#8A9099;">{{ l.email }}</div>{% endif %}
+        {% if l.website %}<div style="font-size:11px;color:#2C7A3F;">{{ l.website }}</div>{% endif %}
+      </td>
+      <td>
+        <div>{{ l.phone }}</div>
+        {% if l.whatsapp %}<div style="font-size:11px;color:#8A9099;">WA: {{ l.whatsapp }}</div>{% endif %}
+      </td>
+      <td>{{ 'All Ghana' if l.region == 'national' else l.region|title }}</td>
+      <td>GHS {{ l.loan_min|int|string }}–{{ l.loan_max|int|string }}</td>
+      <td style="font-size:12px;">{{ l.interest_rate or '—' }}</td>
+      <td style="font-size:11px;color:#5F5E5A;max-width:160px;">{{ l.loan_types or '—' }}</td>
+      <td>
+        <a href="/admin/lenders/verify/{{ l.id }}" class="btn btn-green">✓ Verify</a>
+      </td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
+</div>
+{% else %}
+<div class="card" style="background:#F9FBF7;border:0.5px dashed #C0DD97;">
+  <div style="text-align:center;padding:.5rem;color:#8A9099;font-size:13px;">
+    🏦 No lenders pending verification · Lenders self-register at <strong>www.nkosooai.com/register-lender</strong>
+  </div>
 </div>
 {% endif %}
 
@@ -352,12 +372,14 @@ footer a{color:#2C7A3F;text-decoration:none;}
 <!-- ── QUICK ACTIONS ── -->
 <div class="st">⚡ Quick actions</div>
 <div class="card">
-  <div class="card-title">Platform management</div>
+  <div class="card-title">Platform navigation</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <a href="/register-lender" target="_blank" class="btn btn-navy">🏦 Add lender</a>
     <a href="/app" target="_blank" class="btn btn-navy">📱 View app</a>
     <a href="/" target="_blank" class="btn btn-navy">🌐 Landing page</a>
     <a href="/ecosystem" target="_blank" class="btn btn-gray">🗺 Ecosystem</a>
+  </div>
+  <div style="margin-top:.875rem;padding-top:.875rem;border-top:0.5px solid #E0DED8;font-size:12px;color:#8A9099;line-height:1.6;">
+    💡 Lenders self-register at <strong style="color:#1A2E4A;">www.nkosooai.com/register-lender</strong> — they appear below as pending and you verify them with one click.
   </div>
 </div>
 
