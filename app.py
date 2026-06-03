@@ -88,6 +88,8 @@ def init_db():
             ghana_card_valid INTEGER DEFAULT 0,
             soil_type TEXT, water_source TEXT,
             region TEXT, email TEXT,
+            latitude REAL, longitude REAL,
+            gps_accuracy REAL, gps_address TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now'))
         );
@@ -103,6 +105,8 @@ def init_db():
             housing_type TEXT, purpose TEXT,
             feed_source TEXT, water_source TEXT,
             nearest_vet TEXT, notes TEXT,
+            latitude REAL, longitude REAL,
+            gps_accuracy REAL, gps_address TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now'))
         );
@@ -173,6 +177,27 @@ def init_db():
             if col not in u_cols:
                 try: db.execute(f"ALTER TABLE users ADD COLUMN {col} {defn}")
                 except: pass
+
+        # Migrate farm_profiles — add GPS columns if missing
+        fp_cols = [r[1] for r in db.execute("PRAGMA table_info(farm_profiles)").fetchall()]
+        for col, defn in [
+            ("latitude","REAL"), ("longitude","REAL"),
+            ("gps_accuracy","REAL"), ("gps_address","TEXT"),
+        ]:
+            if col not in fp_cols:
+                try: db.execute(f"ALTER TABLE farm_profiles ADD COLUMN {col} {defn}")
+                except: pass
+
+        # Migrate livestock_profiles — add GPS columns if missing
+        lp_cols = [r[1] for r in db.execute("PRAGMA table_info(livestock_profiles)").fetchall()]
+        for col, defn in [
+            ("latitude","REAL"), ("longitude","REAL"),
+            ("gps_accuracy","REAL"), ("gps_address","TEXT"),
+        ]:
+            if col not in lp_cols:
+                try: db.execute(f"ALTER TABLE livestock_profiles ADD COLUMN {col} {defn}")
+                except: pass
+
         db.commit()
         fp_cols = [r[1] for r in db.execute("PRAGMA table_info(farm_profiles)").fetchall()]
         old_fp_cols = ['farm_name', 'farming_type', 'nearest_market', 'latitude', 'longitude', 'farm_address']
@@ -752,35 +777,40 @@ def api_save_profile():
     sid=get_sid(); data=request.get_json()
     ghana_card=data.get("ghana_card","").strip().upper()
     ghana_card_valid=1 if (ghana_card and re.match(r'^GHA-\d{9}-\d$',ghana_card)) else 0
+    lat = data.get("latitude"); lon = data.get("longitude")
+    acc = data.get("gps_accuracy"); addr = data.get("gps_address","")
     try:
         with get_db() as db:
-            # Check if row exists
             existing=db.execute("SELECT id FROM farm_profiles WHERE session_id=?",(sid,)).fetchone()
             if existing:
                 db.execute("""
                     UPDATE farm_profiles SET
                         farmer_name=?,phone=?,farm_size=?,farm_unit=?,crops=?,crop_type=?,
                         ghana_card=?,ghana_card_valid=?,soil_type=?,water_source=?,
-                        region=?,email=?,updated_at=datetime('now')
+                        region=?,email=?,latitude=?,longitude=?,gps_accuracy=?,gps_address=?,
+                        updated_at=datetime('now')
                     WHERE session_id=?
                 """,(data.get("farmer_name",""),data.get("phone",""),
                      data.get("farm_size",""),data.get("farm_unit","acres"),
                      data.get("crops",""),data.get("crop_type","staples"),
                      ghana_card,ghana_card_valid,
                      data.get("soil_type",""),data.get("water_source",""),
-                     data.get("region","greater_accra"),data.get("email",""),sid))
+                     data.get("region","greater_accra"),data.get("email",""),
+                     lat,lon,acc,addr,sid))
             else:
                 db.execute("""
                     INSERT INTO farm_profiles
                         (session_id,farmer_name,phone,farm_size,farm_unit,crops,crop_type,
-                         ghana_card,ghana_card_valid,soil_type,water_source,region,email)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                         ghana_card,ghana_card_valid,soil_type,water_source,region,email,
+                         latitude,longitude,gps_accuracy,gps_address)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """,(sid,data.get("farmer_name",""),data.get("phone",""),
                      data.get("farm_size",""),data.get("farm_unit","acres"),
                      data.get("crops",""),data.get("crop_type","staples"),
                      ghana_card,ghana_card_valid,
                      data.get("soil_type",""),data.get("water_source",""),
-                     data.get("region","greater_accra"),data.get("email","")))
+                     data.get("region","greater_accra"),data.get("email",""),
+                     lat,lon,acc,addr))
             db.commit()
         return jsonify({"success":True,"ghana_card_valid":bool(ghana_card_valid)})
     except Exception as e:
@@ -809,13 +839,16 @@ def api_save_livestock():
     try:
         with get_db() as db:
             existing=db.execute("SELECT id FROM livestock_profiles WHERE session_id=?",(sid,)).fetchone()
+            lat = data.get("latitude"); lon = data.get("longitude")
+            acc = data.get("gps_accuracy"); addr = data.get("gps_address","")
             if existing:
                 db.execute("""
                     UPDATE livestock_profiles SET
                         farmer_name=?,phone=?,ghana_card=?,ghana_card_valid=?,
                         region=?,email=?,animal_type=?,total_count=?,sick_count=?,
                         housing_type=?,purpose=?,feed_source=?,water_source=?,
-                        nearest_vet=?,notes=?,updated_at=datetime('now')
+                        nearest_vet=?,notes=?,latitude=?,longitude=?,gps_accuracy=?,gps_address=?,
+                        updated_at=datetime('now')
                     WHERE session_id=?
                 """,(data.get("farmer_name",""),data.get("phone",""),
                      ghana_card,ghana_card_valid,
@@ -824,14 +857,16 @@ def api_save_livestock():
                      data.get("total_count",0),data.get("sick_count",0),
                      data.get("housing_type",""),data.get("purpose",""),
                      data.get("feed_source",""),data.get("water_source",""),
-                     data.get("nearest_vet",""),data.get("notes",""),sid))
+                     data.get("nearest_vet",""),data.get("notes",""),
+                     lat,lon,acc,addr,sid))
             else:
                 db.execute("""
                     INSERT INTO livestock_profiles
                         (session_id,farmer_name,phone,ghana_card,ghana_card_valid,
                          region,email,animal_type,total_count,sick_count,
-                         housing_type,purpose,feed_source,water_source,nearest_vet,notes)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                         housing_type,purpose,feed_source,water_source,nearest_vet,notes,
+                         latitude,longitude,gps_accuracy,gps_address)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """,(sid,data.get("farmer_name",""),data.get("phone",""),
                      ghana_card,ghana_card_valid,
                      data.get("region","greater_accra"),data.get("email",""),
@@ -839,7 +874,8 @@ def api_save_livestock():
                      data.get("total_count",0),data.get("sick_count",0),
                      data.get("housing_type",""),data.get("purpose",""),
                      data.get("feed_source",""),data.get("water_source",""),
-                     data.get("nearest_vet",""),data.get("notes","")))
+                     data.get("nearest_vet",""),data.get("notes",""),
+                     lat,lon,acc,addr))
             db.commit()
         return jsonify({"success":True})
     except Exception as e:
@@ -1187,11 +1223,24 @@ def build_credit_pdf(user, farm, livestock):
         story.append(Paragraph("FARM DETAILS", h2_style))
         story.append(HRFlowable(width="100%",thickness=1,color=green,spaceAfter=6))
         crops = farm["crops"] if farm["crops"] else "Not specified"
+        # Build GPS string
+        lat = farm.get("latitude"); lon = farm.get("longitude")
+        acc = farm.get("gps_accuracy")
+        gps_addr = farm.get("gps_address","")
+        if lat and lon:
+            gps_coords = f"{lat:.5f}, {lon:.5f}"
+            gps_acc = f"±{int(acc)}m accuracy" if acc else ""
+            gps_str = f"{gps_coords} ({gps_acc})" if gps_acc else gps_coords
+            gps_loc = gps_addr.split(",")[0] if gps_addr else "Verified"
+        else:
+            gps_str = "Not recorded"
+            gps_loc = "—"
         farm_data = [
             ["Farm size", f"{farm['farm_size']} {farm['farm_unit']}" if farm["farm_size"] else "Not specified",
              "Soil type", farm["soil_type"] or "Not specified"],
             ["Crops grown", crops, "Water source", farm["water_source"] or "Not specified"],
             ["Crop category", farm["crop_type"] or "Not specified", "Farming region", farm["region"] or region_key],
+            ["GPS coordinates", gps_str, "GPS location", gps_loc],
         ]
         farm_tbl = Table(farm_data, colWidths=[3.5*cm,5*cm,3.5*cm,5*cm])
         farm_tbl.setStyle(TableStyle([
@@ -1213,6 +1262,14 @@ def build_credit_pdf(user, farm, livestock):
     if livestock:
         story.append(Paragraph("LIVESTOCK ASSETS", h2_style))
         story.append(HRFlowable(width="100%",thickness=1,color=amber,spaceAfter=6))
+        # GPS for livestock
+        l_lat = livestock.get("latitude"); l_lon = livestock.get("longitude")
+        l_acc = livestock.get("gps_accuracy"); l_addr = livestock.get("gps_address","")
+        if l_lat and l_lon:
+            l_gps = f"{l_lat:.5f}, {l_lon:.5f} (±{int(l_acc)}m)" if l_acc else f"{l_lat:.5f}, {l_lon:.5f}"
+            l_loc = l_addr.split(",")[0] if l_addr else "Verified"
+        else:
+            l_gps = "Not recorded"; l_loc = "—"
         lv_data = [
             ["Animal type", livestock["animal_type"] or "Not specified",
              "Total count", str(livestock["total_count"] or "Not specified")],
@@ -1220,6 +1277,7 @@ def build_credit_pdf(user, farm, livestock):
              "Purpose", livestock["purpose"] or "Not specified"],
             ["Feed source", livestock["feed_source"] or "Not specified",
              "Nearest vet", livestock["nearest_vet"] or "Not specified"],
+            ["GPS coordinates", l_gps, "GPS location", l_loc],
         ]
         lv_tbl = Table(lv_data, colWidths=[3.5*cm,5*cm,3.5*cm,5*cm])
         lv_tbl.setStyle(TableStyle([
@@ -1388,10 +1446,12 @@ def api_credit_score():
     if farm and farm["crops"]:            score+=10; factors.append(("Crops recorded",10))
     if farm and farm["soil_type"]:        score+=5;  factors.append(("Soil type recorded",5))
     if farm and farm["water_source"]:     score+=5;  factors.append(("Water source recorded",5))
+    if farm and farm.get("latitude"):     score+=10; factors.append(("GPS location verified",10))
+    elif livestock and livestock.get("latitude"): score+=5; factors.append(("GPS location (livestock)",5))
     if livestock:                         score+=10; factors.append(("Livestock profile",10))
     if diary_count >= 5:                  score+=10; factors.append((f"{diary_count} diary entries",10))
     elif diary_count > 0:                 score+=5;  factors.append((f"{diary_count} diary entries",5))
-    if usage_count >= 10:                 score+=10; factors.append((f"{usage_count} AI questions asked",10))
+    if usage_count >= 10:                 score+=5;  factors.append((f"{usage_count} AI questions asked",5))
 
     # Rating label
     if score >= 80:   rating,color = "Excellent","#2C7A3F"
