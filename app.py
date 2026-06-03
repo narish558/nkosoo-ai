@@ -1315,11 +1315,11 @@ def api_get_lenders():
     with get_db() as db:
         if region:
             rows = db.execute(
-                "SELECT * FROM lenders WHERE active=1 AND (region=? OR region='national') ORDER BY verified DESC, name",
+                "SELECT * FROM lenders WHERE active=1 AND verified=1 AND (region=? OR region='national') ORDER BY name",
                 (region,)).fetchall()
         else:
             rows = db.execute(
-                "SELECT * FROM lenders WHERE active=1 ORDER BY verified DESC, name").fetchall()
+                "SELECT * FROM lenders WHERE active=1 AND verified=1 ORDER BY name").fetchall()
         lenders = [dict(r) for r in rows]
     # Seed with default lenders if empty
     if not lenders:
@@ -1408,6 +1408,14 @@ def admin_verify_lender(lender_id):
     if not session.get("admin"): return redirect("/admin")
     with get_db() as db:
         db.execute("UPDATE lenders SET verified=1 WHERE id=?",(lender_id,))
+        db.commit()
+    return redirect("/admin")
+
+@app.route("/admin/lenders/reject/<int:lender_id>")
+def admin_reject_lender(lender_id):
+    if not session.get("admin"): return redirect("/admin")
+    with get_db() as db:
+        db.execute("UPDATE lenders SET active=0 WHERE id=?",(lender_id,))
         db.commit()
     return redirect("/admin")
 
