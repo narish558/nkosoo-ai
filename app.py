@@ -136,6 +136,33 @@ def init_db():
             active INTEGER DEFAULT 1,
             created_at TEXT DEFAULT (datetime('now'))
         );
+        CREATE TABLE IF NOT EXISTS lenders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            email TEXT,
+            website TEXT,
+            region TEXT,
+            loan_min REAL DEFAULT 0,
+            loan_max REAL DEFAULT 0,
+            interest_rate TEXT,
+            requirements TEXT,
+            loan_types TEXT,
+            whatsapp TEXT,
+            verified INTEGER DEFAULT 0,
+            active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS credit_applications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            lender_id INTEGER,
+            lender_name TEXT,
+            amount_requested REAL,
+            purpose TEXT,
+            status TEXT DEFAULT 'submitted',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
         """)
         # Migrate users table — add new columns if missing
         u_cols = [r[1] for r in db.execute("PRAGMA table_info(users)").fetchall()]
@@ -1052,6 +1079,276 @@ def admin_reset_password(user_id):
         return redirect("/admin")
     with get_db() as db:
         db.execute("UPDATE users SET password_hash=? WHERE id=?",(hash_password(new_pw), user_id))
+        db.commit()
+    return redirect("/admin")
+
+# ---------------------------------------------------------------------------
+# CREDIT ACCESS — Phases A, B, C, D
+# ---------------------------------------------------------------------------
+
+import io
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+
+def build_credit_pdf(user, farm, livestock):
+    """Generate a Farm Credit Profile PDF for a farmer."""
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+        rightMargin=2*cm, leftMargin=2*cm,
+        topMargin=2*cm, bottomMargin=2*cm)
+    styles = getSampleStyleSheet()
+    navy = colors.HexColor("#1A2E4A")
+    green = colors.HexColor("#2C7A3F")
+    amber = colors.HexColor("#C4873A")
+
+    title_style = ParagraphStyle("title",fontSize=18,textColor=colors.white,
+        fontName="Helvetica-Bold",alignment=TA_CENTER,spaceAfter=4)
+    sub_style = ParagraphStyle("sub",fontSize=10,textColor=colors.HexColor("#C0DD97"),
+        fontName="Helvetica",alignment=TA_CENTER,spaceAfter=2)
+    h2_style = ParagraphStyle("h2",fontSize=11,textColor=navy,
+        fontName="Helvetica-Bold",spaceBefore=12,spaceAfter=4)
+    body_style = ParagraphStyle("body",fontSize=9,textColor=colors.HexColor("#1A1A18"),
+        fontName="Helvetica",spaceAfter=3,leading=14)
+    small_style = ParagraphStyle("small",fontSize=8,textColor=colors.HexColor("#5F5E5A"),
+        fontName="Helvetica",alignment=TA_CENTER,spaceAfter=2)
+
+    story = []
+    # Header banner
+    header_data = [[Paragraph("NKƆSOƆ AI — FARMER CREDIT PROFILE",title_style)],
+                   [Paragraph("Verified Agricultural Identity Document · www.nkosooai.com",sub_style)],
+                   [Paragraph(f"Generated: {__import__('datetime').datetime.now().strftime('%d %B %Y')}",sub_style)]]
+    header_tbl = Table(header_data, colWidths=[17*cm])
+    header_tbl.setStyle(TableStyle([
+        ('BACKGROUND',(0,0),(-1,-1),navy),
+        ('ALIGN',(0,0),(-1,-1),'CENTER'),
+        ('TOPPADDING',(0,0),(-1,-1),8),
+        ('BOTTOMPADDING',(0,0),(-1,-1),8),
+        ('LEFTPADDING',(0,0),(-1,-1),12),
+        ('RIGHTPADDING',(0,0),(-1,-1),12),
+    ]))
+    story.append(header_tbl)
+    story.append(Spacer(1,0.4*cm))
+
+    # Farmer identity
+    story.append(Paragraph("FARMER IDENTITY", h2_style))
+    story.append(HRFlowable(width="100%",thickness=1,color=green,spaceAfter=6))
+    name = user["name"] if user and user["name"] else "Not provided"
+    phone = user["phone"] if user and user["phone"] else "Not provided"
+    region_key = user["region"] if user and user["region"] else "greater_accra"
+    gc = farm["ghana_card"] if farm and farm["ghana_card"] else "Not provided"
+    gc_valid = "✓ Format validated" if farm and farm["ghana_card_valid"] else "Not verified"
+    id_data = [
+        ["Full name", name, "Phone number", phone],
+        ["Ghana Card", gc, "Card status", gc_valid],
+        ["Region", region_key.replace("_"," ").title(), "Platform", "Nkɔsoɔ AI registered"],
+    ]
+    id_tbl = Table(id_data, colWidths=[3.5*cm,5*cm,3.5*cm,5*cm])
+    id_tbl.setStyle(TableStyle([
+        ('FONTNAME',(0,0),(0,-1),'Helvetica-Bold'),
+        ('FONTNAME',(2,0),(2,-1),'Helvetica-Bold'),
+        ('FONTSIZE',(0,0),(-1,-1),9),
+        ('TEXTCOLOR',(0,0),(0,-1),navy),
+        ('TEXTCOLOR',(2,0),(2,-1),navy),
+        ('BACKGROUND',(0,0),(-1,-1),colors.HexColor("#F4F6FA")),
+        ('ROWBACKGROUNDS',(0,0),(-1,-1),[colors.HexColor("#F4F6FA"),colors.HexColor("#FFFFFF")]),
+        ('GRID',(0,0),(-1,-1),0.5,colors.HexColor("#D0D4D9")),
+        ('TOPPADDING',(0,0),(-1,-1),5),
+        ('BOTTOMPADDING',(0,0),(-1,-1),5),
+        ('LEFTPADDING',(0,0),(-1,-1),8),
+    ]))
+    story.append(id_tbl)
+    story.append(Spacer(1,0.3*cm))
+
+    # Farm profile
+    if farm:
+        story.append(Paragraph("FARM DETAILS", h2_style))
+        story.append(HRFlowable(width="100%",thickness=1,color=green,spaceAfter=6))
+        crops = farm["crops"] if farm["crops"] else "Not specified"
+        farm_data = [
+            ["Farm size", f"{farm['farm_size']} {farm['farm_unit']}" if farm["farm_size"] else "Not specified",
+             "Soil type", farm["soil_type"] or "Not specified"],
+            ["Crops grown", crops, "Water source", farm["water_source"] or "Not specified"],
+            ["Crop category", farm["crop_type"] or "Not specified", "Farming region", farm["region"] or region_key],
+        ]
+        farm_tbl = Table(farm_data, colWidths=[3.5*cm,5*cm,3.5*cm,5*cm])
+        farm_tbl.setStyle(TableStyle([
+            ('FONTNAME',(0,0),(0,-1),'Helvetica-Bold'),
+            ('FONTNAME',(2,0),(2,-1),'Helvetica-Bold'),
+            ('FONTSIZE',(0,0),(-1,-1),9),
+            ('TEXTCOLOR',(0,0),(0,-1),green),
+            ('TEXTCOLOR',(2,0),(2,-1),green),
+            ('ROWBACKGROUNDS',(0,0),(-1,-1),[colors.HexColor("#E8F5EC"),colors.HexColor("#FFFFFF")]),
+            ('GRID',(0,0),(-1,-1),0.5,colors.HexColor("#D0D4D9")),
+            ('TOPPADDING',(0,0),(-1,-1),5),
+            ('BOTTOMPADDING',(0,0),(-1,-1),5),
+            ('LEFTPADDING',(0,0),(-1,-1),8),
+        ]))
+        story.append(farm_tbl)
+        story.append(Spacer(1,0.3*cm))
+
+    # Livestock
+    if livestock:
+        story.append(Paragraph("LIVESTOCK ASSETS", h2_style))
+        story.append(HRFlowable(width="100%",thickness=1,color=amber,spaceAfter=6))
+        lv_data = [
+            ["Animal type", livestock["animal_type"] or "Not specified",
+             "Total count", str(livestock["total_count"] or "Not specified")],
+            ["Housing type", livestock["housing_type"] or "Not specified",
+             "Purpose", livestock["purpose"] or "Not specified"],
+            ["Feed source", livestock["feed_source"] or "Not specified",
+             "Nearest vet", livestock["nearest_vet"] or "Not specified"],
+        ]
+        lv_tbl = Table(lv_data, colWidths=[3.5*cm,5*cm,3.5*cm,5*cm])
+        lv_tbl.setStyle(TableStyle([
+            ('FONTNAME',(0,0),(0,-1),'Helvetica-Bold'),
+            ('FONTNAME',(2,0),(2,-1),'Helvetica-Bold'),
+            ('FONTSIZE',(0,0),(-1,-1),9),
+            ('TEXTCOLOR',(0,0),(0,-1),amber),
+            ('TEXTCOLOR',(2,0),(2,-1),amber),
+            ('ROWBACKGROUNDS',(0,0),(-1,-1),[colors.HexColor("#FBF1E8"),colors.HexColor("#FFFFFF")]),
+            ('GRID',(0,0),(-1,-1),0.5,colors.HexColor("#D0D4D9")),
+            ('TOPPADDING',(0,0),(-1,-1),5),
+            ('BOTTOMPADDING',(0,0),(-1,-1),5),
+            ('LEFTPADDING',(0,0),(-1,-1),8),
+        ]))
+        story.append(lv_tbl)
+        story.append(Spacer(1,0.3*cm))
+
+    # Disclaimer
+    story.append(Spacer(1,0.5*cm))
+    story.append(HRFlowable(width="100%",thickness=0.5,color=colors.HexColor("#D0D4D9"),spaceAfter=6))
+    story.append(Paragraph("This document is generated from data provided by the farmer on the Nkɔsoɔ AI platform. Ghana Card format has been validated. Lenders should conduct their own due diligence before making credit decisions. Nkɔsoɔ AI does not guarantee loan approval.",small_style))
+    story.append(Paragraph("© 2026 Nkɔsoɔ AI · Built by DranyTech · www.nkosooai.com · support@dranytech.com",small_style))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf
+
+@app.route("/api/credit/profile", methods=["GET"])
+def api_credit_profile():
+    """Download Farm Credit Profile PDF — Phase A."""
+    if not is_registered():
+        return jsonify({"error":"Please create a free account to download your credit profile.","gate":"register"}),401
+    sid = get_sid()
+    with get_db() as db:
+        user     = db.execute("SELECT * FROM users WHERE session_id=?",(sid,)).fetchone()
+        farm     = db.execute("SELECT * FROM farm_profiles WHERE session_id=?",(sid,)).fetchone()
+        livestock= db.execute("SELECT * FROM livestock_profiles WHERE session_id=?",(sid,)).fetchone()
+    try:
+        pdf_buf = build_credit_pdf(user, farm, livestock)
+        farmer_name = (user["name"] if user and user["name"] else "farmer").replace(" ","_")
+        filename = f"Nkosoo_AI_Credit_Profile_{farmer_name}.pdf"
+        from flask import send_file
+        return send_file(pdf_buf, mimetype="application/pdf",
+            as_attachment=True, download_name=filename)
+    except Exception as e:
+        print(f"[credit pdf error] {e}")
+        return jsonify({"error":"Could not generate PDF. Please try again."}),500
+
+@app.route("/api/credit/lenders", methods=["GET"])
+def api_get_lenders():
+    """Get lenders directory — Phase B."""
+    region = request.args.get("region","")
+    with get_db() as db:
+        if region:
+            rows = db.execute(
+                "SELECT * FROM lenders WHERE active=1 AND (region=? OR region='national') ORDER BY verified DESC, name",
+                (region,)).fetchall()
+        else:
+            rows = db.execute(
+                "SELECT * FROM lenders WHERE active=1 ORDER BY verified DESC, name").fetchall()
+        lenders = [dict(r) for r in rows]
+    # Seed with default lenders if empty
+    if not lenders:
+        lenders = [
+            {"id":1,"name":"Opportunity International Ghana","phone":"030 276 1400",
+             "whatsapp":"0302761400","region":"national","loan_min":500,"loan_max":5000,
+             "interest_rate":"2.5% per month","requirements":"Ghana Card + farm proof",
+             "loan_types":"Agricultural loan, Group loan","verified":1,"email":"info@opportunityghana.com","website":"www.opportunityghana.com"},
+            {"id":2,"name":"Sinapi Aba Trust","phone":"032 209 5000",
+             "whatsapp":"0322095000","region":"national","loan_min":200,"loan_max":2000,
+             "interest_rate":"3% per month","requirements":"Group guarantee of 5 members",
+             "loan_types":"Smallholder agri loan, Group solidarity loan","verified":1,"email":"info@sinapiaba.com","website":"www.sinapiaba.com"},
+            {"id":3,"name":"Advans Ghana","phone":"030 270 5200",
+             "whatsapp":"0302705200","region":"national","loan_min":1000,"loan_max":10000,
+             "interest_rate":"2.8% per month","requirements":"Ghana Card + 6 months trading history",
+             "loan_types":"Agri-business loan, Asset financing","verified":1,"email":"contact@advansghana.com","website":"www.advansghana.com"},
+            {"id":4,"name":"ARB Apex Bank","phone":"030 242 3380",
+             "whatsapp":"","region":"national","loan_min":500,"loan_max":20000,
+             "interest_rate":"Negotiated","requirements":"Ghana Card + farm collateral",
+             "loan_types":"Rural agricultural loan, Cooperative loan","verified":1,"email":"info@arbapexbank.com","website":"www.arbapexbank.com"},
+        ]
+    return jsonify({"success":True,"lenders":lenders})
+
+@app.route("/api/credit/apply", methods=["POST"])
+def api_credit_apply():
+    """Submit a credit referral — Phase C."""
+    if not is_registered():
+        return jsonify({"error":"Please create a free account to apply for credit.","gate":"register"}),401
+    sid = get_sid()
+    data = request.get_json() or {}
+    lender_id   = data.get("lender_id")
+    lender_name = data.get("lender_name","")
+    amount      = data.get("amount_requested",0)
+    purpose     = data.get("purpose","")
+    if not lender_name:
+        return jsonify({"error":"Please select a lender."}),400
+    with get_db() as db:
+        db.execute("""INSERT INTO credit_applications
+            (session_id,lender_id,lender_name,amount_requested,purpose)
+            VALUES (?,?,?,?,?)""",(sid,lender_id,lender_name,amount,purpose))
+        db.commit()
+    return jsonify({"success":True,"message":"Application recorded. Download your credit profile and present it to the lender via WhatsApp."})
+
+@app.route("/api/credit/score", methods=["GET"])
+def api_credit_score():
+    """Generate farming activity score — Phase D."""
+    if not is_registered():
+        return jsonify({"error":"Please create a free account.","gate":"register"}),401
+    sid = get_sid()
+    score = 0
+    factors = []
+    with get_db() as db:
+        user      = db.execute("SELECT * FROM users WHERE session_id=?",(sid,)).fetchone()
+        farm      = db.execute("SELECT * FROM farm_profiles WHERE session_id=?",(sid,)).fetchone()
+        livestock = db.execute("SELECT * FROM livestock_profiles WHERE session_id=?",(sid,)).fetchone()
+        diary_count = db.execute(
+            "SELECT COUNT(*) FROM health_logs WHERE session_id=?",(sid,)).fetchone()[0]
+        usage_count = db.execute(
+            "SELECT COUNT(*) FROM usage WHERE session_id=?",(sid,)).fetchone()[0]
+
+    # Score calculation
+    if user and user["registered"]:  score+=15; factors.append(("Registered account",15))
+    if farm and farm["ghana_card_valid"]: score+=25; factors.append(("Ghana Card validated",25))
+    elif farm and farm["ghana_card"]:     score+=10; factors.append(("Ghana Card entered",10))
+    if farm and farm["farm_size"]:        score+=10; factors.append(("Farm size recorded",10))
+    if farm and farm["crops"]:            score+=10; factors.append(("Crops recorded",10))
+    if farm and farm["soil_type"]:        score+=5;  factors.append(("Soil type recorded",5))
+    if farm and farm["water_source"]:     score+=5;  factors.append(("Water source recorded",5))
+    if livestock:                         score+=10; factors.append(("Livestock profile",10))
+    if diary_count >= 5:                  score+=10; factors.append((f"{diary_count} diary entries",10))
+    elif diary_count > 0:                 score+=5;  factors.append((f"{diary_count} diary entries",5))
+    if usage_count >= 10:                 score+=10; factors.append((f"{usage_count} AI questions asked",10))
+
+    # Rating label
+    if score >= 80:   rating,color = "Excellent","#2C7A3F"
+    elif score >= 60: rating,color = "Good","#3B6D11"
+    elif score >= 40: rating,color = "Fair","#C4873A"
+    else:             rating,color = "Building","#5F5E5A"
+
+    return jsonify({"success":True,"score":score,"max":100,
+        "rating":rating,"color":color,"factors":factors,
+        "message":f"Your farming activity score is {score}/100 ({rating}). Complete your farm profile and add diary entries to improve your score."})
+
+@app.route("/admin/lenders/verify/<int:lender_id>")
+def admin_verify_lender(lender_id):
+    if not session.get("admin"): return redirect("/admin")
+    with get_db() as db:
+        db.execute("UPDATE lenders SET verified=1 WHERE id=?",(lender_id,))
         db.commit()
     return redirect("/admin")
 
