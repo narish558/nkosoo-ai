@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Register as a Lender — Nkɔsoɔ AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f6f2;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{background:#1A2E4A;padding:0 1.25rem;height:54px;display:flex;align-items:center;gap:10px;}
+.logo-mark{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.logo-name{font-size:15px;font-weight:600;color:#fff;}
+.logo-sub{font-size:10px;color:#7EC850;}
+.back{margin-left:auto;font-size:12px;color:rgba(255,255,255,0.55);text-decoration:none;padding:5px 10px;border:0.5px solid rgba(255,255,255,0.15);border-radius:6px;}
+.back:hover{color:#fff;}
+
+.hero{background:#1A2E4A;padding:2rem 1.5rem;text-align:center;}
+.hero-icon{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto .875rem;}
+.hero h1{font-size:22px;font-weight:600;color:#fff;margin-bottom:.375rem;}
+.hero p{font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;max-width:440px;margin:0 auto;}
+
+.wrap{flex:1;max-width:640px;margin:0 auto;padding:1.5rem 1rem 3rem;width:100%;}
+
+.card{background:#fff;border:0.5px solid #d6d4cc;border-radius:16px;padding:1.5rem;margin-bottom:1rem;}
+.sec-label{font-size:11px;font-weight:600;color:#3B6D11;letter-spacing:.07em;text-transform:uppercase;margin-bottom:.875rem;padding-bottom:.5rem;border-bottom:1px solid #E0DED8;}
+
+.fg{margin-bottom:.875rem;}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.875rem;}
+@media(max-width:480px){.fg-row{grid-template-columns:1fr;}}
+.lbl{font-size:12px;font-weight:500;color:#374151;margin-bottom:5px;}
+.lbl span{color:#8A9099;font-weight:400;}
+.inp{width:100%;padding:10px 12px;border:1px solid #d6d4cc;border-radius:8px;font-size:14px;color:#1a1a18;background:#fff;font-family:inherit;outline:none;transition:border-color .15s;}
+.inp:focus{border-color:#1A2E4A;box-shadow:0 0 0 3px rgba(26,46,74,0.08);}
+.sel{width:100%;padding:10px 12px;border:1px solid #d6d4cc;border-radius:8px;font-size:14px;color:#1a1a18;background:#fff;font-family:inherit;outline:none;}
+.sel:focus{border-color:#1A2E4A;}
+.hint{font-size:11px;color:#9C9B97;margin-top:4px;line-height:1.5;}
+textarea.inp{resize:none;height:80px;line-height:1.5;}
+
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.check-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #d6d4cc;border-radius:8px;cursor:pointer;transition:border-color .15s,background .15s;}
+.check-item:hover{border-color:#1A2E4A;background:#F4F6FB;}
+.check-item input{width:15px;height:15px;accent-color:#1A2E4A;cursor:pointer;}
+.check-item label{font-size:13px;color:#1a1a18;cursor:pointer;}
+
+.info-box{background:#E8EDF5;border:1px solid #C8D4E8;border-radius:10px;padding:.875rem 1rem;font-size:12px;color:#1A2E4A;line-height:1.6;margin-bottom:1rem;}
+.info-box strong{font-weight:600;}
+
+.submit-btn{width:100%;padding:13px;border:none;border-radius:10px;background:#1A2E4A;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;}
+.submit-btn:hover{background:#243B5E;}
+.submit-btn:disabled{background:#9C9B97;cursor:not-allowed;}
+
+.err{background:#FCEBEB;border:1px solid #FFCDD2;border-radius:8px;padding:10px 12px;font-size:13px;color:#A32D2D;margin-bottom:1rem;display:none;}
+.err.show{display:block;}
+.ok{background:#EAF3DE;border:1px solid #C0DD97;border-radius:10px;padding:1.25rem;font-size:14px;color:#2C7A3F;text-align:center;display:none;line-height:1.6;}
+.ok.show{display:block;}
+
+footer{text-align:center;font-size:11px;color:#9C9B97;padding:1rem;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-mark">🌿</div>
+  <div>
+    <div class="logo-name">Nkɔsoɔ AI</div>
+    <div class="logo-sub">Ghana's agricultural ecosystem</div>
+  </div>
+  <a href="/app" class="back">← Back to app</a>
+</div>
+
+<div class="hero">
+  <div class="hero-icon">🏦</div>
+  <h1>Register as an Agricultural Lender</h1>
+  <p>Join Ghana's verified lender directory and connect directly with 1,200+ farming sessions across Ghana — crop farmers, livestock keepers, and aquaculture operators.</p>
+</div>
+
+<div class="wrap">
+
+  <div class="info-box">
+    ℹ️ Your listing will be <strong>reviewed by the DranyTech team</strong> before going live. Verified lenders appear in the farmer-facing directory with a <strong>Verified badge</strong>. Farmers can WhatsApp, call, or visit your website directly from your listing.
+  </div>
+
+  <div class="err" id="errMsg"></div>
+  <div class="ok" id="okMsg">
+    ✅ Thank you! Your application has been submitted successfully.<br><br>
+    Our team will review your details and verify your listing within 2–3 business days.<br>
+    We will contact you on the phone number provided once you are verified.<br><br>
+    <strong>Welcome to Nkɔsoɔ AI. 🌿</strong>
+  </div>
+
+  <!-- INSTITUTION DETAILS -->
+  <div class="card" id="formCard">
+    <div class="sec-label">Institution details</div>
+    <div class="fg">
+      <div class="lbl">Institution name</div>
+      <input class="inp" type="text" id="lName" placeholder="e.g. Opportunity International Ghana"/>
+    </div>
+    <div class="fg-row">
+      <div>
+        <div class="lbl">Phone number</div>
+        <input class="inp" type="tel" id="lPhone" placeholder="e.g. 0302761400"/>
+      </div>
+      <div>
+        <div class="lbl">WhatsApp number <span>(for farmers)</span></div>
+        <input class="inp" type="tel" id="lWhatsapp" placeholder="e.g. 0244123456"/>
+      </div>
+    </div>
+    <div class="fg-row">
+      <div>
+        <div class="lbl">Email address <span>(optional)</span></div>
+        <input class="inp" type="email" id="lEmail" placeholder="info@yourinstitution.com"/>
+      </div>
+      <div>
+        <div class="lbl">Website <span>(optional)</span></div>
+        <input class="inp" type="text" id="lWebsite" placeholder="www.yourinstitution.com"/>
+      </div>
+    </div>
+
+    <!-- COVERAGE -->
+    <div class="sec-label" style="margin-top:1rem;">Coverage & loan details</div>
+    <div class="fg">
+      <div class="lbl">Region served</div>
+      <select class="sel" id="lRegion">
+        <option value="national">All Ghana — nationwide</option>
+        {% for key,r in regions.items() %}<option value="{{ key }}">{{ r.name }}</option>{% endfor %}
+      </select>
+      <div class="hint">Select your primary coverage area. If you serve all regions, select "All Ghana".</div>
+    </div>
+    <div class="fg-row">
+      <div>
+        <div class="lbl">Minimum loan (GHS)</div>
+        <input class="inp" type="number" id="lMin" placeholder="e.g. 500" min="0"/>
+      </div>
+      <div>
+        <div class="lbl">Maximum loan (GHS)</div>
+        <input class="inp" type="number" id="lMax" placeholder="e.g. 10000" min="0"/>
+      </div>
+    </div>
+    <div class="fg">
+      <div class="lbl">Interest rate</div>
+      <input class="inp" type="text" id="lRate" placeholder="e.g. 2.5% per month or Negotiated"/>
+    </div>
+
+    <!-- LOAN TYPES -->
+    <div class="fg">
+      <div class="lbl">Loan types offered <span>(select all that apply)</span></div>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" id="lt1" value="Agricultural loan"><label for="lt1">Agricultural loan</label></div>
+        <div class="check-item"><input type="checkbox" id="lt2" value="Group/solidarity loan"><label for="lt2">Group / solidarity loan</label></div>
+        <div class="check-item"><input type="checkbox" id="lt3" value="Livestock loan"><label for="lt3">Livestock loan</label></div>
+        <div class="check-item"><input type="checkbox" id="lt4" value="Input financing"><label for="lt4">Input financing</label></div>
+        <div class="check-item"><input type="checkbox" id="lt5" value="Equipment/asset loan"><label for="lt5">Equipment / asset loan</label></div>
+        <div class="check-item"><input type="checkbox" id="lt6" value="Cooperative loan"><label for="lt6">Cooperative loan</label></div>
+        <div class="check-item"><input type="checkbox" id="lt7" value="Microfinance loan"><label for="lt7">Microfinance loan</label></div>
+        <div class="check-item"><input type="checkbox" id="lt8" value="SME agri-business loan"><label for="lt8">SME agri-business loan</label></div>
+      </div>
+    </div>
+
+    <!-- REQUIREMENTS -->
+    <div class="fg" style="margin-top:.25rem;">
+      <div class="lbl">Requirements from borrowers</div>
+      <textarea class="inp" id="lRequirements" placeholder="e.g. Ghana Card + farm proof · Group guarantee of 5 members · 6 months trading history..."></textarea>
+      <div class="hint">What documents or conditions do farmers need to meet to qualify for a loan?</div>
+    </div>
+
+    <!-- CONTACT PERSON -->
+    <div class="sec-label" style="margin-top:1rem;">Contact person</div>
+    <div class="fg-row">
+      <div>
+        <div class="lbl">Your name</div>
+        <input class="inp" type="text" id="lContact" placeholder="e.g. Ama Mensah"/>
+      </div>
+      <div>
+        <div class="lbl">Your role</div>
+        <input class="inp" type="text" id="lRole" placeholder="e.g. Branch Manager"/>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitLender()">Submit for verification →</button>
+  </div>
+
+</div>
+
+<footer>Nkɔsoɔ AI · Built by DranyTech · © 2026</footer>
+
+<script>
+async function submitLender(){
+  const name=document.getElementById('lName').value.trim();
+  const phone=document.getElementById('lPhone').value.trim();
+  const whatsapp=document.getElementById('lWhatsapp').value.trim();
+  const email=document.getElementById('lEmail').value.trim();
+  const website=document.getElementById('lWebsite').value.trim();
+  const region=document.getElementById('lRegion').value;
+  const loan_min=document.getElementById('lMin').value;
+  const loan_max=document.getElementById('lMax').value;
+  const interest_rate=document.getElementById('lRate').value.trim();
+  const requirements=document.getElementById('lRequirements').value.trim();
+  const contact=document.getElementById('lContact').value.trim();
+  const role=document.getElementById('lRole').value.trim();
+
+  const loan_types=[...document.querySelectorAll('.check-grid input:checked')].map(c=>c.value).join(', ');
+
+  const err=document.getElementById('errMsg');
+  const ok=document.getElementById('okMsg');
+  const btn=document.getElementById('submitBtn');
+  err.classList.remove('show');
+
+  if(!name){err.textContent='Please enter your institution name.';err.classList.add('show');return;}
+  if(!phone){err.textContent='Please enter a phone number.';err.classList.add('show');return;}
+  if(!loan_min||!loan_max){err.textContent='Please enter the minimum and maximum loan amounts.';err.classList.add('show');return;}
+  if(!interest_rate){err.textContent='Please enter your interest rate.';err.classList.add('show');return;}
+
+  btn.disabled=true; btn.textContent='Submitting...';
+  try{
+    const resp=await fetch('/api/lenders/register',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,phone,whatsapp,email,website,region,
+        loan_min:parseFloat(loan_min),loan_max:parseFloat(loan_max),
+        interest_rate,requirements,loan_types,contact_name:contact,contact_role:role})});
+    const data=await resp.json();
+    if(data.success){
+      document.getElementById('formCard').style.display='none';
+      ok.classList.add('show');
+      window.scrollTo({top:0,behavior:'smooth'});
+    } else {
+      err.textContent=data.error||'Submission failed. Please try again.';
+      err.classList.add('show');
+      btn.disabled=false; btn.textContent='Submit for verification →';
+    }
+  }catch(e){
+    err.textContent='Connection error. Please try again.';
+    err.classList.add('show');
+    btn.disabled=false; btn.textContent='Submit for verification →';
+  }
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA') submitLender();});
+</script>
+</body>
+</html>
