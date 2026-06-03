@@ -945,6 +945,20 @@ def admin():
                 """).fetchall()
             except Exception:
                 agro_total=0; agro_verified=0; pending_agros=[]
+            # Credit stats
+            try:
+                credit_apps      = db.execute("SELECT COUNT(*) FROM credit_applications").fetchone()[0]
+                credit_apps_week = db.execute("SELECT COUNT(*) FROM credit_applications WHERE date(created_at)>=date('now','-7 days')").fetchone()[0]
+                top_lender       = db.execute("SELECT lender_name,COUNT(*) cnt FROM credit_applications GROUP BY lender_name ORDER BY cnt DESC LIMIT 1").fetchone()
+                total_requested  = db.execute("SELECT SUM(amount_requested) FROM credit_applications WHERE amount_requested>0").fetchone()[0] or 0
+                lender_count     = db.execute("SELECT COUNT(*) FROM lenders WHERE active=1").fetchone()[0]
+                lender_verified  = db.execute("SELECT COUNT(*) FROM lenders WHERE verified=1 AND active=1").fetchone()[0]
+                pending_lenders  = db.execute("SELECT * FROM lenders WHERE verified=0 AND active=1 ORDER BY created_at DESC").fetchall()
+                credit_score_profiles = db.execute("SELECT COUNT(DISTINCT session_id) FROM farm_profiles").fetchone()[0]
+            except Exception:
+                credit_apps=0; credit_apps_week=0; top_lender=None
+                total_requested=0; lender_count=0; lender_verified=0
+                pending_lenders=[]; credit_score_profiles=0
     except Exception as e:
         return f"<h2>Admin Error</h2><pre>{e}</pre><p><a href='/admin/logout'>Sign out</a></p>", 500
     return render_template("admin.html",
@@ -956,7 +970,12 @@ def admin():
         livestock_cnt=livestock_cnt, livestock_verified=livestock_verified,
         sick_animals=sick_animals, animal_stats=animal_stats,
         agro_total=agro_total, agro_verified=agro_verified,
-        pending_agros=pending_agros)
+        pending_agros=pending_agros,
+        credit_apps=credit_apps, credit_apps_week=credit_apps_week,
+        top_lender=top_lender, total_requested=total_requested,
+        lender_count=lender_count, lender_verified=lender_verified,
+        pending_lenders=pending_lenders,
+        credit_score_profiles=credit_score_profiles)
 
 @app.route("/admin/logout")
 def admin_logout():
