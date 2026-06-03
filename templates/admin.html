@@ -248,8 +248,9 @@ footer a{color:#2C7A3F;text-decoration:none;}
       <td>GHS {{ l.loan_min|int|string }}–{{ l.loan_max|int|string }}</td>
       <td style="font-size:12px;">{{ l.interest_rate or '—' }}</td>
       <td style="font-size:11px;color:#5F5E5A;max-width:160px;">{{ l.loan_types or '—' }}</td>
-      <td>
+      <td style="display:flex;gap:5px;">
         <a href="/admin/lenders/verify/{{ l.id }}" class="btn btn-green">✓ Verify</a>
+        <a href="/admin/lenders/reject/{{ l.id }}" class="btn btn-red" onclick="return confirm('Reject this lender? They will be removed from pending.')">✕ Reject</a>
       </td>
     </tr>
     {% endfor %}
