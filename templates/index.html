@@ -97,6 +97,73 @@ function showTab(name){
   if(name==='credit'){loadLenders();loadCreditScore();}
 }
 
+// ── GPS LOCATION ────────────────────────────────────────────
+async function getGPS(type){
+  const prefix = type==='crop' ? 'crop' : 'live';
+  const btn=document.getElementById(prefix+'GpsBtn');
+  const txt=document.getElementById(prefix+'GpsTxt');
+  const icon=document.getElementById(prefix+'GpsIcon');
+  const result=document.getElementById(prefix+'GpsResult');
+  const err=document.getElementById(prefix+'GpsErr');
+
+  if(!navigator.geolocation){
+    err.textContent='GPS is not supported on this device.';
+    err.classList.add('show'); return;
+  }
+
+  btn.classList.add('loading');
+  txt.textContent='Getting your location...';
+  icon.textContent='⏳';
+  err.classList.remove('show');
+  result.classList.remove('show');
+
+  navigator.geolocation.getCurrentPosition(
+    async(pos)=>{
+      const lat=pos.coords.latitude;
+      const lon=pos.coords.longitude;
+      const acc=pos.coords.accuracy;
+
+      document.getElementById(prefix+'Lat').value=lat;
+      document.getElementById(prefix+'Lon').value=lon;
+      document.getElementById(prefix+'Acc').value=acc;
+
+      // Reverse geocode using OpenStreetMap Nominatim
+      let addr='';
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+        const d=await r.json();
+        addr=d.display_name||'';
+        document.getElementById(prefix+'Addr').value=addr;
+      }catch(e){}
+
+      btn.classList.remove('loading');
+      btn.classList.add('got');
+      icon.textContent='✅';
+      txt.textContent='Location recorded';
+      result.textContent=`📍 ${lat.toFixed(5)}, ${lon.toFixed(5)} · Accuracy: ±${Math.round(acc)}m${addr?'\n'+addr.split(',').slice(0,3).join(','):''}`;
+      result.classList.add('show');
+    },
+    (e)=>{
+      btn.classList.remove('loading');
+      icon.textContent='📍';
+      txt.textContent='Tap to record location';
+      const msgs={1:'Location access denied. Please allow location in your browser settings.',
+                  2:'Location unavailable. Please try again.',
+                  3:'Location request timed out. Please try again.'};
+      err.textContent=msgs[e.code]||'Could not get location. Please try again.';
+      err.classList.add('show');
+    },
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+  );
+}
+
+// Patch saveCropProfile to include GPS data
+const _origSaveCrop=saveCropProfile;
+async function saveCropProfile(){
+  // GPS fields are already in hidden inputs — they will be included when the form reads them
+  await _origSaveCrop();
+}
+
 {% raw %}
   window.dataLayer=window.dataLayer||[];
   function gtag(){dataLayer.push(arguments);}
@@ -131,6 +198,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .auth-btn{font-size:11px;color:#fff;text-decoration:none;padding:5px 10px;border-radius:6px;background:var(--g600);font-weight:500;white-space:nowrap;}
 .auth-btn:hover{background:var(--g900);}
 
+
+/* ── GPS LOCATION ── */
+.gps-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;font-weight:500;color:#1A2E4A;cursor:pointer;font-family:inherit;transition:all .15s;width:100%;}
+.gps-btn:hover{background:#E8EDF5;border-color:#1A2E4A;}
+.gps-btn.got{background:#EAF3DE;border-color:#C0DD97;color:#2C7A3F;}
+.gps-btn.loading{background:#F4F6FB;color:#8A9099;cursor:not-allowed;}
+.gps-result{font-size:11px;color:#5F5E5A;margin-top:5px;line-height:1.5;padding:7px 10px;background:#F4F6FA;border-radius:6px;display:none;}
+.gps-result.show{display:block;}
+.gps-err{font-size:11px;color:#A32D2D;margin-top:5px;display:none;}
+.gps-err.show{display:block;}
+
+/* ── GPS LOCATION ── */
+.gps-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;font-weight:500;color:#1A2E4A;cursor:pointer;font-family:inherit;transition:all .15s;width:100%;text-align:left;}
+.gps-btn:hover{background:#E8EDF5;border-color:#1A2E4A;}
+.gps-btn.got{background:#EAF3DE;border-color:#C0DD97;color:#2C7A3F;}
+.gps-btn.loading{background:#F4F6FB;color:#8A9099;cursor:not-allowed;}
+.gps-result{font-size:11px;color:#5F5E5A;margin-top:5px;line-height:1.5;padding:7px 10px;background:#F4F6FA;border-radius:6px;display:none;}
+.gps-result.show{display:block;}
+.gps-err{font-size:11px;color:#A32D2D;margin-top:5px;display:none;}
+.gps-err.show{display:block;}
 /* ── PRO LOCK BAR ── */
 .pro-lock-bar{
   background:linear-gradient(135deg,#1A2E4A,#2E5F8A);
@@ -793,6 +880,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
             <div class="lbl">Region</div>
             <select class="sel" id="cRegion">{% for key,r in regions.items() %}<option value="{{ key }}">{{ r.name }}</option>{% endfor %}</select>
           </div>
+          <div class="fg">
+            <div class="lbl">📍 Farm GPS location <span style="font-size:11px;color:var(--ts);font-weight:400;">(optional — records exact farm coordinates)</span></div>
+            <button type="button" class="gps-btn" id="cropGpsBtn" onclick="getGPS('crop')">
+              <span id="cropGpsIcon">📍</span>&nbsp;<span id="cropGpsTxt">Tap to record farm location</span>
+            </button>
+            <div class="gps-result" id="cropGpsResult"></div>
+            <div class="gps-err" id="cropGpsErr"></div>
+            <input type="hidden" id="cropLat"/>
+            <input type="hidden" id="cropLon"/>
+            <input type="hidden" id="cropAcc"/>
+            <input type="hidden" id="cropAddr"/>
+          </div>
           <div class="fg"><div class="lbl">Email (optional)</div><input class="inp" type="email" id="cEmail" placeholder="e.g. kwame@gmail.com"/></div>
         </div>
       </div>
@@ -896,6 +995,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
         </div>
         <div class="form-row">
           <div class="fg"><div class="lbl">Region</div><select class="sel" id="lRegion">{% for key,r in regions.items() %}<option value="{{ key }}">{{ r.name }}</option>{% endfor %}</select></div>
+      <div class="fg" style="margin-top:.5rem;">
+        <div class="lbl">📍 Farm/livestock GPS location <span style="font-size:11px;color:var(--ts);font-weight:400;">(optional — records exact location)</span></div>
+        <button type="button" class="gps-btn" id="liveGpsBtn" onclick="getGPS('live')">
+          <span id="liveGpsIcon">📍</span>&nbsp;<span id="liveGpsTxt">Tap to record location</span>
+        </button>
+        <div class="gps-result" id="liveGpsResult"></div>
+        <div class="gps-err" id="liveGpsErr"></div>
+        <input type="hidden" id="liveLat"/>
+        <input type="hidden" id="liveLon"/>
+        <input type="hidden" id="liveAcc"/>
+        <input type="hidden" id="liveAddr"/>
+      </div>
           <div class="fg"><div class="lbl">Email (optional)</div><input class="inp" type="email" id="lEmail" placeholder="e.g. kwame@gmail.com"/></div>
         </div>
         <button class="save-btn a" onclick="saveLivestockProfile()" style="margin-top:.5rem;">💾 Save profile</button>
@@ -1302,9 +1413,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
         ✅ Validate your Ghana Card (+25 pts)<br>
         ✅ Save your farm profile with size and crops (+20 pts)<br>
         ✅ Add soil type and water source (+10 pts)<br>
+        📍 Record your farm GPS location (+10 pts)<br>
         ✅ Add a livestock profile (+10 pts)<br>
         ✅ Log 5+ diary entries (+10 pts)<br>
-        ✅ Ask 10+ AI farming questions (+10 pts)
+        ✅ Ask 10+ AI farming questions (+5 pts)
       </div>
     </div>
   </div>
@@ -1662,6 +1774,10 @@ async function saveCropProfile(){
     farm_size:document.getElementById('cFarmSize').value.trim(),
     farm_unit:document.getElementById('cFarmUnit').value,
     soil_type:document.getElementById('cSoilType').value,
+    latitude:parseFloat(document.getElementById('cropLat').value)||null,
+    longitude:parseFloat(document.getElementById('cropLon').value)||null,
+    gps_accuracy:parseFloat(document.getElementById('cropAcc').value)||null,
+    gps_address:document.getElementById('cropAddr').value||'',
     water_source:document.getElementById('cWaterSource').value,
     crop_type:document.querySelector('.ctype.on')?document.querySelector('.ctype.on').dataset.type||'staples':'staples',
     crops:selectedCrops.join(','),
@@ -1691,6 +1807,10 @@ async function saveLivestockProfile(){
     email:document.getElementById('lEmail').value.trim(),
     animal_type:'profile',
     total_count:0,sick_count:0,
+    latitude:parseFloat(document.getElementById('liveLat').value)||null,
+    longitude:parseFloat(document.getElementById('liveLon').value)||null,
+    gps_accuracy:parseFloat(document.getElementById('liveAcc').value)||null,
+    gps_address:document.getElementById('liveAddr').value||'',
   };
   try{
     const resp=await fetch('/api/livestock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
