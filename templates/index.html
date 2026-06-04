@@ -41,12 +41,15 @@ async function loadCreditScore(){
 async function loadLenders(){
   const region=document.getElementById('lenderRegionFilter').value;
   const url='/api/credit/lenders'+(region?'?region='+region:'');
-  const r=await fetch(url); const d=await r.json();
   const list=document.getElementById('lendersList');
-  if(!d.lenders||!d.lenders.length){
-    list.innerHTML='<div style="text-align:center;padding:1rem;color:var(--ts);font-size:13px;">No lenders found for this region.</div>';
-    return;
-  }
+  try{
+    const r=await fetch(url);
+    if(!r.ok) throw new Error('Network error '+r.status);
+    const d=await r.json();
+    if(!d.lenders||!d.lenders.length){
+      list.innerHTML='<div style="text-align:center;padding:1rem;color:var(--ts);font-size:13px;">No lenders found for this region.</div>';
+      return;
+    }
   list.innerHTML=d.lenders.map(l=>`
     <div style="background:#fff;border:1px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:.5rem;">
@@ -67,6 +70,10 @@ async function loadLenders(){
         ${l.website?`<a href="https://${l.website}" target="_blank" style="font-size:11px;padding:5px 10px;border-radius:6px;background:var(--muted);color:var(--ts);text-decoration:none;">🌐 Website</a>`:''}
       </div>
     </div>`).join('');
+  }catch(e){
+    list.innerHTML='<div style="text-align:center;padding:1rem;color:var(--ts);font-size:13px;">⚠️ Could not load lenders. Please check your connection and try again.</div>';
+    console.error('[loadLenders]',e);
+  }
 }
 
 async function submitCreditApp(){
@@ -298,16 +305,23 @@ async function loadDashboard(){
   document.getElementById('dashLoading').style.display='block';
   document.getElementById('dashContent').style.display='none';
   document.getElementById('dashNotReg').style.display='none';
-  const r=await fetch('/api/farmer/dashboard');
-  if(r.status===401){
-    document.getElementById('dashLoading').style.display='none';
-    document.getElementById('dashNotReg').style.display='block';
-    return;
-  }
-  const d=await r.json();
-  if(!d.success){
-    document.getElementById('dashLoading').style.display='none';
-    document.getElementById('dashNotReg').style.display='block';
+  let d;
+  try{
+    const r=await fetch('/api/farmer/dashboard');
+    if(r.status===401){
+      document.getElementById('dashLoading').style.display='none';
+      document.getElementById('dashNotReg').style.display='block';
+      return;
+    }
+    d=await r.json();
+    if(!d||!d.success){
+      document.getElementById('dashLoading').style.display='none';
+      document.getElementById('dashNotReg').style.display='block';
+      return;
+    }
+  }catch(e){
+    console.error('[dashboard]',e);
+    document.getElementById('dashLoading').textContent='Could not load dashboard. Please refresh.';
     return;
   }
   _dashData=d;
