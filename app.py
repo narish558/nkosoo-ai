@@ -1595,6 +1595,7 @@ def seed_default_lenders():
     except Exception as e:
         print(f"[lenders seed error] {e}")
 
+@app.route("/api/credit/lenders", methods=["GET"])
 def api_get_lenders():
     """Get lenders directory — Phase B."""
     region = request.args.get("region","")
