@@ -258,6 +258,8 @@ def init_db():
                     ghana_card_valid INTEGER DEFAULT 0,
                     soil_type TEXT, water_source TEXT,
                     region TEXT, email TEXT,
+                    latitude REAL, longitude REAL,
+                    gps_accuracy REAL, gps_address TEXT,
                     created_at TEXT DEFAULT (datetime('now')),
                     updated_at TEXT DEFAULT (datetime('now'))
                 );
@@ -270,10 +272,18 @@ def init_db():
             for col, defn in [
                 ("farm_unit","TEXT"),("crop_type","TEXT"),
                 ("region","TEXT"),("email","TEXT"),
+                ("latitude","REAL"),("longitude","REAL"),
+                ("gps_accuracy","REAL"),("gps_address","TEXT"),
             ]:
                 if col not in fp_cols:
                     try: db.execute(f"ALTER TABLE farm_profiles ADD COLUMN {col} {defn}")
                     except: pass
+        # Always ensure GPS columns exist after any migration path
+        fp_cols_final = [r[1] for r in db.execute("PRAGMA table_info(farm_profiles)").fetchall()]
+        for col, defn in [("latitude","REAL"),("longitude","REAL"),("gps_accuracy","REAL"),("gps_address","TEXT")]:
+            if col not in fp_cols_final:
+                try: db.execute(f"ALTER TABLE farm_profiles ADD COLUMN {col} {defn}")
+                except: pass
 
         # Migrate livestock_profiles — check if old UNIQUE(session_id,animal_type) exists
         # If so, recreate with UNIQUE(session_id) only
@@ -297,6 +307,8 @@ def init_db():
                     housing_type TEXT, purpose TEXT,
                     feed_source TEXT, water_source TEXT,
                     nearest_vet TEXT, notes TEXT,
+                    latitude REAL, longitude REAL,
+                    gps_accuracy REAL, gps_address TEXT,
                     created_at TEXT DEFAULT (datetime('now')),
                     updated_at TEXT DEFAULT (datetime('now'))
                 );
@@ -314,10 +326,18 @@ def init_db():
                 ("farmer_name","TEXT"),("phone","TEXT"),
                 ("ghana_card","TEXT"),("ghana_card_valid","INTEGER DEFAULT 0"),
                 ("region","TEXT"),("email","TEXT"),
+                ("latitude","REAL"),("longitude","REAL"),
+                ("gps_accuracy","REAL"),("gps_address","TEXT"),
             ]:
                 if col not in live_cols:
                     try: db.execute(f"ALTER TABLE livestock_profiles ADD COLUMN {col} {defn}")
                     except: pass
+        # Always ensure GPS columns exist on livestock after any migration path
+        lp_cols_final = [r[1] for r in db.execute("PRAGMA table_info(livestock_profiles)").fetchall()]
+        for col, defn in [("latitude","REAL"),("longitude","REAL"),("gps_accuracy","REAL"),("gps_address","TEXT")]:
+            if col not in lp_cols_final:
+                try: db.execute(f"ALTER TABLE livestock_profiles ADD COLUMN {col} {defn}")
+                except: pass
         db.commit()
 
 
