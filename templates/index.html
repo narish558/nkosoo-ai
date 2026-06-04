@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Nkɔsoɔ AI — Ghana Farming Assistant</title>
 <!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<!-- Google Analytics: replace G-XXXXXXXXXX with your real ID to enable -->
 <script>
 // ── CREDIT ACCESS ──────────────────────────────────────────
 async function downloadCreditProfile(){
@@ -391,7 +391,8 @@ function showDashTab(tab){
   });
 }
 async function handleCropSave(){
-  if(USER_REGISTERED){
+  if(USER_REGISTERED || window._registered){
+    USER_REGISTERED = true;
     await saveCropProfile();
     return;
   }
@@ -430,6 +431,8 @@ async function inlineCropRegister(){
     body:JSON.stringify({name,phone,password:pw,region})});
   const d=await r.json();
   if(d.success){
+    USER_REGISTERED = true;
+    window._registered = true;
     document.getElementById('cropInlineReg').innerHTML='';
     await saveCropProfile();
   } else {
@@ -446,6 +449,8 @@ async function inlineCropLogin(){
     body:JSON.stringify({phone,password:pw})});
   const d=await r.json();
   if(d.success){
+    USER_REGISTERED = true;
+    window._registered = true;
     document.getElementById('cropInlineReg').innerHTML='';
     await saveCropProfile();
   } else {
@@ -457,7 +462,7 @@ async function inlineCropLogin(){
   window.dataLayer=window.dataLayer||[];
   function gtag(){dataLayer.push(arguments);}
   gtag('js',new Date());
-  gtag('config','G-XXXXXXXXXX');
+  // gtag('config','G-XXXXXXXXXX'); // replace with real ID
   function trackTab(name){gtag('event','tab_view',{event_category:'navigation',event_label:name});}
   function trackSave(type){gtag('event','profile_save',{event_category:'engagement',event_label:type});}
   function trackUpgrade(){gtag('event','upgrade_click',{event_category:'monetisation',event_label:'pro_upgrade'});}
@@ -1846,7 +1851,7 @@ const WEATHER_DATA = {
 const USER_PLAN = _d.user_plan;
 const FREE_LIMIT = _d.free_limit;
 const ANON_LIMIT = _d.anon_limit || 1;
-const USER_REGISTERED = _d.user_registered || false;
+let USER_REGISTERED = _d.user_registered || false;
 const EFFECTIVE_LIMIT = USER_REGISTERED ? FREE_LIMIT : ANON_LIMIT;
 let usedToday = _d.used_today;
 let currentLang='en';
@@ -2168,7 +2173,8 @@ async function saveCropProfile(){
       const sel=document.getElementById('cDiaryCrop');
       sel.innerHTML='<option value="all">All crops</option>'+selectedCrops.map(c=>`<option value="${c}">${c}</option>`).join('');
     } else if(data.gate==='register'){
-      handleCropSave();
+      if(!USER_REGISTERED) handleCropSave();
+      else alert('Session error. Please refresh the page and try again.');
     } else {
       alert('Save failed: '+(data.error||'Unknown error. Please try again.'));
     }
