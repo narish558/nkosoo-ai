@@ -689,6 +689,17 @@ QUICK_TW = [
 # ---------------------------------------------------------------------------
 # Main route
 # ---------------------------------------------------------------------------
+
+@app.route("/favicon.ico")
+def favicon():
+    from flask import Response
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#1A4D15"/>
+  <circle cx="16" cy="16" r="10" fill="#2C7A3F"/>
+  <text x="16" y="21" font-size="14" text-anchor="middle" fill="#7EC850" font-family="Arial">🌿</text>
+</svg>'''
+    return Response(svg, mimetype="image/svg+xml")
+
 @app.route("/")
 def landing():
     return render_template("landing.html")
