@@ -95,11 +95,11 @@ def init_db():
         );
         CREATE TABLE IF NOT EXISTS livestock_profiles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            session_id TEXT UNIQUE NOT NULL,
+            session_id TEXT NOT NULL,
             farmer_name TEXT, phone TEXT,
             ghana_card TEXT, ghana_card_valid INTEGER DEFAULT 0,
             region TEXT, email TEXT,
-            animal_type TEXT,
+            animal_type TEXT NOT NULL,
             total_count INTEGER DEFAULT 0,
             sick_count INTEGER DEFAULT 0,
             housing_type TEXT, purpose TEXT,
@@ -109,6 +109,13 @@ def init_db():
             gps_accuracy REAL, gps_address TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS farmer_dashboard_notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            note_type TEXT,
+            note_text TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
         );
         CREATE TABLE IF NOT EXISTS health_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -188,13 +195,47 @@ def init_db():
                 try: db.execute(f"ALTER TABLE farm_profiles ADD COLUMN {col} {defn}")
                 except: pass
 
-        # Migrate livestock_profiles — add GPS columns if missing
-        lp_cols = [r[1] for r in db.execute("PRAGMA table_info(livestock_profiles)").fetchall()]
-        for col, defn in [
-            ("latitude","REAL"), ("longitude","REAL"),
-            ("gps_accuracy","REAL"), ("gps_address","TEXT"),
-        ]:
-            if col not in lp_cols:
+        # Migrate livestock_profiles — remove UNIQUE(session_id) to support multiple animal types
+        lp_info = db.execute("PRAGMA table_info(livestock_profiles)").fetchall()
+        lp_cols = [r[1] for r in lp_info]
+        # Check if UNIQUE constraint exists (old schema had session_id UNIQUE)
+        lp_index = db.execute("PRAGMA index_list(livestock_profiles)").fetchall()
+        has_unique = any('unique' in str(i).lower() for i in lp_index)
+        if has_unique or 'id' not in lp_cols:
+            try:
+                db.execute("""CREATE TABLE IF NOT EXISTS livestock_profiles_v2 (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT NOT NULL,
+                    farmer_name TEXT, phone TEXT,
+                    ghana_card TEXT, ghana_card_valid INTEGER DEFAULT 0,
+                    region TEXT, email TEXT,
+                    animal_type TEXT NOT NULL DEFAULT 'poultry',
+                    total_count INTEGER DEFAULT 0, sick_count INTEGER DEFAULT 0,
+                    housing_type TEXT, purpose TEXT,
+                    feed_source TEXT, water_source TEXT,
+                    nearest_vet TEXT, notes TEXT,
+                    latitude REAL, longitude REAL,
+                    gps_accuracy REAL, gps_address TEXT,
+                    created_at TEXT DEFAULT (datetime('now')),
+                    updated_at TEXT DEFAULT (datetime('now'))
+                )""")
+                db.execute("""INSERT OR IGNORE INTO livestock_profiles_v2
+                    (session_id,farmer_name,phone,ghana_card,ghana_card_valid,
+                     region,email,animal_type,total_count,sick_count,
+                     housing_type,purpose,feed_source,water_source,nearest_vet,notes)
+                    SELECT session_id,farmer_name,phone,ghana_card,ghana_card_valid,
+                     region,email,COALESCE(animal_type,'poultry'),total_count,sick_count,
+                     housing_type,purpose,feed_source,water_source,nearest_vet,notes
+                    FROM livestock_profiles""")
+                db.execute("DROP TABLE livestock_profiles")
+                db.execute("ALTER TABLE livestock_profiles_v2 RENAME TO livestock_profiles")
+                db.commit()
+            except Exception as e:
+                print(f"[livestock migration] {e}")
+        # Add GPS columns if missing
+        lp_cols2 = [r[1] for r in db.execute("PRAGMA table_info(livestock_profiles)").fetchall()]
+        for col,defn in [("latitude","REAL"),("longitude","REAL"),("gps_accuracy","REAL"),("gps_address","TEXT")]:
+            if col not in lp_cols2:
                 try: db.execute(f"ALTER TABLE livestock_profiles ADD COLUMN {col} {defn}")
                 except: pass
 
@@ -818,13 +859,15 @@ def api_save_profile():
         return jsonify({"success":False,"error":str(e)}),500
 
 # ---------------------------------------------------------------------------
-# Livestock profile
+# Livestock profile — multiple animal types per farmer
 # ---------------------------------------------------------------------------
 @app.route("/api/livestock", methods=["GET"])
 def api_get_livestock():
     sid=get_sid()
     with get_db() as db:
-        rows=db.execute("SELECT * FROM livestock_profiles WHERE session_id=?",(sid,)).fetchall()
+        rows=db.execute(
+            "SELECT * FROM livestock_profiles WHERE session_id=? ORDER BY created_at",
+            (sid,)).fetchall()
     return jsonify([dict(r) for r in rows])
 
 @app.route("/api/livestock", methods=["POST"])
@@ -832,33 +875,35 @@ def api_save_livestock():
     if not is_registered():
         return jsonify({"success":False,"error":"Please create a free account to save your livestock profile.","gate":"register"}), 401
     sid=get_sid(); data=request.get_json()
-    animal_type=data.get("animal_type","")
+    animal_type=data.get("animal_type","").strip()
     if not animal_type: return jsonify({"error":"animal_type required"}),400
     ghana_card=data.get("ghana_card","").strip().upper()
     ghana_card_valid=1 if (ghana_card and re.match(r'^GHA-\d{9}-\d$',ghana_card)) else 0
+    lat=data.get("latitude"); lon=data.get("longitude")
+    acc=data.get("gps_accuracy"); addr=data.get("gps_address","")
     try:
         with get_db() as db:
-            existing=db.execute("SELECT id FROM livestock_profiles WHERE session_id=?",(sid,)).fetchone()
-            lat = data.get("latitude"); lon = data.get("longitude")
-            acc = data.get("gps_accuracy"); addr = data.get("gps_address","")
+            # Check if this animal_type already exists for this farmer
+            existing=db.execute(
+                "SELECT id FROM livestock_profiles WHERE session_id=? AND animal_type=?",
+                (sid,animal_type)).fetchone()
             if existing:
                 db.execute("""
                     UPDATE livestock_profiles SET
                         farmer_name=?,phone=?,ghana_card=?,ghana_card_valid=?,
-                        region=?,email=?,animal_type=?,total_count=?,sick_count=?,
+                        region=?,email=?,total_count=?,sick_count=?,
                         housing_type=?,purpose=?,feed_source=?,water_source=?,
-                        nearest_vet=?,notes=?,latitude=?,longitude=?,gps_accuracy=?,gps_address=?,
-                        updated_at=datetime('now')
-                    WHERE session_id=?
+                        nearest_vet=?,notes=?,latitude=?,longitude=?,
+                        gps_accuracy=?,gps_address=?,updated_at=datetime('now')
+                    WHERE session_id=? AND animal_type=?
                 """,(data.get("farmer_name",""),data.get("phone",""),
                      ghana_card,ghana_card_valid,
                      data.get("region","greater_accra"),data.get("email",""),
-                     animal_type,
                      data.get("total_count",0),data.get("sick_count",0),
                      data.get("housing_type",""),data.get("purpose",""),
                      data.get("feed_source",""),data.get("water_source",""),
                      data.get("nearest_vet",""),data.get("notes",""),
-                     lat,lon,acc,addr,sid))
+                     lat,lon,acc,addr,sid,animal_type))
             else:
                 db.execute("""
                     INSERT INTO livestock_profiles
@@ -877,10 +922,22 @@ def api_save_livestock():
                      data.get("nearest_vet",""),data.get("notes",""),
                      lat,lon,acc,addr))
             db.commit()
-        return jsonify({"success":True})
+        return jsonify({"success":True,"animal_type":animal_type})
     except Exception as e:
         print(f"[livestock save error] {e}")
         return jsonify({"success":False,"error":str(e)}),500
+
+@app.route("/api/livestock/<int:livestock_id>", methods=["DELETE"])
+def api_delete_livestock(livestock_id):
+    if not is_registered():
+        return jsonify({"success":False}), 401
+    sid=get_sid()
+    with get_db() as db:
+        db.execute("DELETE FROM livestock_profiles WHERE id=? AND session_id=?",(livestock_id,sid))
+        db.commit()
+    return jsonify({"success":True})
+
+
 
 # ---------------------------------------------------------------------------
 # Usage
@@ -1366,7 +1423,57 @@ def api_register_lender():
         print(f"[lender register error] {e}")
         return jsonify({"success":False,"error":"Registration failed. Please try again."}),500
 
-@app.route("/api/credit/lenders", methods=["GET"])
+@app.route("/api/farmer/dashboard")
+def api_farmer_dashboard():
+    if not is_registered():
+        return jsonify({"error":"Not registered","gate":"register"}), 401
+    sid=get_sid()
+    with get_db() as db:
+        user     = db.execute("SELECT * FROM users WHERE session_id=?",(sid,)).fetchone()
+        farm     = db.execute("SELECT * FROM farm_profiles WHERE session_id=?",(sid,)).fetchone()
+        animals  = db.execute("SELECT * FROM livestock_profiles WHERE session_id=? ORDER BY created_at",(sid,)).fetchall()
+        diary_count = db.execute("SELECT COUNT(*) FROM health_logs WHERE session_id=?",(sid,)).fetchone()[0]
+        usage_count = db.execute("SELECT COUNT(*) FROM usage WHERE session_id=?",(sid,)).fetchone()[0]
+        recent_usage = db.execute(
+            "SELECT question,created_at FROM usage WHERE session_id=? ORDER BY created_at DESC LIMIT 5",
+            (sid,)).fetchall()
+    # Build score
+    score=0
+    if user and user["registered"]: score+=15
+    if farm and farm["ghana_card_valid"]: score+=25
+    elif farm and farm["ghana_card"]: score+=10
+    if farm and farm["farm_size"]: score+=10
+    if farm and farm["crops"]: score+=10
+    if farm and farm["soil_type"]: score+=5
+    if farm and farm["water_source"]: score+=5
+    if farm and farm.get("latitude"): score+=10
+    if animals: score+=10
+    if diary_count>=5: score+=10
+    elif diary_count>0: score+=5
+    if usage_count>=10: score+=5
+    rating="Excellent" if score>=80 else "Good" if score>=60 else "Fair" if score>=40 else "Building"
+    return jsonify({
+        "success":True,
+        "farmer":{"name":user["name"] if user else "","region":user["region"] if user else "","phone":user["phone"] if user else "","plan":user["plan"] if user else "free"},
+        "farm":dict(farm) if farm else None,
+        "animals":[dict(a) for a in animals],
+        "diary_count":diary_count,
+        "usage_count":usage_count,
+        "recent_questions":[{"q":r["question"][:60],"at":r["created_at"]} for r in recent_usage],
+        "score":{"value":score,"rating":rating},
+    })
+
+@app.route("/api/auth/check-phone", methods=["POST"])
+def api_check_phone():
+    """Check if a phone number is already registered — for inline registration."""
+    data=request.get_json() or {}
+    phone=(data.get("phone","") or "").strip()
+    if not phone: return jsonify({"exists":False})
+    with get_db() as db:
+        u=db.execute("SELECT id FROM users WHERE phone=? AND registered=1",(phone,)).fetchone()
+    return jsonify({"exists":bool(u)})
+
+
 def api_get_lenders():
     """Get lenders directory — Phase B."""
     region = request.args.get("region","")
