@@ -458,6 +458,72 @@ async function inlineCropLogin(){
   }
 }
 
+async function handleLiveSave(){
+  if(USER_REGISTERED || window._registered){
+    USER_REGISTERED = true;
+    await saveLivestockProfile();
+    return;
+  }
+  const phone=(document.getElementById('lFarmerPhone')||{value:''}).value.trim();
+  const regDiv=document.getElementById('liveInlineReg');
+  if(!regDiv) return;
+  const exists=phone?await checkPhoneExists(phone):false;
+  if(exists){
+    regDiv.innerHTML=`<div class="inline-login-box">
+      <div class="inline-box-title">🔑 Sign in to save your livestock profile</div>
+      <input class="inline-inp" id="lirPassword" type="password" placeholder="Your password"/>
+      <button class="inline-save-btn" style="background:#1A2E4A;color:#fff;" onclick="inlineLiveLogin()">Sign in &amp; save →</button>
+      <div style="font-size:11px;color:var(--ts);text-align:center;margin-top:6px;"><a href="/forgot-password" style="color:#1A2E4A;">Forgot password?</a></div>
+      <div id="lirErr" style="font-size:12px;color:#A32D2D;margin-top:5px;display:none;"></div>
+    </div>`;
+  } else {
+    regDiv.innerHTML=`<div class="inline-reg-box">
+      <div class="inline-box-title">🌿 Create your free account to save</div>
+      <input class="inline-inp" id="lirName" type="text" placeholder="Your full name"/>
+      <input class="inline-inp" id="lirPass" type="password" placeholder="Create a password (at least 6 characters)"/>
+      <button class="inline-save-btn" style="background:#2C7A3F;color:#fff;" onclick="inlineLiveRegister()">Save &amp; create account →</button>
+      <div id="lirErr" style="font-size:12px;color:#A32D2D;margin-top:5px;display:none;"></div>
+    </div>`;
+  }
+}
+
+async function inlineLiveRegister(){
+  const name=(document.getElementById('lirName')||{value:''}).value.trim();
+  const phone=(document.getElementById('lFarmerPhone')||{value:''}).value.trim();
+  const pw=(document.getElementById('lirPass')||{value:''}).value.trim();
+  const region=document.getElementById('lRegion')?.value||'greater_accra';
+  const err=document.getElementById('lirErr');
+  if(!name){if(err){err.textContent='Please enter your name.';err.style.display='block';}return;}
+  if(!pw||pw.length<6){if(err){err.textContent='Password must be at least 6 characters.';err.style.display='block';}return;}
+  const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,phone,password:pw,region})});
+  const d=await r.json();
+  if(d.success){
+    USER_REGISTERED=true; window._registered=true;
+    document.getElementById('liveInlineReg').innerHTML='';
+    await saveLivestockProfile();
+  } else {
+    if(err){err.textContent=d.error||'Registration failed.';err.style.display='block';}
+  }
+}
+
+async function inlineLiveLogin(){
+  const phone=(document.getElementById('lFarmerPhone')||{value:''}).value.trim();
+  const pw=(document.getElementById('lirPassword')||{value:''}).value.trim();
+  const err=document.getElementById('lirErr');
+  if(!pw){if(err){err.textContent='Please enter your password.';err.style.display='block';}return;}
+  const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({phone,password:pw})});
+  const d=await r.json();
+  if(d.success){
+    USER_REGISTERED=true; window._registered=true;
+    document.getElementById('liveInlineReg').innerHTML='';
+    await saveLivestockProfile();
+  } else {
+    if(err){err.textContent=d.error||'Sign in failed.';err.style.display='block';}
+  }
+}
+
 {% raw %}
   window.dataLayer=window.dataLayer||[];
   function gtag(){dataLayer.push(arguments);}
@@ -1388,7 +1454,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       </div>
           <div class="fg"><div class="lbl">Email (optional)</div><input class="inp" type="email" id="lEmail" placeholder="e.g. kwame@gmail.com"/></div>
         </div>
-        <button class="save-btn a" onclick="saveLivestockProfile()" style="margin-top:.5rem;">💾 Save profile</button>
+        <div id="liveInlineReg"></div>
+        <button class="save-btn a" onclick="handleLiveSave()" style="margin-top:.5rem;">💾 Save profile</button>
         <div class="saved-ok a" id="liveProfileSaved">✅ Livestock profile saved!</div>
       </div>
     </div>
@@ -2198,8 +2265,17 @@ async function saveLivestockProfile(){
   try{
     const resp=await fetch('/api/livestock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const data=await resp.json();
-    if(data.success){showSaved('liveProfileSaved','a');if(typeof gtag!=='undefined') trackSave('livestock');}
-  }catch(e){alert('Error saving profile. Please try again.');}
+    if(data.success){
+      showSaved('liveProfileSaved','a');
+      if(typeof gtag!=='undefined') trackSave('livestock');
+      loadLivestockAnimals();
+    } else if(data.gate==='register'){
+      if(!USER_REGISTERED) handleLiveSave();
+      else alert('Session error. Please refresh and try again.');
+    } else {
+      alert('Save failed: '+(data.error||'Please try again.'));
+    }
+  }catch(e){alert('Error saving profile. Please check your connection.');}
 }
 
 async function saveAnimalDetails(){
