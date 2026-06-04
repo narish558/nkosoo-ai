@@ -335,8 +335,22 @@ def hash_password(pw):
     return hashlib.sha256(pw.strip().encode()).hexdigest()
 
 def is_registered():
-    """Check if current session user is explicitly registered (session-based only)."""
-    return session.get("registered", False) is True
+    """Check if current session user is registered — session first, then DB fallback."""
+    if session.get("registered") is True:
+        return True
+    # Fallback: check DB in case session was cleared but farmer is logged in via cookie
+    try:
+        sid = get_sid()
+        with get_db() as db:
+            u = db.execute(
+                "SELECT registered FROM users WHERE session_id=? AND registered=1",
+                (sid,)).fetchone()
+            if u:
+                session["registered"] = True  # restore session flag
+                return True
+    except:
+        pass
+    return False
 
 def get_or_create_user(sid):
     with get_db() as db:
