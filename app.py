@@ -1101,6 +1101,11 @@ def admin_logout():
 
 # ---------------------------------------------------------------------------
 # Auth — register / login / logout
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/app")
+
 # ---------------------------------------------------------------------------
 @app.route("/register", methods=["GET","POST"])
 def register():
