@@ -1185,19 +1185,23 @@ def login():
             """,(phone,pw_hash)).fetchone()
             if not u:
                 return jsonify({"success":False,"error":"Incorrect phone or password."}), 401
-            # Link this browser session to registered user
-            old_sid = u["session_id"]
-            new_sid = get_sid()
-            if old_sid != new_sid:
-                # Merge sessions — update all tables to new sid
+            # Use the registered user's existing session_id — do NOT overwrite it
+            registered_sid = u["session_id"]
+            current_sid    = get_sid()
+            if registered_sid != current_sid:
+                # Migrate any anonymous activity from current browser to registered account
                 try:
-                    db.execute("UPDATE users SET session_id=? WHERE session_id=?",(new_sid,old_sid))
-                    for tbl in ["usage","payments","farm_profiles","livestock_profiles","health_logs"]:
-                        db.execute(f"UPDATE {tbl} SET session_id=? WHERE session_id=?",(new_sid,old_sid))
+                    for tbl in ["usage","health_logs"]:
+                        db.execute(f"UPDATE {tbl} SET session_id=? WHERE session_id=?",(registered_sid,current_sid))
+                    # Delete the anonymous user record if it exists (no profile data to keep)
+                    db.execute("DELETE FROM users WHERE session_id=? AND registered=0",(current_sid,))
                     db.commit()
-                except: pass
+                except Exception as merge_err:
+                    print(f"[login merge] {merge_err}")
+            # Set session to the registered user's permanent session_id
+            session["sid"]        = registered_sid
             session["registered"] = True
-            session["user_name"]   = u["name"]
+            session["user_name"]  = u["name"]
         return jsonify({"success":True,"name":u["name"],"plan":u["plan"],"redirect":"/app"})
     except Exception as e:
         print(f"[login error] {e}")
