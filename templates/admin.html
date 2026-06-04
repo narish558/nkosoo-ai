@@ -7,75 +7,88 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#F4F5F7;color:#1A1A18;min-height:100vh;}
-.topbar{background:#1A2E4A;padding:0 1.5rem;height:54px;display:flex;align-items:center;justify-content:space-between;}
+
+/* TOPBAR */
+.topbar{background:#1A2E4A;padding:0 1.5rem;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .topbar-left{display:flex;align-items:center;gap:10px;}
 .topbar-logo{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:18px;}
 .topbar-title{font-size:15px;font-weight:600;color:#fff;}
 .topbar-sub{font-size:11px;color:rgba(255,255,255,0.45);}
 .topbar-right{display:flex;align-items:center;gap:10px;}
-.topbar-badge{font-size:11px;padding:4px 12px;border-radius:20px;background:rgba(126,200,80,0.15);color:#7EC850;border:0.5px solid rgba(126,200,80,0.3);}
+.live-badge{font-size:11px;padding:4px 12px;border-radius:20px;background:rgba(126,200,80,0.15);color:#7EC850;border:0.5px solid rgba(126,200,80,0.3);}
 .logout-btn{font-size:12px;color:rgba(255,255,255,0.5);text-decoration:none;padding:5px 10px;border:0.5px solid rgba(255,255,255,0.15);border-radius:6px;}
 .logout-btn:hover{color:#fff;}
 
-.wrap{max-width:1100px;margin:0 auto;padding:1.5rem 1.25rem;}
+/* LAYOUT */
+.wrap{max-width:1100px;margin:0 auto;padding:1.5rem 1.25rem 3rem;}
 
-/* Section titles */
-.st{font-size:11px;font-weight:600;color:#8A9099;letter-spacing:.08em;text-transform:uppercase;margin:1.75rem 0 .75rem;}
+/* SECTION TITLES */
+.st{font-size:11px;font-weight:600;color:#8A9099;letter-spacing:.08em;text-transform:uppercase;margin:1.75rem 0 .75rem;display:flex;align-items:center;gap:6px;}
 .st:first-child{margin-top:0;}
 
-/* Metric grid */
-.mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:.5rem;}
-.m{background:#fff;border:0.5px solid #E0DED8;border-radius:12px;padding:1rem;}
+/* METRIC GRID */
+.mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:.5rem;}
+.m{background:#fff;border:0.5px solid #E0DED8;border-radius:12px;padding:.875rem 1rem;}
 .ml{font-size:11px;color:#8A9099;margin-bottom:4px;}
-.mv{font-size:26px;font-weight:600;color:#1A1A18;}
+.mv{font-size:26px;font-weight:600;color:#1A1A18;line-height:1;}
 .mv.g{color:#2C7A3F;}
 .mv.b{color:#1A2E4A;}
 .mv.a{color:#C4873A;}
 .mv.r{color:#A32D2D;}
 .ms{font-size:11px;color:#8A9099;margin-top:3px;}
 
-/* Cards */
+/* CARDS */
 .card{background:#fff;border:0.5px solid #E0DED8;border-radius:12px;padding:1.25rem;margin-bottom:1rem;}
-.card-title{font-size:14px;font-weight:600;color:#1A1A18;margin-bottom:.875rem;display:flex;align-items:center;gap:8px;}
+.card-title{font-size:14px;font-weight:600;color:#1A1A18;margin-bottom:.875rem;}
+.card-urgent{border-left:3px solid #C4873A;}
 
-/* Tables */
+/* TABLES */
 table{width:100%;border-collapse:collapse;font-size:13px;}
 th{text-align:left;font-size:11px;font-weight:500;color:#8A9099;text-transform:uppercase;letter-spacing:.05em;padding:.5rem .75rem;border-bottom:1px solid #E0DED8;}
-td{padding:.625rem .75rem;border-bottom:0.5px solid #F0EEE8;color:#1A1A18;}
+td{padding:.625rem .75rem;border-bottom:0.5px solid #F0EEE8;color:#1A1A18;vertical-align:top;}
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:#FAFAF8;}
 
-/* Badges */
-.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;}
+/* BADGES */
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;white-space:nowrap;}
 .badge-green{background:#EAF3DE;color:#2C7A3F;}
 .badge-navy{background:#E8EDF5;color:#1A2E4A;}
 .badge-amber{background:#FBF1E8;color:#C4873A;}
 .badge-red{background:#FCEBEB;color:#A32D2D;}
 .badge-gray{background:#F0EEE8;color:#5F5E5A;}
+.badge-teal{background:#E1F5EE;color:#0F6E56;}
 
-/* Buttons */
-.btn{display:inline-block;font-size:12px;padding:5px 14px;border-radius:6px;border:none;cursor:pointer;font-family:inherit;text-decoration:none;}
+/* BUTTONS */
+.btn{display:inline-block;font-size:12px;padding:5px 14px;border-radius:6px;border:none;cursor:pointer;font-family:inherit;text-decoration:none;white-space:nowrap;}
 .btn-green{background:#2C7A3F;color:#fff;}
 .btn-navy{background:#1A2E4A;color:#fff;}
 .btn-red{background:#A32D2D;color:#fff;}
 .btn-gray{background:#E0DED8;color:#1A1A18;}
+.btn-amber{background:#C4873A;color:#fff;}
 
-/* Progress bar */
-.prog{height:6px;background:#E0DED8;border-radius:3px;overflow:hidden;margin-top:4px;}
-.prog-fill{height:6px;border-radius:3px;}
+/* PROGRESS BAR */
+.prog{height:5px;background:#E0DED8;border-radius:3px;overflow:hidden;margin-top:5px;}
+.prog-fill{height:5px;border-radius:3px;}
 
-/* Two column layout */
+/* 2-COL */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
-@media(max-width:700px){.two-col{grid-template-columns:1fr;}}
+@media(max-width:680px){.two-col{grid-template-columns:1fr;}}
 
-/* Footer */
+/* FEATURE CHIPS */
+.chip-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:.5rem;}
+.chip{font-size:11px;padding:4px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;}
+.chip-live{background:#EAF3DE;color:#2C7A3F;}
+.chip-free{background:#E8EDF5;color:#1A2E4A;}
+.chip-pro{background:#FBF1E8;color:#C4873A;}
+.chip-new{background:#E1F5EE;color:#0F6E56;}
+
+/* FOOTER */
 footer{text-align:center;font-size:11px;color:#8A9099;padding:2rem 1rem;border-top:0.5px solid #E0DED8;margin-top:2rem;}
 footer a{color:#2C7A3F;text-decoration:none;}
 </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-left">
     <div class="topbar-logo">🌿</div>
@@ -85,105 +98,77 @@ footer a{color:#2C7A3F;text-decoration:none;}
     </div>
   </div>
   <div class="topbar-right">
-    <div class="topbar-badge">🟢 Live</div>
+    <div class="live-badge">🟢 Live</div>
     <a href="/admin/logout" class="logout-btn">Sign out</a>
   </div>
 </div>
 
 <div class="wrap">
 
-<!-- ── PLATFORM OVERVIEW ── -->
+<!-- PLATFORM OVERVIEW -->
 <div class="st">📊 Platform overview</div>
 <div class="mg">
-  <div class="m">
-    <div class="ml">Total sessions</div>
-    <div class="mv">{{ total_users }}</div>
-    <div class="ms">anonymous + registered</div>
-  </div>
-  <div class="m">
-    <div class="ml">Registered farmers</div>
-    <div class="mv g">{{ registered_users }}</div>
-    <div class="ms">name + phone verified</div>
-  </div>
-  <div class="m">
-    <div class="ml">Pro subscribers</div>
-    <div class="mv b">{{ pro_users }}</div>
-    <div class="ms">GHS 30/month</div>
-  </div>
-  <div class="m">
-    <div class="ml">Monthly revenue</div>
-    <div class="mv g" style="font-size:20px;">GHS {{ total_revenue }}</div>
-    <div class="ms">{{ pro_users }} × GHS 30</div>
-  </div>
-  <div class="m">
-    <div class="ml">AI questions today</div>
-    <div class="mv">{{ questions_today }}</div>
-  </div>
-  <div class="m">
-    <div class="ml">Diagnoses today</div>
-    <div class="mv a">{{ diagnoses_today }}</div>
-  </div>
-  <div class="m">
-    <div class="ml">Voice sessions today</div>
-    <div class="mv b">{{ voice_today }}</div>
-  </div>
-  <div class="m">
-    <div class="ml">Break-even</div>
-    <div class="mv" style="font-size:18px;">24 Pro</div>
-    <div class="ms">subscribers needed</div>
+  <div class="m"><div class="ml">Total sessions</div><div class="mv">{{ total_users }}</div><div class="ms">anonymous + registered</div></div>
+  <div class="m"><div class="ml">Registered farmers</div><div class="mv g">{{ registered_users }}</div><div class="ms">name + phone saved</div></div>
+  <div class="m"><div class="ml">Pro subscribers</div><div class="mv b">{{ pro_users }}</div><div class="ms">GHS 30/month</div></div>
+  <div class="m"><div class="ml">Monthly revenue</div><div class="mv g" style="font-size:18px;">GHS {{ total_revenue }}</div><div class="ms">{{ pro_users }} × GHS 30</div></div>
+  <div class="m"><div class="ml">AI questions today</div><div class="mv">{{ questions_today }}</div><div class="ms">all tiers</div></div>
+  <div class="m"><div class="ml">Diagnoses today</div><div class="mv a">{{ diagnoses_today }}</div><div class="ms">Pro feature</div></div>
+  <div class="m"><div class="ml">Voice sessions today</div><div class="mv b">{{ voice_today }}</div><div class="ms">Pro feature</div></div>
+  <div class="m"><div class="ml">Break-even</div><div class="mv" style="font-size:18px;">24 Pro</div><div class="ms">subscribers needed</div></div>
+</div>
+
+<!-- PLATFORM FEATURES LIVE -->
+<div class="st">✅ Features live on platform</div>
+<div class="card">
+  <div class="card-title">11 features · www.nkosooai.com/app</div>
+  <div class="chip-grid">
+    <div class="chip chip-live">🌤 Live weather · 16 regions</div>
+    <div class="chip chip-live">📈 Market prices · GHS</div>
+    <div class="chip chip-live">🐛 Pest & disease alerts</div>
+    <div class="chip chip-free">🌾 My Crops · Ghana Card</div>
+    <div class="chip chip-free">📅 AI planting calendars</div>
+    <div class="chip chip-free">📔 Farm & livestock diary</div>
+    <div class="chip chip-free">🐄 Livestock · 6 types · multi-profile</div>
+    <div class="chip chip-free">📍 GPS farm location</div>
+    <div class="chip chip-free">💳 Credit access · score + PDF</div>
+    <div class="chip chip-free">🏠 Farmer dashboard · My Farm</div>
+    <div class="chip chip-free">🔬 Agronomist directory</div>
+    <div class="chip chip-free">🏦 Lender directory · self-registration</div>
+    <div class="chip chip-pro">📷 AI photo diagnosis · crops + animals</div>
+    <div class="chip chip-pro">🎤 Voice · Twi · Dagbani · Hausa</div>
+    <div class="chip chip-new">🤖 Ask AI · unlimited Pro</div>
   </div>
 </div>
 
-<!-- ── FARM PROFILES ── -->
+<!-- CROP PROFILES -->
 <div class="st">🌾 Crop farm profiles</div>
 <div class="mg">
-  <div class="m">
-    <div class="ml">Total crop profiles</div>
-    <div class="mv g">{{ profiles }}</div>
-  </div>
-  <div class="m">
-    <div class="ml">Ghana Card validated</div>
-    <div class="mv g">{{ verified }}</div>
-    <div class="ms">format verified</div>
-  </div>
-  <div class="m">
-    <div class="ml">Avg farm size</div>
-    <div class="mv">{{ avg_farm_size }}</div>
-    <div class="ms">acres/hectares</div>
-  </div>
+  <div class="m"><div class="ml">Total farm profiles</div><div class="mv g">{{ profiles }}</div></div>
+  <div class="m"><div class="ml">Ghana Card validated</div><div class="mv g">{{ verified }}</div><div class="ms">format verified</div></div>
+  <div class="m"><div class="ml">Avg farm size</div><div class="mv">{{ avg_farm_size }}</div><div class="ms">acres / hectares</div></div>
+  <div class="m"><div class="ml">GPS recorded</div><div class="mv b">{{ credit_score_profiles }}</div><div class="ms">with coordinates</div></div>
 </div>
 
-<!-- ── LIVESTOCK ── -->
+<!-- LIVESTOCK -->
 <div class="st">🐄 Livestock profiles</div>
 <div class="mg">
-  <div class="m">
-    <div class="ml">Total livestock profiles</div>
-    <div class="mv a">{{ livestock_cnt }}</div>
-  </div>
-  <div class="m">
-    <div class="ml">Ghana Card validated</div>
-    <div class="mv g">{{ livestock_verified }}</div>
-  </div>
-  <div class="m">
-    <div class="ml">Sick/isolated animals</div>
-    <div class="mv r">{{ sick_animals }}</div>
-    <div class="ms">reported this period</div>
-  </div>
+  <div class="m"><div class="ml">Total livestock profiles</div><div class="mv a">{{ livestock_cnt }}</div><div class="ms">all animal types</div></div>
+  <div class="m"><div class="ml">Ghana Card validated</div><div class="mv g">{{ livestock_verified }}</div></div>
+  <div class="m"><div class="ml">Sick / isolated animals</div><div class="mv r">{{ sick_animals }}</div><div class="ms">reported</div></div>
 </div>
 
 {% if animal_stats %}
-<div class="card" style="margin-bottom:1rem;">
-  <div class="card-title">🐄 Animals by type</div>
+<div class="card">
+  <div class="card-title">🐾 Animals by type</div>
   <table>
     <thead><tr><th>Animal type</th><th>Farmers</th><th>Share</th></tr></thead>
     <tbody>
     {% for row in animal_stats %}
     <tr>
-      <td>{{ row.animal_type|title }}</td>
-      <td><strong>{{ row.cnt }}</strong></td>
-      <td>
-        <div class="prog"><div class="prog-fill" style="width:{{ (row.cnt / (livestock_cnt or 1) * 100)|round }}%;background:#C4873A;"></div></div>
-      </td>
+      <td><strong>{{ row.animal_type|title }}</strong></td>
+      <td>{{ row.cnt }}</td>
+      <td><div class="prog"><div class="prog-fill" style="width:{{ (row.cnt / (livestock_cnt or 1) * 100)|round }}%;background:#C4873A;"></div></div></td>
     </tr>
     {% endfor %}
     </tbody>
@@ -191,67 +176,35 @@ footer a{color:#2C7A3F;text-decoration:none;}
 </div>
 {% endif %}
 
-<!-- ── CREDIT ACCESS ── -->
+<!-- CREDIT ACCESS -->
 <div class="st">💳 Credit access</div>
 <div class="mg">
-  <div class="m">
-    <div class="ml">Total loan applications</div>
-    <div class="mv b">{{ credit_apps }}</div>
-    <div class="ms">all time</div>
-  </div>
-  <div class="m">
-    <div class="ml">Applications this week</div>
-    <div class="mv g">{{ credit_apps_week }}</div>
-  </div>
-  <div class="m">
-    <div class="ml">Total amount requested</div>
-    <div class="mv a" style="font-size:18px;">GHS {{ "{:,.0f}".format(total_requested) }}</div>
-  </div>
-  <div class="m">
-    <div class="ml">Credit profiles eligible</div>
-    <div class="mv">{{ credit_score_profiles }}</div>
-    <div class="ms">have farm profiles</div>
-  </div>
-  <div class="m">
-    <div class="ml">Listed lenders</div>
-    <div class="mv b">{{ lender_count }}</div>
-    <div class="ms">{{ lender_verified }} verified</div>
-  </div>
-  <div class="m">
-    <div class="ml">Top lender</div>
-    <div class="mv" style="font-size:14px;">{{ top_lender[0] if top_lender else 'None yet' }}</div>
-    <div class="ms">{{ top_lender[1]|string + ' applications' if top_lender else '' }}</div>
-  </div>
+  <div class="m"><div class="ml">Loan applications</div><div class="mv b">{{ credit_apps }}</div><div class="ms">all time</div></div>
+  <div class="m"><div class="ml">Applications this week</div><div class="mv g">{{ credit_apps_week }}</div></div>
+  <div class="m"><div class="ml">Total GHS requested</div><div class="mv a" style="font-size:18px;">GHS {{ "{:,.0f}".format(total_requested) }}</div></div>
+  <div class="m"><div class="ml">Eligible credit profiles</div><div class="mv">{{ credit_score_profiles }}</div><div class="ms">have farm profiles</div></div>
+  <div class="m"><div class="ml">Listed lenders</div><div class="mv b">{{ lender_count }}</div><div class="ms">{{ lender_verified }} verified</div></div>
+  <div class="m"><div class="ml">Top lender</div><div class="mv" style="font-size:13px;padding-top:4px;">{{ top_lender[0] if top_lender else '—' }}</div><div class="ms">{{ top_lender[1]|string + ' applications' if top_lender else 'No applications yet' }}</div></div>
 </div>
 
 {% if pending_lenders %}
-<div class="card" style="border-left:3px solid #C4873A;">
-  <div class="card-title">🏦 Lenders awaiting verification — {{ pending_lenders|length }} pending
-    <span class="badge badge-amber" style="margin-left:6px;">Action required</span>
-  </div>
-  <p style="font-size:12px;color:#8A9099;margin-bottom:.875rem;">These institutions submitted registration forms and are waiting for your review. Click ✓ Verify to make them live in the farmer-facing lender directory.</p>
+<div class="card card-urgent">
+  <div class="card-title">🏦 Lenders awaiting verification — {{ pending_lenders|length }} pending <span class="badge badge-amber">Action required</span></div>
+  <p style="font-size:12px;color:#8A9099;margin-bottom:.875rem;">Click ✓ Verify to make a lender live in the farmer-facing directory. Lenders self-register at www.nkosooai.com/register-lender.</p>
   <table>
-    <thead><tr><th>Institution</th><th>Phone / WhatsApp</th><th>Region</th><th>Loan range</th><th>Interest</th><th>Loan types</th><th>Action</th></tr></thead>
+    <thead><tr><th>Institution</th><th>Phone / WhatsApp</th><th>Region</th><th>Loan range</th><th>Interest</th><th>Action</th></tr></thead>
     <tbody>
     {% for l in pending_lenders %}
     <tr>
       <td>
         <strong>{{ l.name }}</strong>
         {% if l.email %}<div style="font-size:11px;color:#8A9099;">{{ l.email }}</div>{% endif %}
-        {% if l.website %}<div style="font-size:11px;color:#2C7A3F;">{{ l.website }}</div>{% endif %}
       </td>
-      <td>
-        <div>{{ l.phone }}</div>
-        {% if l.whatsapp %}<div style="font-size:11px;color:#8A9099;">WA: {{ l.whatsapp }}</div>{% endif %}
-      </td>
+      <td><div>{{ l.phone }}</div>{% if l.whatsapp %}<div style="font-size:11px;color:#8A9099;">WA: {{ l.whatsapp }}</div>{% endif %}</td>
       <td>{{ 'All Ghana' if l.region == 'national' else l.region|title }}</td>
-      <td>GHS {{ l.loan_min|int|string }}–{{ l.loan_max|int|string }}</td>
+      <td>GHS {{ l.loan_min|int }}–{{ l.loan_max|int }}</td>
       <td style="font-size:12px;">{{ l.interest_rate or '—' }}</td>
-      <td style="font-size:11px;color:#5F5E5A;max-width:160px;">{{ l.loan_types or '—' }}</td>
-      <td style="display:flex;gap:5px;">
-        <a href="/admin/lenders/verify/{{ l.id }}" class="btn btn-green">✓ Verify</a>
-        <a href="/admin/lenders/reject/{{ l.id }}" class="btn btn-red" onclick="return confirm('Reject this lender? They will be removed from pending.')">✕ Reject</a>
-      </td>
+      <td><a href="/admin/lenders/verify/{{ l.id }}" class="btn btn-green">✓ Verify</a></td>
     </tr>
     {% endfor %}
     </tbody>
@@ -259,32 +212,23 @@ footer a{color:#2C7A3F;text-decoration:none;}
 </div>
 {% else %}
 <div class="card" style="background:#F9FBF7;border:0.5px dashed #C0DD97;">
-  <div style="text-align:center;padding:.5rem;color:#8A9099;font-size:13px;">
-    🏦 No lenders pending verification · Lenders self-register at <strong>www.nkosooai.com/register-lender</strong>
+  <div style="font-size:13px;color:#8A9099;text-align:center;padding:.5rem;">
+    🏦 No lenders pending · Lenders self-register at <strong>www.nkosooai.com/register-lender</strong>
   </div>
 </div>
 {% endif %}
 
-<!-- ── AGRONOMISTS ── -->
+<!-- AGRONOMISTS -->
 <div class="st">🔬 Agronomist directory</div>
 <div class="mg">
-  <div class="m">
-    <div class="ml">Total agronomists</div>
-    <div class="mv">{{ agro_total }}</div>
-  </div>
-  <div class="m">
-    <div class="ml">Verified</div>
-    <div class="mv g">{{ agro_verified }}</div>
-  </div>
-  <div class="m">
-    <div class="ml">Pending verification</div>
-    <div class="mv a">{{ pending_agros|length }}</div>
-  </div>
+  <div class="m"><div class="ml">Total agronomists</div><div class="mv">{{ agro_total }}</div></div>
+  <div class="m"><div class="ml">Verified</div><div class="mv g">{{ agro_verified }}</div></div>
+  <div class="m"><div class="ml">Pending verification</div><div class="mv a">{{ pending_agros|length }}</div></div>
 </div>
 
 {% if pending_agros %}
-<div class="card">
-  <div class="card-title">🔬 Agronomists pending verification ({{ pending_agros|length }})</div>
+<div class="card card-urgent">
+  <div class="card-title">🔬 Agronomists pending verification — {{ pending_agros|length }}</div>
   <table>
     <thead><tr><th>Name</th><th>Phone</th><th>Speciality</th><th>Region</th><th>Fee</th><th>Action</th></tr></thead>
     <tbody>
@@ -303,7 +247,7 @@ footer a{color:#2C7A3F;text-decoration:none;}
 </div>
 {% endif %}
 
-<!-- ── REGIONAL REACH ── -->
+<!-- REGIONAL REACH -->
 <div class="st">📍 Regional reach</div>
 <div class="card">
   <div class="card-title">Farming sessions by region</div>
@@ -314,16 +258,14 @@ footer a{color:#2C7A3F;text-decoration:none;}
     <tr>
       <td>{{ regions[row.region].name if row.region in regions else row.region|title }}</td>
       <td><strong>{{ row.cnt }}</strong></td>
-      <td>
-        <div class="prog"><div class="prog-fill" style="width:{{ (row.cnt / (total_users or 1) * 100)|round }}%;background:#2C7A3F;"></div></div>
-      </td>
+      <td><div class="prog"><div class="prog-fill" style="width:{{ (row.cnt / (total_users or 1) * 100)|round }}%;background:#2C7A3F;"></div></div></td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
 </div>
 
-<!-- ── TOP AI QUESTIONS ── -->
+<!-- TOP AI QUESTIONS -->
 <div class="st">🤖 Top AI questions</div>
 <div class="card">
   <table>
@@ -343,7 +285,7 @@ footer a{color:#2C7A3F;text-decoration:none;}
   </table>
 </div>
 
-<!-- ── RECENT FARMERS ── -->
+<!-- RECENT FARMERS -->
 <div class="st">👥 Recent farmers</div>
 <div class="card">
   <table>
@@ -355,13 +297,9 @@ footer a{color:#2C7A3F;text-decoration:none;}
       <td>{{ u.phone or '—' }}</td>
       <td>{{ regions[u.region].name if u.region and u.region in regions else u.region or '—' }}</td>
       <td>
-        {% if u.plan == 'pro' %}
-          <span class="badge badge-amber">⭐ Pro</span>
-        {% elif u.registered %}
-          <span class="badge badge-green">Free</span>
-        {% else %}
-          <span class="badge badge-gray">Anonymous</span>
-        {% endif %}
+        {% if u.plan == 'pro' %}<span class="badge badge-amber">⭐ Pro</span>
+        {% elif u.registered %}<span class="badge badge-green">Free</span>
+        {% else %}<span class="badge badge-gray">Anonymous</span>{% endif %}
       </td>
       <td style="color:#8A9099;font-size:12px;">{{ u.created_at[:10] if u.created_at else '—' }}</td>
     </tr>
@@ -370,21 +308,22 @@ footer a{color:#2C7A3F;text-decoration:none;}
   </table>
 </div>
 
-<!-- ── QUICK ACTIONS ── -->
+<!-- QUICK ACTIONS -->
 <div class="st">⚡ Quick actions</div>
 <div class="card">
   <div class="card-title">Platform navigation</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
     <a href="/app" target="_blank" class="btn btn-navy">📱 View app</a>
     <a href="/" target="_blank" class="btn btn-navy">🌐 Landing page</a>
+    <a href="/register-lender" target="_blank" class="btn btn-navy">🏦 Lender registration</a>
     <a href="/ecosystem" target="_blank" class="btn btn-gray">🗺 Ecosystem</a>
   </div>
   <div style="margin-top:.875rem;padding-top:.875rem;border-top:0.5px solid #E0DED8;font-size:12px;color:#8A9099;line-height:1.6;">
-    💡 Lenders self-register at <strong style="color:#1A2E4A;">www.nkosooai.com/register-lender</strong> — they appear below as pending and you verify them with one click.
+    💡 Lenders self-register at <strong style="color:#1A2E4A;">www.nkosooai.com/register-lender</strong> — they appear above as pending and you verify them with one click.
   </div>
 </div>
 
-<!-- ── CSV EXPORTS ── -->
+<!-- EXPORT -->
 <div class="st">📥 Export data</div>
 <div class="card">
   <div class="card-title">Download CSV reports</div>
