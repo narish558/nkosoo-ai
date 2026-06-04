@@ -91,11 +91,6 @@ async function submitCreditApp(){
 }
 
 // Load lenders when credit tab opens
-const _origShowTab=showTab;
-function showTab(name){
-  _origShowTab(name);
-  if(name==='credit'){loadLenders();loadCreditScore();}
-}
 
 // ── GPS LOCATION ────────────────────────────────────────────
 async function getGPS(type){
@@ -156,14 +151,6 @@ async function getGPS(type){
     {enableHighAccuracy:true,timeout:15000,maximumAge:0}
   );
 }
-
-// Patch saveCropProfile to include GPS data
-const _origSaveCrop=saveCropProfile;
-async function saveCropProfile(){
-  // GPS fields are already in hidden inputs — they will be included when the form reads them
-  await _origSaveCrop();
-}
-
 // ── INLINE REGISTRATION ─────────────────────────────────────
 async function checkPhoneExists(phone){
   if(!phone||phone.length<10) return false;
@@ -403,16 +390,6 @@ function showDashTab(tab){
     b.classList.toggle('on',['activity','farm','animals','credit'][i]===tab);
   });
 }
-
-// Patch showTab to load dashboard and livestock animals
-const __origShowTab=showTab;
-function showTab(name){
-  __origShowTab(name);
-  if(name==='dashboard') loadDashboard();
-  if(name==='livestock') loadLivestockAnimals();
-}
-
-// ── HANDLE CROP SAVE WITH INLINE REG ────────────────────────
 async function handleCropSave(){
   if(USER_REGISTERED){
     await saveCropProfile();
@@ -1936,6 +1913,9 @@ function showTab(name){
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',names[i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name));
   if(name==='agronomy') loadAgronomists();
+  if(name==='credit'){loadLenders();loadCreditScore();}
+  if(name==='dashboard') loadDashboard();
+  if(name==='livestock') loadLivestockAnimals();
   if(typeof gtag!=='undefined') trackTab(name);
 }
 
@@ -2188,7 +2168,7 @@ async function saveCropProfile(){
       const sel=document.getElementById('cDiaryCrop');
       sel.innerHTML='<option value="all">All crops</option>'+selectedCrops.map(c=>`<option value="${c}">${c}</option>`).join('');
     } else if(data.gate==='register'){
-      document.getElementById('gateModal').classList.add('open');
+      handleCropSave();
     } else {
       alert('Save failed: '+(data.error||'Unknown error. Please try again.'));
     }
