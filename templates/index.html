@@ -164,6 +164,318 @@ async function saveCropProfile(){
   await _origSaveCrop();
 }
 
+// ── INLINE REGISTRATION ─────────────────────────────────────
+async function checkPhoneExists(phone){
+  if(!phone||phone.length<10) return false;
+  try{
+    const r=await fetch('/api/auth/check-phone',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({phone})});
+    const d=await r.json();
+    return d.exists;
+  }catch(e){return false;}
+}
+
+function showInlineReg(containerId,saveFn){
+  const c=document.getElementById(containerId);
+  if(!c) return;
+  c.innerHTML=`
+    <div class="inline-reg-box">
+      <div class="inline-box-title">🌿 Create your free account to save</div>
+      <input class="inline-inp" id="irName" type="text" placeholder="Your full name"/>
+      <input class="inline-inp" id="irPhone" type="tel" placeholder="Phone number (e.g. 0244123456)" oninput="checkIRPhone(this,'${containerId}')"/>
+      <div id="irLoginBox" style="display:none;" class="inline-login-box" style="margin-top:0;">
+        <div class="inline-box-title">🔑 This phone is registered — sign in to save</div>
+        <input class="inline-inp" id="irPassword" type="password" placeholder="Your password"/>
+        <button class="inline-save-btn" style="background:#1A2E4A;color:#fff;" onclick="inlineLogin('${saveFn}')">Sign in &amp; save →</button>
+        <div style="font-size:11px;color:var(--ts);text-align:center;margin-top:6px;"><a href="/forgot-password" style="color:#1A2E4A;">Forgot password?</a></div>
+      </div>
+      <div id="irRegBox">
+        <input class="inline-inp" id="irPass" type="password" placeholder="Create a password (at least 6 characters)"/>
+        <button class="inline-save-btn" style="background:#2C7A3F;color:#fff;" onclick="${saveFn}(true)">Save &amp; create account →</button>
+      </div>
+      <div id="irErr" style="font-size:12px;color:#A32D2D;margin-top:6px;display:none;"></div>
+    </div>`;
+}
+
+async function checkIRPhone(input,containerId){
+  const phone=input.value.trim();
+  if(phone.length<10) return;
+  const exists=await checkPhoneExists(phone);
+  const loginBox=document.getElementById('irLoginBox');
+  const regBox=document.getElementById('irRegBox');
+  if(loginBox&&regBox){
+    loginBox.style.display=exists?'block':'none';
+    regBox.style.display=exists?'none':'block';
+  }
+}
+
+async function inlineRegister(){
+  const name=(document.getElementById('irName')||{value:''}).value.trim();
+  const phone=(document.getElementById('irPhone')||{value:''}).value.trim();
+  const pw=(document.getElementById('irPass')||{value:''}).value.trim();
+  const err=document.getElementById('irErr');
+  if(!name){if(err){err.textContent='Please enter your name.';err.style.display='block';} return false;}
+  if(!phone){if(err){err.textContent='Please enter your phone number.';err.style.display='block';} return false;}
+  if(!pw||pw.length<6){if(err){err.textContent='Password must be at least 6 characters.';err.style.display='block';} return false;}
+  const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,phone,password:pw,region:document.getElementById('cRegion')?.value||'greater_accra'})});
+  const d=await r.json();
+  if(d.success){
+    if(typeof gtag!=='undefined') gtag('event','register_inline');
+    return true;
+  }
+  if(err){err.textContent=d.error||'Registration failed.';err.style.display='block';}
+  return false;
+}
+
+async function inlineLogin(saveFn){
+  const phone=(document.getElementById('irPhone')||{value:''}).value.trim();
+  const pw=(document.getElementById('irPassword')||{value:''}).value.trim();
+  const err=document.getElementById('irErr');
+  if(!phone||!pw){if(err){err.textContent='Phone and password required.';err.style.display='block';} return;}
+  const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({phone,password:pw})});
+  const d=await r.json();
+  if(d.success){
+    window._registered=true;
+    eval(saveFn+'(false)');
+  } else {
+    if(err){err.textContent=d.error||'Sign in failed.';err.style.display='block';}
+  }
+}
+
+// ── MULTIPLE LIVESTOCK TYPES ─────────────────────────────────
+let _liveAnimals=[];
+let _selectedAnimalIdx=null;
+
+const ANIMAL_ICONS={poultry:'🐔',cattle:'🐄',goats:'🐐',sheep:'🐑',pigs:'🐖',fish:'🐟',aquaculture:'🐟'};
+const ANIMAL_LABELS={poultry:'Poultry',cattle:'Cattle',goats:'Goats',sheep:'Sheep',pigs:'Pigs',fish:'Fish/Aquaculture',aquaculture:'Aquaculture'};
+
+async function loadLivestockAnimals(){
+  const r=await fetch('/api/livestock');
+  const animals=await r.json();
+  _liveAnimals=animals;
+  renderAnimalGrid();
+}
+
+function renderAnimalGrid(){
+  const grid=document.getElementById('animalTypeGrid');
+  if(!grid) return;
+  let html=_liveAnimals.map((a,i)=>`
+    <div class="animal-type-card${_selectedAnimalIdx===i?' selected':''}" onclick="selectAnimal(${i})">
+      <div class="atc-icon">${ANIMAL_ICONS[a.animal_type]||'🐾'}</div>
+      <div class="atc-name">${ANIMAL_LABELS[a.animal_type]||a.animal_type}</div>
+      <div class="atc-count">${a.total_count||0} animals</div>
+    </div>`).join('');
+  html+=`<button class="add-animal-btn" onclick="addNewAnimalType()">+ Add animal type</button>`;
+  grid.innerHTML=html;
+  if(_selectedAnimalIdx!==null&&_liveAnimals[_selectedAnimalIdx]){
+    populateLivestockForm(_liveAnimals[_selectedAnimalIdx]);
+  }
+}
+
+function selectAnimal(idx){
+  _selectedAnimalIdx=idx;
+  renderAnimalGrid();
+  populateLivestockForm(_liveAnimals[idx]);
+}
+
+function populateLivestockForm(a){
+  const fields={lFarmerName:'farmer_name',lFarmerPhone:'phone',lGhanaCard:'ghana_card',
+    lRegion:'region',lEmail:'email',lAnimalType:'animal_type',
+    lTotalCount:'total_count',lSickCount:'sick_count',
+    lHousing:'housing_type',lPurpose:'purpose',
+    lFeed:'feed_source',lWater:'water_source',lVet:'nearest_vet',lNotes:'notes'};
+  for(const [id,key] of Object.entries(fields)){
+    const el=document.getElementById(id);
+    if(el&&a[key]!==undefined) el.value=a[key]||'';
+  }
+}
+
+function addNewAnimalType(){
+  _selectedAnimalIdx=null;
+  const form=document.getElementById('liveProfileForm');
+  if(form){
+    form.reset();
+    const typeEl=document.getElementById('lAnimalType');
+    if(typeEl) typeEl.value='';
+  }
+  renderAnimalGrid();
+}
+
+// ── FARMER DASHBOARD ─────────────────────────────────────────
+let _dashData=null;
+
+async function loadDashboard(){
+  document.getElementById('dashLoading').style.display='block';
+  document.getElementById('dashContent').style.display='none';
+  document.getElementById('dashNotReg').style.display='none';
+  const r=await fetch('/api/farmer/dashboard');
+  if(r.status===401){
+    document.getElementById('dashLoading').style.display='none';
+    document.getElementById('dashNotReg').style.display='block';
+    return;
+  }
+  const d=await r.json();
+  if(!d.success){
+    document.getElementById('dashLoading').style.display='none';
+    document.getElementById('dashNotReg').style.display='block';
+    return;
+  }
+  _dashData=d;
+  document.getElementById('dashLoading').style.display='none';
+  document.getElementById('dashContent').style.display='block';
+
+  const REGIONS={greater_accra:'Greater Accra',ashanti:'Ashanti',central:'Central',
+    eastern:'Eastern',western:'Western',northern:'Northern',upper_east:'Upper East',
+    upper_west:'Upper West',volta:'Volta',brong_ahafo:'Bono',savannah:'Savannah',
+    north_east:'North East',oti:'Oti',bono_east:'Bono East',western_north:'Western North',ahafo:'Ahafo'};
+
+  document.getElementById('dashName').textContent=d.farmer.name||'Farmer';
+  document.getElementById('dashSub').textContent=
+    `${REGIONS[d.farmer.region]||d.farmer.region||'Ghana'} · ${d.farmer.phone||''}`;
+  document.getElementById('dashPlanBadge').textContent=d.farmer.plan==='pro'?'⭐ Pro':'Free';
+  document.getElementById('dashCrops').textContent=d.farm&&d.farm.crops?d.farm.crops.split(',').length:0;
+  document.getElementById('dashAnimals').textContent=d.animals?d.animals.length:0;
+  document.getElementById('dashDiary').textContent=d.diary_count||0;
+  document.getElementById('dashScore').textContent=d.score.value+'/100';
+
+  // Activity feed
+  const activity=[];
+  if(d.farm&&d.farm.crops) activity.push({icon:'🌾',bg:'#EAF3DE',title:'Crops profile saved',sub:d.farm.crops.split(',').slice(0,3).join(', '),time:'Profile'});
+  if(d.farm&&d.farm.ghana_card_valid) activity.push({icon:'🇬🇭',bg:'#EAF3DE',title:'Ghana Card validated',sub:'Identity verified on farm profile',time:'Profile'});
+  if(d.farm&&d.farm.latitude) activity.push({icon:'📍',bg:'#E8EDF5',title:'GPS location recorded',sub:'Farm coordinates saved',time:'Profile'});
+  if(d.animals&&d.animals.length) d.animals.forEach(a=>activity.push({icon:ANIMAL_ICONS[a.animal_type]||'🐾',bg:'#FBF1E8',title:`${ANIMAL_LABELS[a.animal_type]||a.animal_type} profile`,sub:`${a.total_count||0} animals · ${a.housing_type||''}`,time:'Livestock'}));
+  if(d.diary_count>0) activity.push({icon:'📔',bg:'#EAF3DE',title:`${d.diary_count} diary entries logged`,sub:'Keep logging for a better credit score',time:'Diary'});
+  d.recent_questions.forEach(q=>activity.push({icon:'🤖',bg:'#F0EEE8',title:'AI question asked',sub:q.q,time:q.at?q.at.slice(5,10):''}));
+
+  if(!activity.length) activity.push({icon:'🌱',bg:'#EAF3DE',title:'Welcome to your farm dashboard',sub:'Save your crop or livestock profile to get started',time:'Now'});
+
+  document.getElementById('dashActivity').innerHTML=activity.slice(0,8).map(a=>`
+    <div class="activity-row">
+      <div class="activity-dot" style="background:${a.bg};">${a.icon}</div>
+      <div class="activity-main">
+        <div class="activity-title">${a.title}</div>
+        <div class="activity-sub">${a.sub||''}</div>
+      </div>
+      <div class="activity-time">${a.time||''}</div>
+    </div>`).join('');
+
+  // Farm tab
+  document.getElementById('dashFarm').innerHTML=d.farm?`
+    <div class="card">
+      <div style="font-size:13px;font-weight:500;color:var(--tp);margin-bottom:.75rem;">🌾 Crop farm profile</div>
+      ${[['Farm size',d.farm.farm_size?d.farm.farm_size+' '+d.farm.farm_unit:'Not set'],['Region',REGIONS[d.farm.region]||d.farm.region],['Crops',d.farm.crops||'Not set'],['Soil type',d.farm.soil_type||'Not set'],['Water source',d.farm.water_source||'Not set'],['Ghana Card',d.farm.ghana_card_valid?'✅ Validated':'⚠ Not validated'],['GPS',d.farm.latitude?'✅ Recorded':'Not recorded']].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--bd);font-size:12px;"><span style="color:var(--ts);">${k}</span><span style="font-weight:500;">${v}</span></div>`).join('')}
+    </div>`:'<div style="text-align:center;padding:1.5rem;color:var(--ts);font-size:13px;">No crop profile saved yet. Go to My Crops tab to add one.</div>';
+
+  // Animals tab
+  document.getElementById('dashAnimals').innerHTML=d.animals&&d.animals.length?d.animals.map(a=>`
+    <div class="card" style="margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem;">
+        <span style="font-size:22px;">${ANIMAL_ICONS[a.animal_type]||'🐾'}</span>
+        <div style="font-size:13px;font-weight:500;">${ANIMAL_LABELS[a.animal_type]||a.animal_type}</div>
+        <span style="margin-left:auto;font-size:11px;padding:2px 8px;border-radius:20px;background:#FBF1E8;color:#633806;">${a.total_count||0} animals</span>
+      </div>
+      ${[['Purpose',a.purpose||'—'],['Housing',a.housing_type||'—'],['Feed source',a.feed_source||'—'],['Sick/isolated',a.sick_count||0],['Nearest vet',a.nearest_vet||'—']].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--bd);font-size:12px;"><span style="color:var(--ts);">${k}</span><span>${v}</span></div>`).join('')}
+    </div>`).join(''):'<div style="text-align:center;padding:1.5rem;color:var(--ts);font-size:13px;">No livestock profiles yet. Go to Livestock tab to add animals.</div>';
+
+  // Credit tab
+  const sc=d.score;
+  document.getElementById('dashCredit').innerHTML=`
+    <div class="card">
+      <div style="font-size:13px;font-weight:500;margin-bottom:.875rem;">💳 Farming activity score</div>
+      <div style="font-size:32px;font-weight:600;color:var(--g600);">${sc.value}<span style="font-size:14px;font-weight:400;color:var(--ts);">/100</span></div>
+      <div style="height:6px;background:var(--bd);border-radius:3px;overflow:hidden;margin:8px 0;">
+        <div style="height:6px;background:var(--g600);border-radius:3px;width:${sc.value}%;transition:width .8s;"></div>
+      </div>
+      <div style="font-size:11px;color:var(--ts);margin-bottom:.875rem;">${sc.rating} score · Complete your profile to improve</div>
+      <button class="save-btn" style="background:#1A2E4A;" onclick="showTab('credit')">View full credit profile →</button>
+    </div>`;
+}
+
+function showDashTab(tab){
+  ['activity','farm','animals','credit'].forEach(t=>{
+    const el=document.getElementById('dash'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(el) el.style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('.dash-tab').forEach((b,i)=>{
+    b.classList.toggle('on',['activity','farm','animals','credit'][i]===tab);
+  });
+}
+
+// Patch showTab to load dashboard and livestock animals
+const __origShowTab=showTab;
+function showTab(name){
+  __origShowTab(name);
+  if(name==='dashboard') loadDashboard();
+  if(name==='livestock') loadLivestockAnimals();
+}
+
+// ── HANDLE CROP SAVE WITH INLINE REG ────────────────────────
+async function handleCropSave(){
+  if(USER_REGISTERED){
+    await saveCropProfile();
+    return;
+  }
+  const phone=(document.getElementById('cFarmerPhone')||{value:''}).value.trim();
+  const regDiv=document.getElementById('cropInlineReg');
+  if(!regDiv) return;
+  const exists=phone?await checkPhoneExists(phone):false;
+  if(exists){
+    regDiv.innerHTML=`<div class="inline-login-box">
+      <div class="inline-box-title">🔑 Sign in to save your farm profile</div>
+      <input class="inline-inp" id="irPassword" type="password" placeholder="Your password"/>
+      <button class="inline-save-btn" style="background:#1A2E4A;color:#fff;" onclick="inlineCropLogin()">Sign in &amp; save →</button>
+      <div style="font-size:11px;color:var(--ts);text-align:center;margin-top:6px;"><a href="/forgot-password" style="color:#1A2E4A;">Forgot password?</a></div>
+      <div id="irErr" style="font-size:12px;color:#A32D2D;margin-top:5px;display:none;"></div>
+    </div>`;
+  } else {
+    regDiv.innerHTML=`<div class="inline-reg-box">
+      <div class="inline-box-title">🌿 Create your free account to save</div>
+      <input class="inline-inp" id="irName" type="text" placeholder="Your full name"/>
+      <input class="inline-inp" id="irPass" type="password" placeholder="Create a password (at least 6 characters)"/>
+      <button class="inline-save-btn" style="background:#2C7A3F;color:#fff;" onclick="inlineCropRegister()">Save &amp; create account →</button>
+      <div id="irErr" style="font-size:12px;color:#A32D2D;margin-top:5px;display:none;"></div>
+    </div>`;
+  }
+}
+
+async function inlineCropRegister(){
+  const name=(document.getElementById('irName')||{value:''}).value.trim();
+  const phone=(document.getElementById('cFarmerPhone')||{value:''}).value.trim();
+  const pw=(document.getElementById('irPass')||{value:''}).value.trim();
+  const region=document.getElementById('cRegion')?.value||'greater_accra';
+  const err=document.getElementById('irErr');
+  if(!name){if(err){err.textContent='Please enter your name.';err.style.display='block';} return;}
+  if(!pw||pw.length<6){if(err){err.textContent='Password must be at least 6 characters.';err.style.display='block';} return;}
+  const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,phone,password:pw,region})});
+  const d=await r.json();
+  if(d.success){
+    document.getElementById('cropInlineReg').innerHTML='';
+    await saveCropProfile();
+  } else {
+    if(err){err.textContent=d.error||'Registration failed.';err.style.display='block';}
+  }
+}
+
+async function inlineCropLogin(){
+  const phone=(document.getElementById('cFarmerPhone')||{value:''}).value.trim();
+  const pw=(document.getElementById('irPassword')||{value:''}).value.trim();
+  const err=document.getElementById('irErr');
+  if(!pw){if(err){err.textContent='Please enter your password.';err.style.display='block';} return;}
+  const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({phone,password:pw})});
+  const d=await r.json();
+  if(d.success){
+    document.getElementById('cropInlineReg').innerHTML='';
+    await saveCropProfile();
+  } else {
+    if(err){err.textContent=d.error||'Sign in failed.';err.style.display='block';}
+  }
+}
+
 {% raw %}
   window.dataLayer=window.dataLayer||[];
   function gtag(){dataLayer.push(arguments);}
@@ -199,6 +511,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .auth-btn:hover{background:var(--g900);}
 
 
+
+/* ── INLINE REGISTRATION ── */
+.inline-reg-box{background:#EAF3DE;border:0.5px solid #C0DD97;border-radius:var(--rl);padding:1rem;margin-top:.875rem;}
+.inline-login-box{background:#E8EDF5;border:0.5px solid #B5D4F4;border-radius:var(--rl);padding:1rem;margin-top:.875rem;}
+.inline-box-title{font-size:12px;font-weight:500;margin-bottom:.75rem;display:flex;align-items:center;gap:6px;}
+.inline-reg-box .inline-box-title{color:#27500A;}
+.inline-login-box .inline-box-title{color:#0C447C;}
+.inline-inp{width:100%;padding:9px 12px;border:0.5px solid var(--bd);border-radius:var(--rm);font-size:13px;font-family:inherit;background:#fff;color:var(--tp);outline:none;margin-bottom:7px;}
+.inline-inp:focus{border-color:#3B6D11;}
+.inline-save-btn{width:100%;padding:10px;border:none;border-radius:var(--rm);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+
+/* ── FARMER DASHBOARD ── */
+.dash-farmer-header{display:flex;align-items:center;gap:10px;background:var(--g900);border-radius:var(--rl);padding:1rem;margin-bottom:1rem;}
+.dash-avatar{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.dash-farmer-name{font-size:15px;font-weight:500;color:#fff;}
+.dash-farmer-sub{font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;}
+.dash-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem;}
+.dash-metric{background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;}
+.dash-metric-val{font-size:24px;font-weight:600;color:var(--tp);}
+.dash-metric-lbl{font-size:11px;color:var(--ts);margin-top:2px;}
+.dash-tabs{display:flex;gap:4px;margin-bottom:.875rem;border-bottom:0.5px solid var(--bd);padding-bottom:8px;overflow-x:auto;}
+.dash-tab{font-size:11px;padding:5px 12px;border-radius:var(--rm);border:none;background:transparent;color:var(--ts);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.dash-tab.on{background:var(--g50);color:var(--g600);font-weight:500;}
+.activity-feed{display:flex;flex-direction:column;gap:0;}
+.activity-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--bd);}
+.activity-row:last-child{border-bottom:none;}
+.activity-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;}
+.activity-main{flex:1;min-width:0;}
+.activity-title{font-size:13px;font-weight:500;color:var(--tp);}
+.activity-sub{font-size:11px;color:var(--ts);margin-top:2px;line-height:1.4;}
+.activity-time{font-size:10px;color:var(--tt);white-space:nowrap;flex-shrink:0;}
+.animal-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.875rem;}
+.animal-type-card{border:0.5px solid var(--bd);border-radius:var(--rm);padding:.75rem;cursor:pointer;transition:border-color .15s,background .15s;}
+.animal-type-card.selected{border-color:var(--a600);background:var(--a50);}
+.animal-type-card:hover{border-color:var(--a600);}
+.atc-icon{font-size:22px;margin-bottom:3px;}
+.atc-name{font-size:12px;font-weight:500;color:var(--tp);}
+.atc-count{font-size:11px;color:var(--ts);}
+.add-animal-btn{border:0.5px dashed var(--bd);border-radius:var(--rm);padding:.75rem;text-align:center;color:var(--ts);font-size:12px;cursor:pointer;background:transparent;width:100%;font-family:inherit;}
+.add-animal-btn:hover{border-color:var(--a600);color:var(--a600);}
+
 /* ── GPS LOCATION ── */
 .gps-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;font-weight:500;color:#1A2E4A;cursor:pointer;font-family:inherit;transition:all .15s;width:100%;}
 .gps-btn:hover{background:#E8EDF5;border-color:#1A2E4A;}
@@ -208,6 +561,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .gps-result.show{display:block;}
 .gps-err{font-size:11px;color:#A32D2D;margin-top:5px;display:none;}
 .gps-err.show{display:block;}
+
+
+/* ── INLINE REGISTRATION ── */
+.inline-reg-box{background:#EAF3DE;border:0.5px solid #C0DD97;border-radius:var(--rl);padding:1rem;margin-top:.875rem;}
+.inline-login-box{background:#E8EDF5;border:0.5px solid #B5D4F4;border-radius:var(--rl);padding:1rem;margin-top:.875rem;}
+.inline-box-title{font-size:12px;font-weight:500;margin-bottom:.75rem;display:flex;align-items:center;gap:6px;}
+.inline-reg-box .inline-box-title{color:#27500A;}
+.inline-login-box .inline-box-title{color:#0C447C;}
+.inline-inp{width:100%;padding:9px 12px;border:0.5px solid var(--bd);border-radius:var(--rm);font-size:13px;font-family:inherit;background:#fff;color:var(--tp);outline:none;margin-bottom:7px;}
+.inline-inp:focus{border-color:#3B6D11;}
+.inline-save-btn{width:100%;padding:10px;border:none;border-radius:var(--rm);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+
+/* ── FARMER DASHBOARD ── */
+.dash-farmer-header{display:flex;align-items:center;gap:10px;background:var(--g900);border-radius:var(--rl);padding:1rem;margin-bottom:1rem;}
+.dash-avatar{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.dash-farmer-name{font-size:15px;font-weight:500;color:#fff;}
+.dash-farmer-sub{font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;}
+.dash-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem;}
+.dash-metric{background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;}
+.dash-metric-val{font-size:24px;font-weight:600;color:var(--tp);}
+.dash-metric-lbl{font-size:11px;color:var(--ts);margin-top:2px;}
+.dash-tabs{display:flex;gap:4px;margin-bottom:.875rem;border-bottom:0.5px solid var(--bd);padding-bottom:8px;overflow-x:auto;}
+.dash-tab{font-size:11px;padding:5px 12px;border-radius:var(--rm);border:none;background:transparent;color:var(--ts);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.dash-tab.on{background:var(--g50);color:var(--g600);font-weight:500;}
+.activity-feed{display:flex;flex-direction:column;gap:0;}
+.activity-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--bd);}
+.activity-row:last-child{border-bottom:none;}
+.activity-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;}
+.activity-main{flex:1;min-width:0;}
+.activity-title{font-size:13px;font-weight:500;color:var(--tp);}
+.activity-sub{font-size:11px;color:var(--ts);margin-top:2px;line-height:1.4;}
+.activity-time{font-size:10px;color:var(--tt);white-space:nowrap;flex-shrink:0;}
+.animal-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.875rem;}
+.animal-type-card{border:0.5px solid var(--bd);border-radius:var(--rm);padding:.75rem;cursor:pointer;transition:border-color .15s,background .15s;}
+.animal-type-card.selected{border-color:var(--a600);background:var(--a50);}
+.animal-type-card:hover{border-color:var(--a600);}
+.atc-icon{font-size:22px;margin-bottom:3px;}
+.atc-name{font-size:12px;font-weight:500;color:var(--tp);}
+.atc-count{font-size:11px;color:var(--ts);}
+.add-animal-btn{border:0.5px dashed var(--bd);border-radius:var(--rm);padding:.75rem;text-align:center;color:var(--ts);font-size:12px;cursor:pointer;background:transparent;width:100%;font-family:inherit;}
+.add-animal-btn:hover{border-color:var(--a600);color:var(--a600);}
 
 /* ── GPS LOCATION ── */
 .gps-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;font-weight:500;color:#1A2E4A;cursor:pointer;font-family:inherit;transition:all .15s;width:100%;text-align:left;}
@@ -345,6 +739,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .tab-btn.teal.active{background:var(--teal50);color:var(--teal);}
 .tab-btn.shared.active{background:var(--muted);color:var(--tp);}
 .tab-btn.credit.active{background:#E8EDF5;color:#1A2E4A;}
+.tab-btn.dash.active{background:#EAF3DE;color:#2C7A3F;}
 
 @media(min-width:700px){
   .tab-btn{min-width:80px;padding:9px 6px;}
@@ -735,6 +1130,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <button class="tab-btn voice" onclick="showTab('voice')"><span class="tab-icon">🎤</span><span class="tab-lbl">Voice</span></button>
     <button class="tab-btn shared" onclick="showTab('chat')"><span class="tab-icon">🤖</span><span class="tab-lbl">Ask AI</span></button>
     <button class="tab-btn credit" onclick="showTab('credit')"><span class="tab-icon">💳</span><span class="tab-lbl">Credit</span></button>
+    <button class="tab-btn dash" onclick="showTab('dashboard')"><span class="tab-icon">🏠</span><span class="tab-lbl">My Farm</span></button>
   </div>
 
   <!-- ══ WEATHER ══ -->
@@ -922,7 +1318,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
           {% for c in fruits %}<span class="chip" onclick="this.classList.toggle('on-g')" data-crop="{{ c }}">{{ c }}</span>{% endfor %}
         </div>
         <div class="hint" style="margin-bottom:.875rem;">Select crops then save. Go to Planting Calendar → click Generate to get your calendar.</div>
-        <button class="save-btn g" onclick="saveCropProfile()">💾 Save profile</button>
+        <button class="save-btn g" onclick="handleCropSave()">💾 Save profile</button>
         <div class="saved-ok g" id="cropSaved">✅ Profile saved! Go to Planting Calendar → Generate your calendar.</div>
       </div>
     </div>
@@ -972,6 +1368,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
   <!-- ══ LIVESTOCK ══ -->
   <div id="panel-livestock" class="panel">
+    <div id="animalTypeGrid" class="animal-type-grid" style="margin-bottom:.875rem;"></div>
     <div class="stabs">
       <button class="stab a on" onclick="showSubPanel('livestock','profile',this)">👤 My Profile</button>
       <button class="stab a" onclick="showSubPanel('livestock','animals',this)">🐄 Animal Details</button>
@@ -1535,7 +1932,7 @@ function setLang(lang){
 
 // ── Tabs ──
 function showTab(name){
-  const names=['weather','prices','pests','diagnose','mycrops','livestock','agronomy','voice','chat','credit'];
+  const names=['weather','prices','pests','diagnose','mycrops','livestock','agronomy','voice','chat','credit','dashboard'];
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',names[i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name));
   if(name==='agronomy') loadAgronomists();
@@ -2279,6 +2676,45 @@ async function submitAgroRegistration(){
 }
 {% endraw %}
 </script>
+
+  <!-- ══ FARMER DASHBOARD ══ -->
+  <div id="panel-dashboard" class="panel">
+    <div id="dashLoading" style="text-align:center;padding:2rem;color:var(--ts);">Loading your farm dashboard...</div>
+    <div id="dashContent" style="display:none;">
+      <div class="dash-farmer-header">
+        <div class="dash-avatar">👨‍🌾</div>
+        <div>
+          <div class="dash-farmer-name" id="dashName">—</div>
+          <div class="dash-farmer-sub" id="dashSub">—</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div id="dashPlanBadge" style="font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.12);color:#7EC850;">Free</div>
+        </div>
+      </div>
+      <div class="dash-metrics">
+        <div class="dash-metric"><div class="dash-metric-val" id="dashCrops">—</div><div class="dash-metric-lbl">Crops growing</div></div>
+        <div class="dash-metric"><div class="dash-metric-val" id="dashAnimals">—</div><div class="dash-metric-lbl">Animal types</div></div>
+        <div class="dash-metric"><div class="dash-metric-val" id="dashDiary">—</div><div class="dash-metric-lbl">Diary entries</div></div>
+        <div class="dash-metric"><div class="dash-metric-val" id="dashScore" style="color:var(--g600);">—</div><div class="dash-metric-lbl">Credit score</div></div>
+      </div>
+      <div class="dash-tabs">
+        <button class="dash-tab on" onclick="showDashTab('activity')">Recent activity</button>
+        <button class="dash-tab" onclick="showDashTab('farm')">Farm profile</button>
+        <button class="dash-tab" onclick="showDashTab('animals')">Livestock</button>
+        <button class="dash-tab" onclick="showDashTab('credit')">Credit</button>
+      </div>
+      <div id="dashActivity" class="activity-feed"></div>
+      <div id="dashFarm" style="display:none;"></div>
+      <div id="dashAnimals" style="display:none;"></div>
+      <div id="dashCredit" style="display:none;"></div>
+    </div>
+    <div id="dashNotReg" style="display:none;text-align:center;padding:2rem;">
+      <div style="font-size:32px;margin-bottom:.75rem;">🌾</div>
+      <div style="font-size:15px;font-weight:500;color:var(--tp);margin-bottom:.5rem;">Your farm dashboard</div>
+      <div style="font-size:13px;color:var(--ts);margin-bottom:1.25rem;">Create a free account to see your farm activity, calendars, and credit score all in one place.</div>
+      <a href="/register" style="display:inline-block;padding:10px 24px;background:var(--g600);color:#fff;border-radius:var(--rm);font-size:13px;font-weight:500;text-decoration:none;">Create free account →</a>
+    </div>
+  </div>
 
 <!-- GATE MODAL -->
 <div class="gate-modal" id="gateModal">
