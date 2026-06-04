@@ -1366,6 +1366,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
           {% for c in fruits %}<span class="chip" onclick="this.classList.toggle('on-g')" data-crop="{{ c }}">{{ c }}</span>{% endfor %}
         </div>
         <div class="hint" style="margin-bottom:.875rem;">Select crops then save. Go to Planting Calendar → click Generate to get your calendar.</div>
+        <div id="cropInlineReg"></div>
         <button class="save-btn g" onclick="handleCropSave()">💾 Save profile</button>
         <div class="saved-ok g" id="cropSaved">✅ Profile saved! Go to Planting Calendar → Generate your calendar.</div>
       </div>
@@ -1867,6 +1868,57 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     </div>
   </div>
 
+
+  <div id="panel-dashboard" class="panel">
+    <div id="dashLoading" style="text-align:center;padding:2rem;color:var(--ts);">Loading your farm dashboard...</div>
+    <div id="dashContent" style="display:none;">
+      <div class="dash-farmer-header">
+        <div class="dash-avatar">👨‍🌾</div>
+        <div>
+          <div class="dash-farmer-name" id="dashName">—</div>
+          <div class="dash-farmer-sub" id="dashSub">—</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div id="dashPlanBadge" style="font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.12);color:#7EC850;">Free</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;">
+        <div style="background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
+          <div style="font-size:24px;font-weight:600;color:var(--tp);" id="dashCrops">—</div>
+          <div style="font-size:11px;color:var(--ts);margin-top:2px;">Crops growing</div>
+        </div>
+        <div style="background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
+          <div style="font-size:24px;font-weight:600;color:var(--tp);" id="dashAnimals">—</div>
+          <div style="font-size:11px;color:var(--ts);margin-top:2px;">Animal types</div>
+        </div>
+        <div style="background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
+          <div style="font-size:24px;font-weight:600;color:var(--tp);" id="dashDiary">—</div>
+          <div style="font-size:11px;color:var(--ts);margin-top:2px;">Diary entries</div>
+        </div>
+        <div style="background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
+          <div style="font-size:24px;font-weight:600;color:var(--g600);" id="dashScore">—</div>
+          <div style="font-size:11px;color:var(--ts);margin-top:2px;">Credit score</div>
+        </div>
+      </div>
+      <div class="dash-tabs">
+        <button class="dash-tab on" onclick="showDashTab('activity')">Recent activity</button>
+        <button class="dash-tab" onclick="showDashTab('farm')">Farm profile</button>
+        <button class="dash-tab" onclick="showDashTab('animals')">Livestock</button>
+        <button class="dash-tab" onclick="showDashTab('credit')">Credit</button>
+      </div>
+      <div id="dashActivity" class="activity-feed"></div>
+      <div id="dashFarm" style="display:none;"></div>
+      <div id="dashAnimals" style="display:none;"></div>
+      <div id="dashCredit" style="display:none;"></div>
+    </div>
+    <div id="dashNotReg" style="display:none;text-align:center;padding:2rem;">
+      <div style="font-size:32px;margin-bottom:.75rem;">🌾</div>
+      <div style="font-size:15px;font-weight:500;color:var(--tp);margin-bottom:.5rem;">Your farm dashboard</div>
+      <div style="font-size:13px;color:var(--ts);margin-bottom:1.25rem;">Create a free account to see your farm activity, calendars, and credit score all in one place.</div>
+      <a href="/register" style="display:inline-block;padding:10px 24px;background:var(--g600);color:#fff;border-radius:var(--rm);font-size:13px;font-weight:500;text-decoration:none;">Create free account →</a>
+    </div>
+  </div>
+
 </div><!-- /container -->
 </div><!-- /main-content -->
 
@@ -2240,8 +2292,7 @@ async function saveCropProfile(){
       const sel=document.getElementById('cDiaryCrop');
       sel.innerHTML='<option value="all">All crops</option>'+selectedCrops.map(c=>`<option value="${c}">${c}</option>`).join('');
     } else if(data.gate==='register'){
-      if(!USER_REGISTERED) handleCropSave();
-      else alert('Session error. Please refresh the page and try again.');
+      handleCropSave();
     } else {
       alert('Save failed: '+(data.error||'Unknown error. Please try again.'));
     }
@@ -2740,43 +2791,8 @@ async function submitAgroRegistration(){
 </script>
 
   <!-- ══ FARMER DASHBOARD ══ -->
-  <div id="panel-dashboard" class="panel">
-    <div id="dashLoading" style="text-align:center;padding:2rem;color:var(--ts);">Loading your farm dashboard...</div>
-    <div id="dashContent" style="display:none;">
-      <div class="dash-farmer-header">
-        <div class="dash-avatar">👨‍🌾</div>
-        <div>
-          <div class="dash-farmer-name" id="dashName">—</div>
-          <div class="dash-farmer-sub" id="dashSub">—</div>
-        </div>
-        <div style="margin-left:auto;text-align:right;">
-          <div id="dashPlanBadge" style="font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.12);color:#7EC850;">Free</div>
-        </div>
-      </div>
-      <div class="dash-metrics">
-        <div class="dash-metric"><div class="dash-metric-val" id="dashCrops">—</div><div class="dash-metric-lbl">Crops growing</div></div>
-        <div class="dash-metric"><div class="dash-metric-val" id="dashAnimals">—</div><div class="dash-metric-lbl">Animal types</div></div>
-        <div class="dash-metric"><div class="dash-metric-val" id="dashDiary">—</div><div class="dash-metric-lbl">Diary entries</div></div>
-        <div class="dash-metric"><div class="dash-metric-val" id="dashScore" style="color:var(--g600);">—</div><div class="dash-metric-lbl">Credit score</div></div>
-      </div>
-      <div class="dash-tabs">
-        <button class="dash-tab on" onclick="showDashTab('activity')">Recent activity</button>
-        <button class="dash-tab" onclick="showDashTab('farm')">Farm profile</button>
-        <button class="dash-tab" onclick="showDashTab('animals')">Livestock</button>
-        <button class="dash-tab" onclick="showDashTab('credit')">Credit</button>
-      </div>
-      <div id="dashActivity" class="activity-feed"></div>
-      <div id="dashFarm" style="display:none;"></div>
-      <div id="dashAnimals" style="display:none;"></div>
-      <div id="dashCredit" style="display:none;"></div>
-    </div>
-    <div id="dashNotReg" style="display:none;text-align:center;padding:2rem;">
-      <div style="font-size:32px;margin-bottom:.75rem;">🌾</div>
-      <div style="font-size:15px;font-weight:500;color:var(--tp);margin-bottom:.5rem;">Your farm dashboard</div>
-      <div style="font-size:13px;color:var(--ts);margin-bottom:1.25rem;">Create a free account to see your farm activity, calendars, and credit score all in one place.</div>
-      <a href="/register" style="display:inline-block;padding:10px 24px;background:var(--g600);color:#fff;border-radius:var(--rm);font-size:13px;font-weight:500;text-decoration:none;">Create free account →</a>
-    </div>
-  </div>
+
+
 
 <!-- GATE MODAL -->
 <div class="gate-modal" id="gateModal">
