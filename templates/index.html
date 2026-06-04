@@ -357,7 +357,8 @@ async function loadDashboard(){
     </div>`:'<div style="text-align:center;padding:1.5rem;color:var(--ts);font-size:13px;">No crop profile saved yet. Go to My Crops tab to add one.</div>';
 
   // Animals tab
-  document.getElementById('dashAnimals').innerHTML=d.animals&&d.animals.length?d.animals.map(a=>`
+  const validAnimals=d.animals?d.animals.filter(a=>a.animal_type&&a.animal_type!=='profile'):[];
+  document.getElementById('dashAnimals').innerHTML=validAnimals.length?validAnimals.map(a=>`
     <div class="card" style="margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem;">
         <span style="font-size:22px;">${ANIMAL_ICONS[a.animal_type]||'🐾'}</span>
@@ -365,6 +366,7 @@ async function loadDashboard(){
         <span style="margin-left:auto;font-size:11px;padding:2px 8px;border-radius:20px;background:#FBF1E8;color:#633806;">${a.total_count||0} animals</span>
       </div>
       ${[['Purpose',a.purpose||'—'],['Housing',a.housing_type||'—'],['Feed source',a.feed_source||'—'],['Sick/isolated',a.sick_count||0],['Nearest vet',a.nearest_vet||'—']].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--bd);font-size:12px;"><span style="color:var(--ts);">${k}</span><span>${v}</span></div>`).join('')}
+      <button onclick="showTab('livestock')" style="width:100%;margin-top:8px;padding:7px;border:0.5px solid var(--bd);border-radius:6px;background:transparent;font-size:11px;color:var(--ts);cursor:pointer;font-family:inherit;">✏️ Update count or details</button>
     </div>`).join(''):'<div style="text-align:center;padding:1.5rem;color:var(--ts);font-size:13px;">No livestock profiles yet. Go to Livestock tab to add animals.</div>';
 
   // Credit tab
