@@ -1247,20 +1247,43 @@ def build_credit_pdf(user, farm, livestock):
     green = colors.HexColor("#2C7A3F")
     amber = colors.HexColor("#C4873A")
 
+    # Register Unicode-capable font for special characters (ɔ in Nkosoo)
+    try:
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        import os
+        # Try system fonts that support extended Latin
+        for font_path in [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        ]:
+            if os.path.exists(font_path):
+                if "Bold" in font_path:
+                    pdfmetrics.registerFont(TTFont("UnicodeBold", font_path))
+                else:
+                    pdfmetrics.registerFont(TTFont("Unicode", font_path))
+        body_font = "Unicode" if "Unicode" in pdfmetrics.getRegisteredFontNames() else "Helvetica"
+        bold_font = "UnicodeBold" if "UnicodeBold" in pdfmetrics.getRegisteredFontNames() else "Helvetica-Bold"
+    except Exception:
+        body_font = "Helvetica"
+        bold_font = "Helvetica-Bold"
+
     title_style = ParagraphStyle("title",fontSize=18,textColor=colors.white,
-        fontName="Helvetica-Bold",alignment=TA_CENTER,spaceAfter=4)
+        fontName=bold_font,alignment=TA_CENTER,spaceAfter=4)
     sub_style = ParagraphStyle("sub",fontSize=10,textColor=colors.HexColor("#C0DD97"),
-        fontName="Helvetica",alignment=TA_CENTER,spaceAfter=2)
+        fontName=body_font,alignment=TA_CENTER,spaceAfter=2)
     h2_style = ParagraphStyle("h2",fontSize=11,textColor=navy,
-        fontName="Helvetica-Bold",spaceBefore=12,spaceAfter=4)
+        fontName=bold_font,spaceBefore=12,spaceAfter=4)
     body_style = ParagraphStyle("body",fontSize=9,textColor=colors.HexColor("#1A1A18"),
-        fontName="Helvetica",spaceAfter=3,leading=14)
+        fontName=body_font,spaceAfter=3,leading=14)
     small_style = ParagraphStyle("small",fontSize=8,textColor=colors.HexColor("#5F5E5A"),
-        fontName="Helvetica",alignment=TA_CENTER,spaceAfter=2)
+        fontName=body_font,alignment=TA_CENTER,spaceAfter=2)
 
     story = []
     # Header banner
-    header_data = [[Paragraph("NKƆSOƆ AI — FARMER CREDIT PROFILE",title_style)],
+    header_data = [[Paragraph("NKOSOO AI — FARMER CREDIT PROFILE",title_style)],
                    [Paragraph("Verified Agricultural Identity Document · www.nkosooai.com",sub_style)],
                    [Paragraph(f"Generated: {__import__('datetime').datetime.now().strftime('%d %B %Y')}",sub_style)]]
     header_tbl = Table(header_data, colWidths=[17*cm])
@@ -1286,7 +1309,7 @@ def build_credit_pdf(user, farm, livestock):
     id_data = [
         ["Full name", name, "Phone number", phone],
         ["Ghana Card", gc, "Card status", gc_valid],
-        ["Region", region_key.replace("_"," ").title(), "Platform", "Nkɔsoɔ AI registered"],
+        ["Region", region_key.replace("_"," ").title(), "Platform", "Nkosoo AI registered"],
     ]
     id_tbl = Table(id_data, colWidths=[3.5*cm,5*cm,3.5*cm,5*cm])
     id_tbl.setStyle(TableStyle([
@@ -1345,28 +1368,30 @@ def build_credit_pdf(user, farm, livestock):
         story.append(farm_tbl)
         story.append(Spacer(1,0.3*cm))
 
-    # Livestock
-    if livestock:
+    # Livestock — all animal types
+    animals = livestock if isinstance(livestock, list) else ([livestock] if livestock else [])
+    if animals:
         story.append(Paragraph("LIVESTOCK ASSETS", h2_style))
         story.append(HRFlowable(width="100%",thickness=1,color=amber,spaceAfter=6))
-        # GPS for livestock
-        l_lat = livestock.get("latitude"); l_lon = livestock.get("longitude")
-        l_acc = livestock.get("gps_accuracy"); l_addr = livestock.get("gps_address","")
-        if l_lat and l_lon:
-            l_gps = f"{l_lat:.5f}, {l_lon:.5f} (±{int(l_acc)}m)" if l_acc else f"{l_lat:.5f}, {l_lon:.5f}"
-            l_loc = l_addr.split(",")[0] if l_addr else "Verified"
-        else:
-            l_gps = "Not recorded"; l_loc = "—"
-        lv_data = [
-            ["Animal type", livestock["animal_type"] or "Not specified",
-             "Total count", str(livestock["total_count"] or "Not specified")],
-            ["Housing type", livestock["housing_type"] or "Not specified",
-             "Purpose", livestock["purpose"] or "Not specified"],
-            ["Feed source", livestock["feed_source"] or "Not specified",
-             "Nearest vet", livestock["nearest_vet"] or "Not specified"],
-            ["GPS coordinates", l_gps, "GPS location", l_loc],
-        ]
-        lv_tbl = Table(lv_data, colWidths=[3.5*cm,5*cm,3.5*cm,5*cm])
+        for lv in animals:
+            if not lv or lv.get("animal_type") in (None,"profile",""): continue
+            l_lat = lv.get("latitude"); l_lon = lv.get("longitude")
+            l_acc = lv.get("gps_accuracy"); l_addr = lv.get("gps_address","")
+            if l_lat and l_lon:
+                l_gps = f"{l_lat:.5f}, {l_lon:.5f} (+-{int(l_acc)}m)" if l_acc else f"{l_lat:.5f}, {l_lon:.5f}"
+                l_loc = l_addr.split(",")[0] if l_addr else "Verified"
+            else:
+                l_gps = "Not recorded"; l_loc = "—"
+            lv_data = [
+                ["Animal type", (lv.get("animal_type") or "").title(),
+                 "Total count", str(lv.get("total_count") or "Not specified")],
+                ["Housing type", lv.get("housing_type") or "Not specified",
+                 "Purpose", lv.get("purpose") or "Not specified"],
+                ["Feed source", lv.get("feed_source") or "Not specified",
+                 "Nearest vet", lv.get("nearest_vet") or "Not specified"],
+                ["GPS coordinates", l_gps, "GPS location", l_loc],
+            ]
+            lv_tbl = Table(lv_data, colWidths=[3.5*cm,5*cm,3.5*cm,5*cm])
         lv_tbl.setStyle(TableStyle([
             ('FONTNAME',(0,0),(0,-1),'Helvetica-Bold'),
             ('FONTNAME',(2,0),(2,-1),'Helvetica-Bold'),
@@ -1380,13 +1405,13 @@ def build_credit_pdf(user, farm, livestock):
             ('LEFTPADDING',(0,0),(-1,-1),8),
         ]))
         story.append(lv_tbl)
-        story.append(Spacer(1,0.3*cm))
+        story.append(Spacer(1,0.2*cm))
 
     # Disclaimer
     story.append(Spacer(1,0.5*cm))
     story.append(HRFlowable(width="100%",thickness=0.5,color=colors.HexColor("#D0D4D9"),spaceAfter=6))
-    story.append(Paragraph("This document is generated from data provided by the farmer on the Nkɔsoɔ AI platform. Ghana Card format has been validated. Lenders should conduct their own due diligence before making credit decisions. Nkɔsoɔ AI does not guarantee loan approval.",small_style))
-    story.append(Paragraph("© 2026 Nkɔsoɔ AI · Built by DranyTech · www.nkosooai.com · support@dranytech.com",small_style))
+    story.append(Paragraph("This document is generated from data provided by the farmer on the Nkosoo AI platform. Ghana Card format has been validated. Lenders should conduct their own due diligence before making credit decisions. Nkosoo AI does not guarantee loan approval.",small_style))
+    story.append(Paragraph("© 2026 Nkosoo AI · Built by DranyTech · www.nkosooai.com · support@dranytech.com",small_style))
 
     doc.build(story)
     buf.seek(0)
@@ -1401,9 +1426,9 @@ def api_credit_profile():
     with get_db() as db:
         user     = db.execute("SELECT * FROM users WHERE session_id=?",(sid,)).fetchone()
         farm     = db.execute("SELECT * FROM farm_profiles WHERE session_id=?",(sid,)).fetchone()
-        livestock= db.execute("SELECT * FROM livestock_profiles WHERE session_id=?",(sid,)).fetchone()
+        animals  = db.execute("SELECT * FROM livestock_profiles WHERE session_id=? AND animal_type!='profile' ORDER BY created_at",(sid,)).fetchall()
     try:
-        pdf_buf = build_credit_pdf(user, farm, livestock)
+        pdf_buf = build_credit_pdf(user, farm, animals)
         farmer_name = (user["name"] if user and user["name"] else "farmer").replace(" ","_")
         filename = f"Nkosoo_AI_Credit_Profile_{farmer_name}.pdf"
         from flask import send_file
@@ -1569,7 +1594,7 @@ def api_credit_score():
     with get_db() as db:
         user      = db.execute("SELECT * FROM users WHERE session_id=?",(sid,)).fetchone()
         farm      = db.execute("SELECT * FROM farm_profiles WHERE session_id=?",(sid,)).fetchone()
-        livestock = db.execute("SELECT * FROM livestock_profiles WHERE session_id=?",(sid,)).fetchone()
+        animals_all = db.execute("SELECT * FROM livestock_profiles WHERE session_id=? AND animal_type!='profile' ORDER BY created_at",(sid,)).fetchall()
         diary_count = db.execute(
             "SELECT COUNT(*) FROM health_logs WHERE session_id=?",(sid,)).fetchone()[0]
         usage_count = db.execute(
@@ -1584,8 +1609,8 @@ def api_credit_score():
     if farm and farm["soil_type"]:        score+=5;  factors.append(("Soil type recorded",5))
     if farm and farm["water_source"]:     score+=5;  factors.append(("Water source recorded",5))
     if farm and farm.get("latitude"):     score+=10; factors.append(("GPS location verified",10))
-    elif livestock and livestock.get("latitude"): score+=5; factors.append(("GPS location (livestock)",5))
-    if livestock:                         score+=10; factors.append(("Livestock profile",10))
+    elif animals_all and animals_all[0].get("latitude") if animals_all else False: score+=5; factors.append(("GPS location (livestock)",5))
+    if animals_all:                        score+=10; factors.append(("Livestock profiles",10))
     if diary_count >= 5:                  score+=10; factors.append((f"{diary_count} diary entries",10))
     elif diary_count > 0:                 score+=5;  factors.append((f"{diary_count} diary entries",5))
     if usage_count >= 10:                 score+=5;  factors.append((f"{usage_count} AI questions asked",5))
