@@ -343,12 +343,6 @@ def init_db():
 
 init_db()
 
-# Seed default lenders into DB on startup
-try:
-    seed_default_lenders()
-except Exception:
-    pass  # seed_default_lenders defined later — will seed on first request
-
 # ---------------------------------------------------------------------------
 # Session helpers
 # ---------------------------------------------------------------------------
@@ -1509,15 +1503,19 @@ def api_farmer_dashboard():
     if not is_registered():
         return jsonify({"error":"Not registered","gate":"register"}), 401
     sid=get_sid()
-    with get_db() as db:
-        user     = db.execute("SELECT * FROM users WHERE session_id=?",(sid,)).fetchone()
-        farm     = db.execute("SELECT * FROM farm_profiles WHERE session_id=?",(sid,)).fetchone()
-        animals  = db.execute("SELECT * FROM livestock_profiles WHERE session_id=? ORDER BY created_at",(sid,)).fetchall()
-        diary_count = db.execute("SELECT COUNT(*) FROM health_logs WHERE session_id=?",(sid,)).fetchone()[0]
-        usage_count = db.execute("SELECT COUNT(*) FROM usage WHERE session_id=?",(sid,)).fetchone()[0]
-        recent_usage = db.execute(
-            "SELECT question,created_at FROM usage WHERE session_id=? ORDER BY created_at DESC LIMIT 5",
-            (sid,)).fetchall()
+    try:
+        with get_db() as db:
+            user     = db.execute("SELECT * FROM users WHERE session_id=?",(sid,)).fetchone()
+            farm     = db.execute("SELECT * FROM farm_profiles WHERE session_id=?",(sid,)).fetchone()
+            animals  = db.execute("SELECT * FROM livestock_profiles WHERE session_id=? ORDER BY created_at",(sid,)).fetchall()
+            diary_count = db.execute("SELECT COUNT(*) FROM health_logs WHERE session_id=?",(sid,)).fetchone()[0]
+            usage_count = db.execute("SELECT COUNT(*) FROM usage WHERE session_id=?",(sid,)).fetchone()[0]
+            recent_usage = db.execute(
+                "SELECT question,created_at FROM usage WHERE session_id=? ORDER BY created_at DESC LIMIT 5",
+                (sid,)).fetchall()
+    except Exception as e:
+        print(f"[dashboard error] {e}")
+        return jsonify({"success":False,"error":str(e)}),500
     # Build score
     score=0
     if user and user["registered"]: score+=15
@@ -1527,7 +1525,7 @@ def api_farmer_dashboard():
     if farm and farm["crops"]: score+=10
     if farm and farm["soil_type"]: score+=5
     if farm and farm["water_source"]: score+=5
-    if farm and farm.get("latitude"): score+=10
+    if farm and dict(farm).get("latitude"): score+=10
     if animals: score+=10
     if diary_count>=5: score+=10
     elif diary_count>0: score+=5
@@ -1668,7 +1666,7 @@ def api_credit_score():
     if farm and farm["crops"]:            score+=10; factors.append(("Crops recorded",10))
     if farm and farm["soil_type"]:        score+=5;  factors.append(("Soil type recorded",5))
     if farm and farm["water_source"]:     score+=5;  factors.append(("Water source recorded",5))
-    if farm and farm.get("latitude"):     score+=10; factors.append(("GPS location verified",10))
+    if farm and dict(farm).get("latitude"):     score+=10; factors.append(("GPS location verified",10))
     elif animals_all and animals_all[0].get("latitude") if animals_all else False: score+=5; factors.append(("GPS location (livestock)",5))
     if animals_all:                        score+=10; factors.append(("Livestock profiles",10))
     if diary_count >= 5:                  score+=10; factors.append((f"{diary_count} diary entries",10))
