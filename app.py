@@ -849,6 +849,37 @@ def api_diagnose():
 # ---------------------------------------------------------------------------
 # Farm profile
 # ---------------------------------------------------------------------------
+@app.route("/api/farmer/identity", methods=["GET"])
+def api_farmer_identity():
+    """Return farmer's identity data from any saved profile — for pre-filling forms."""
+    sid = get_sid()
+    identity = {"name":"","phone":"","ghana_card":"","ghana_card_valid":0,"region":"greater_accra","email":""}
+    with get_db() as db:
+        # Check users table first
+        u = db.execute("SELECT name,phone,region,email FROM users WHERE session_id=?",(sid,)).fetchone()
+        if u:
+            identity["name"]   = u["name"] or ""
+            identity["phone"]  = u["phone"] or ""
+            identity["region"] = u["region"] or "greater_accra"
+            identity["email"]  = u["email"] or ""
+        # Check farm_profiles for Ghana Card
+        fp = db.execute("SELECT ghana_card,ghana_card_valid,farmer_name,phone,region,email FROM farm_profiles WHERE session_id=?",(sid,)).fetchone()
+        if fp:
+            if fp["ghana_card"]: identity["ghana_card"] = fp["ghana_card"]
+            if fp["ghana_card_valid"]: identity["ghana_card_valid"] = fp["ghana_card_valid"]
+            if fp["farmer_name"] and not identity["name"]: identity["name"] = fp["farmer_name"]
+            if fp["phone"] and not identity["phone"]: identity["phone"] = fp["phone"]
+            if fp["region"] and not identity["region"]: identity["region"] = fp["region"]
+        # Check livestock_profiles for Ghana Card if still missing
+        lp = db.execute("SELECT ghana_card,ghana_card_valid,farmer_name,phone,region,email FROM livestock_profiles WHERE session_id=? LIMIT 1",(sid,)).fetchone()
+        if lp:
+            if lp["ghana_card"] and not identity["ghana_card"]: identity["ghana_card"] = lp["ghana_card"]
+            if lp["ghana_card_valid"] and not identity["ghana_card_valid"]: identity["ghana_card_valid"] = lp["ghana_card_valid"]
+            if lp["farmer_name"] and not identity["name"]: identity["name"] = lp["farmer_name"]
+            if lp["phone"] and not identity["phone"]: identity["phone"] = lp["phone"]
+            if lp["region"] and not identity["region"]: identity["region"] = lp["region"]
+    return jsonify({"success":True,"identity":identity})
+
 @app.route("/api/profile", methods=["GET"])
 def api_get_profile():
     sid=get_sid()
