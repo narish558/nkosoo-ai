@@ -1985,40 +1985,1991 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   "used_today": {{ used_today }}
 }
 </script>
-
-// ── PRE-FILL FARMER IDENTITY ─────────────────────────────────
-async function prefillFarmerIdentity(prefix){
-  // prefix: 'c' for crops, 'l' for livestock
-  try{
-    const r=await fetch('/api/farmer/identity');
-    if(!r.ok) return;
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Nkɔsoɔ AI — Ghana Farming Assistant</title>
+<!-- Google Analytics -->
+<!-- Google Analytics: replace G-XXXXXXXXXX with your real ID to enable -->
+<script>
+// ── CREDIT ACCESS ──────────────────────────────────────────
+async function downloadCreditProfile(){
+  const r=await fetch('/api/credit/profile');
+  if(r.status===401){
     const d=await r.json();
-    if(!d.success||!d.identity) return;
-    const id=d.identity;
-    const fields={
-      [`${prefix}FarmerName`]:id.name,
-      [`${prefix}FarmerPhone`]:id.phone,
-      [`${prefix}GhanaCard`]:id.ghana_card,
-      [`${prefix}Region`]:id.region,
-      [`${prefix}Email`]:id.email,
-    };
-    for(const [elId,val] of Object.entries(fields)){
-      const el=document.getElementById(elId);
-      if(el&&val&&!el.value) el.value=val;
-    }
-    // Validate Ghana Card if pre-filled
-    if(id.ghana_card){
-      const gcEl=document.getElementById(`${prefix}GhanaCard`);
-      const gcStatus=document.getElementById(`${prefix==='c'?'cGCStatus':'lGCStatus'}`);
-      if(gcEl&&gcStatus){
-        const valid=/^GHA-\d{9}-\d$/.test(id.ghana_card);
-        gcStatus.style.display='block';
-        gcStatus.className='gc-status '+(valid?'gc-ok':'gc-err');
-        gcStatus.textContent=valid?'✅ Valid Ghana Card format':'⚠ Invalid format';
-      }
-    }
-  }catch(e){console.log('[prefill]',e);}
+    if(d.gate==='register') document.getElementById('gateModal').classList.add('open');
+    return;
+  }
+  if(!r.ok){alert('Could not generate PDF. Please complete your farm profile first.');return;}
+  const blob=await r.blob();
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='Nkosoo_AI_Credit_Profile.pdf'; a.click();
+  URL.revokeObjectURL(url);
 }
+
+async function loadCreditScore(){
+  const r=await fetch('/api/credit/score');
+  if(r.status===401){document.getElementById('gateModal').classList.add('open');return;}
+  const d=await r.json();
+  if(!d.success) return;
+  const card=document.getElementById('creditScoreCard');
+  card.style.display='block';
+  document.getElementById('creditScoreNum').textContent=d.score;
+  document.getElementById('creditRating').textContent=d.rating;
+  document.getElementById('creditRating').style.color=d.color;
+  document.getElementById('creditScoreBar').style.width=d.score+'%';
+  document.getElementById('creditScoreBar').style.background=d.color;
+  document.getElementById('creditScoreMsg').textContent=d.message;
+}
+
+async function loadLenders(){
+  const region=document.getElementById('lenderRegionFilter').value;
+  const url='/api/credit/lenders'+(region?'?region='+region:'');
+  const list=document.getElementById('lendersList');
+  try{
+    const r=await fetch(url);
+    if(!r.ok) throw new Error('Network error '+r.status);
+    const d=await r.json();
+    if(!d.lenders||!d.lenders.length){
+      list.innerHTML='<div style="text-align:center;padding:1rem;color:var(--ts);font-size:13px;">No lenders found for this region.</div>';
+      return;
+    }
+  list.innerHTML=d.lenders.map(l=>`
+    <div style="background:#fff;border:1px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:.5rem;">
+        <div>
+          <div style="font-size:13px;font-weight:500;color:#1A1A18;">${l.name}${l.verified?'<span style="font-size:9px;padding:2px 7px;border-radius:20px;background:#EAF3DE;color:#3B6D11;margin-left:6px;font-weight:500;">Verified</span>':''}</div>
+          <div style="font-size:11px;color:var(--ts);margin-top:2px;">${l.loan_types||''}</div>
+        </div>
+        <div style="font-size:12px;font-weight:500;color:#C4873A;white-space:nowrap;">GHS ${(l.loan_min||0).toLocaleString()}–${(l.loan_max||0).toLocaleString()}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px;color:var(--ts);margin-bottom:.75rem;">
+        <div>📊 ${l.interest_rate||'Negotiated'}</div>
+        <div>📍 ${l.region==='national'?'All Ghana':l.region}</div>
+        <div colspan="2">📋 ${l.requirements||'Contact lender'}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${l.whatsapp?`<a href="https://wa.me/233${l.whatsapp.replace(/^0/,'').replace(/\s/,'')}" target="_blank" style="font-size:11px;padding:5px 10px;border-radius:6px;background:#25D366;color:#fff;text-decoration:none;font-weight:500;">💬 WhatsApp</a>`:''}
+        ${l.phone?`<a href="tel:${l.phone}" style="font-size:11px;padding:5px 10px;border-radius:6px;background:#E8EDF5;color:#1A2E4A;text-decoration:none;">📞 Call</a>`:''}
+        ${l.website?`<a href="https://${l.website}" target="_blank" style="font-size:11px;padding:5px 10px;border-radius:6px;background:var(--muted);color:var(--ts);text-decoration:none;">🌐 Website</a>`:''}
+      </div>
+    </div>`).join('');
+  }catch(e){
+    list.innerHTML='<div style="text-align:center;padding:1rem;color:var(--ts);font-size:13px;">⚠️ Could not load lenders. Please check your connection and try again.</div>';
+    console.error('[loadLenders]',e);
+  }
+}
+
+async function submitCreditApp(){
+  const lender=document.getElementById('applyLender').value;
+  const amount=document.getElementById('applyAmount').value;
+  const purpose=document.getElementById('applyPurpose').value.trim();
+  const msg=document.getElementById('applyMsg');
+  if(!lender){msg.textContent='Please select a lender.';msg.style.display='block';msg.style.color='#A32D2D';return;}
+  const r=await fetch('/api/credit/apply',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({lender_name:lender,amount_requested:amount,purpose})});
+  if(r.status===401){document.getElementById('gateModal').classList.add('open');return;}
+  const d=await r.json();
+  msg.style.display='block';
+  if(d.success){
+    msg.textContent='✅ '+d.message;msg.style.color='#2C7A3F';
+    document.getElementById('applyLender').value='';
+    document.getElementById('applyAmount').value='';
+    document.getElementById('applyPurpose').value='';
+  } else {
+    msg.textContent='❌ '+(d.error||'Please try again.');msg.style.color='#A32D2D';
+  }
+}
+
+// Load lenders when credit tab opens
+
+// ── GPS LOCATION ────────────────────────────────────────────
+async function getGPS(type){
+  const prefix = type==='crop' ? 'crop' : 'live';
+  const btn=document.getElementById(prefix+'GpsBtn');
+  const txt=document.getElementById(prefix+'GpsTxt');
+  const icon=document.getElementById(prefix+'GpsIcon');
+  const result=document.getElementById(prefix+'GpsResult');
+  const err=document.getElementById(prefix+'GpsErr');
+
+  if(!navigator.geolocation){
+    err.textContent='GPS is not supported on this device.';
+    err.classList.add('show'); return;
+  }
+
+  btn.classList.add('loading');
+  txt.textContent='Getting your location...';
+  icon.textContent='⏳';
+  err.classList.remove('show');
+  result.classList.remove('show');
+
+  navigator.geolocation.getCurrentPosition(
+    async(pos)=>{
+      const lat=pos.coords.latitude;
+      const lon=pos.coords.longitude;
+      const acc=pos.coords.accuracy;
+
+      document.getElementById(prefix+'Lat').value=lat;
+      document.getElementById(prefix+'Lon').value=lon;
+      document.getElementById(prefix+'Acc').value=acc;
+
+      // Reverse geocode using OpenStreetMap Nominatim
+      let addr='';
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+        const d=await r.json();
+        addr=d.display_name||'';
+        document.getElementById(prefix+'Addr').value=addr;
+      }catch(e){}
+
+      btn.classList.remove('loading');
+      btn.classList.add('got');
+      icon.textContent='✅';
+      txt.textContent='Location recorded';
+      result.textContent=`📍 ${lat.toFixed(5)}, ${lon.toFixed(5)} · Accuracy: ±${Math.round(acc)}m${addr?'\n'+addr.split(',').slice(0,3).join(','):''}`;
+      result.classList.add('show');
+    },
+    (e)=>{
+      btn.classList.remove('loading');
+      icon.textContent='📍';
+      txt.textContent='Tap to record location';
+      const msgs={1:'Location access denied. Please allow location in your browser settings.',
+                  2:'Location unavailable. Please try again.',
+                  3:'Location request timed out. Please try again.'};
+      err.textContent=msgs[e.code]||'Could not get location. Please try again.';
+      err.classList.add('show');
+    },
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+  );
+}
+// ── INLINE REGISTRATION ─────────────────────────────────────
+async function checkPhoneExists(phone){
+  if(!phone||phone.length<10) return false;
+  try{
+    const r=await fetch('/api/auth/check-phone',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({phone})});
+    const d=await r.json();
+    return d.exists;
+  }catch(e){return false;}
+}
+
+function showInlineReg(containerId,saveFn){
+  const c=document.getElementById(containerId);
+  if(!c) return;
+  c.innerHTML=`
+    <div class="inline-reg-box">
+      <div class="inline-box-title">🌿 Create your free account to save</div>
+      <input class="inline-inp" id="irName" type="text" placeholder="Your full name"/>
+      <input class="inline-inp" id="irPhone" type="tel" placeholder="Phone number (e.g. 0244123456)" oninput="checkIRPhone(this,'${containerId}')"/>
+      <div id="irLoginBox" style="display:none;" class="inline-login-box" style="margin-top:0;">
+        <div class="inline-box-title">🔑 This phone is registered — sign in to save</div>
+        <input class="inline-inp" id="irPassword" type="password" placeholder="Your password"/>
+        <button class="inline-save-btn" style="background:#1A2E4A;color:#fff;" onclick="inlineLogin('${saveFn}')">Sign in &amp; save →</button>
+        <div style="font-size:11px;color:var(--ts);text-align:center;margin-top:6px;"><a href="/forgot-password" style="color:#1A2E4A;">Forgot password?</a></div>
+      </div>
+      <div id="irRegBox">
+        <input class="inline-inp" id="irPass" type="password" placeholder="Create a password (at least 6 characters)"/>
+        <button class="inline-save-btn" style="background:#2C7A3F;color:#fff;" onclick="${saveFn}(true)">Save &amp; create account →</button>
+      </div>
+      <div id="irErr" style="font-size:12px;color:#A32D2D;margin-top:6px;display:none;"></div>
+    </div>`;
+}
+
+async function checkIRPhone(input,containerId){
+  const phone=input.value.trim();
+  if(phone.length<10) return;
+  const exists=await checkPhoneExists(phone);
+  const loginBox=document.getElementById('irLoginBox');
+  const regBox=document.getElementById('irRegBox');
+  if(loginBox&&regBox){
+    loginBox.style.display=exists?'block':'none';
+    regBox.style.display=exists?'none':'block';
+  }
+}
+
+async function inlineRegister(){
+  const name=(document.getElementById('irName')||{value:''}).value.trim();
+  const phone=(document.getElementById('irPhone')||{value:''}).value.trim();
+  const pw=(document.getElementById('irPass')||{value:''}).value.trim();
+  const err=document.getElementById('irErr');
+  if(!name){if(err){err.textContent='Please enter your name.';err.style.display='block';} return false;}
+  if(!phone){if(err){err.textContent='Please enter your phone number.';err.style.display='block';} return false;}
+  if(!pw||pw.length<6){if(err){err.textContent='Password must be at least 6 characters.';err.style.display='block';} return false;}
+  const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,phone,password:pw,region:document.getElementById('cRegion')?.value||'greater_accra'})});
+  const d=await r.json();
+  if(d.success){
+    if(typeof gtag!=='undefined') gtag('event','register_inline');
+    return true;
+  }
+  if(err){err.textContent=d.error||'Registration failed.';err.style.display='block';}
+  return false;
+}
+
+async function inlineLogin(saveFn){
+  const phone=(document.getElementById('irPhone')||{value:''}).value.trim();
+  const pw=(document.getElementById('irPassword')||{value:''}).value.trim();
+  const err=document.getElementById('irErr');
+  if(!phone||!pw){if(err){err.textContent='Phone and password required.';err.style.display='block';} return;}
+  const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({phone,password:pw})});
+  const d=await r.json();
+  if(d.success){
+    window._registered=true;
+    eval(saveFn+'(false)');
+  } else {
+    if(err){err.textContent=d.error||'Sign in failed.';err.style.display='block';}
+  }
+}
+
+// ── MULTIPLE LIVESTOCK TYPES ─────────────────────────────────
+let _liveAnimals=[];
+let _selectedAnimalIdx=null;
+
+const ANIMAL_ICONS={poultry:'🐔',cattle:'🐄',goats:'🐐',sheep:'🐑',pigs:'🐖',fish:'🐟',aquaculture:'🐟'};
+const ANIMAL_LABELS={poultry:'Poultry',cattle:'Cattle',goats:'Goats',sheep:'Sheep',pigs:'Pigs',fish:'Fish/Aquaculture',aquaculture:'Aquaculture'};
+
+async function loadLivestockAnimals(){
+  const r=await fetch('/api/livestock');
+  const animals=await r.json();
+  _liveAnimals=animals;
+  renderAnimalGrid();
+}
+
+function renderAnimalGrid(){
+  const grid=document.getElementById('animalTypeGrid');
+  if(!grid) return;
+  // Filter out base 'profile' record — only show real animal types
+  const realAnimals=_liveAnimals.filter(a=>a.animal_type&&a.animal_type!=='profile');
+  let html=realAnimals.map((a,i)=>`
+    <div class="animal-type-card${_selectedAnimalIdx===i?' selected':''}" onclick="selectAnimal(${i})">
+      <div class="atc-icon">${ANIMAL_ICONS[a.animal_type]||'🐾'}</div>
+      <div class="atc-name">${ANIMAL_LABELS[a.animal_type]||a.animal_type}</div>
+      <div class="atc-count">${a.total_count||0} animals</div>
+    </div>`).join('');
+  html+=`<button class="add-animal-btn" onclick="addNewAnimalType()">+ Add animal type</button>`;
+  grid.innerHTML=html;
+  if(_selectedAnimalIdx!==null&&_liveAnimals[_selectedAnimalIdx]){
+    populateLivestockForm(_liveAnimals[_selectedAnimalIdx]);
+  }
+}
+
+function selectAnimal(idx){
+  _selectedAnimalIdx=idx;
+  const realAnimals=_liveAnimals.filter(a=>a.animal_type&&a.animal_type!=='profile');
+  renderAnimalGrid();
+  if(realAnimals[idx]) populateLivestockForm(realAnimals[idx]);
+}
+
+function populateLivestockForm(a){
+  const fields={lFarmerName:'farmer_name',lFarmerPhone:'phone',lGhanaCard:'ghana_card',
+    lRegion:'region',lEmail:'email',lAnimalType:'animal_type',
+    lTotalCount:'total_count',lSickCount:'sick_count',
+    lHousing:'housing_type',lPurpose:'purpose',
+    lFeed:'feed_source',lWater:'water_source',lVet:'nearest_vet',lNotes:'notes'};
+  for(const [id,key] of Object.entries(fields)){
+    const el=document.getElementById(id);
+    if(el&&a[key]!==undefined) el.value=a[key]||'';
+  }
+}
+
+function addNewAnimalType(){
+  _selectedAnimalIdx=null;
+  // Clear all livestock form fields
+  const fieldIds=['lFarmerName','lFarmerPhone','lGhanaCard','lEmail','lAnimalType',
+    'lTotalCount','lSickCount','lHousing','lPurpose','lFeed','lWater','lVet','lNotes',
+    'liveLat','liveLon','liveAcc','liveAddr'];
+  fieldIds.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  // Reset GPS button
+  const gpsBtn=document.getElementById('liveGpsBtn');
+  if(gpsBtn){gpsBtn.classList.remove('got','loading');document.getElementById('liveGpsTxt').textContent='Tap to record location';document.getElementById('liveGpsIcon').textContent='📍';}
+  const gpsResult=document.getElementById('liveGpsResult');if(gpsResult)gpsResult.classList.remove('show');
+  // Switch to My Profile sub-tab
+  const profileBtn=document.querySelector('.stab.a');
+  if(profileBtn) showSubPanel('livestock','profile',profileBtn);
+  // Scroll to form
+  // Scroll to livestock tab top
+  const panel=document.getElementById('panel-livestock');
+  if(panel) panel.scrollIntoView({behavior:'smooth',block:'start'});
+  renderAnimalGrid();
+}
+
+// ── FARMER DASHBOARD ─────────────────────────────────────────
+let _dashData=null;
+
+async function loadDashboard(){
+  document.getElementById('dashLoading').style.display='block';
+  document.getElementById('dashContent').style.display='none';
+  document.getElementById('dashNotReg').style.display='none';
+  let d;
+  try{
+    const r=await fetch('/api/farmer/dashboard');
+    if(r.status===401){
+      document.getElementById('dashLoading').style.display='none';
+      document.getElementById('dashNotReg').style.display='block';
+      return;
+    }
+    d=await r.json();
+    if(!d||!d.success){
+      document.getElementById('dashLoading').style.display='none';
+      document.getElementById('dashNotReg').style.display='block';
+      return;
+    }
+  }catch(e){
+    console.error('[dashboard]',e);
+    document.getElementById('dashLoading').textContent='Could not load dashboard. Please refresh.';
+    return;
+  }
+  _dashData=d;
+  document.getElementById('dashLoading').style.display='none';
+  document.getElementById('dashContent').style.display='block';
+
+  const REGIONS={greater_accra:'Greater Accra',ashanti:'Ashanti',central:'Central',
+    eastern:'Eastern',western:'Western',northern:'Northern',upper_east:'Upper East',
+    upper_west:'Upper West',volta:'Volta',brong_ahafo:'Bono',savannah:'Savannah',
+    north_east:'North East',oti:'Oti',bono_east:'Bono East',western_north:'Western North',ahafo:'Ahafo'};
+
+  document.getElementById('dashName').textContent=d.farmer.name||d.farmer.phone||'My Farm';
+  document.getElementById('dashSub').textContent=
+    `${REGIONS[d.farmer.region]||d.farmer.region||'Ghana'} · ${d.farmer.phone||''}`;
+  document.getElementById('dashPlanBadge').textContent=d.farmer.plan==='pro'?'⭐ Pro':'Free';
+  document.getElementById('dashCrops').textContent=d.farm&&d.farm.crops?d.farm.crops.split(',').length:0;
+  const realAnimalCount=(d.animals||[]).filter(a=>a.animal_type&&a.animal_type!=='profile').length;
+  document.getElementById('dashAnimalCount').textContent=realAnimalCount;
+  document.getElementById('dashDiary').textContent=d.diary_count||0;
+  document.getElementById('dashScore').textContent=d.score.value+'/100';
+
+  // Activity feed
+  const activity=[];
+  if(d.farm&&d.farm.crops) activity.push({icon:'🌾',bg:'#EAF3DE',title:'Crops profile saved',sub:d.farm.crops.split(',').slice(0,3).join(', '),time:'Profile'});
+  if(d.farm&&d.farm.ghana_card_valid) activity.push({icon:'🇬🇭',bg:'#EAF3DE',title:'Ghana Card validated',sub:'Identity verified on farm profile',time:'Profile'});
+  if(d.farm&&d.farm.latitude) activity.push({icon:'📍',bg:'#E8EDF5',title:'GPS location recorded',sub:'Farm coordinates saved',time:'Profile'});
+  const actAnimals=(d.animals||[]).filter(a=>a.animal_type&&a.animal_type!=='profile');
+  if(actAnimals.length) actAnimals.forEach(a=>activity.push({icon:ANIMAL_ICONS[a.animal_type]||'🐾',bg:'#FBF1E8',title:`${ANIMAL_LABELS[a.animal_type]||a.animal_type} · ${a.total_count||0} animals`,sub:`${a.housing_type||''} · ${a.purpose||''}`.replace(/^·\s*/,'').replace(/\s*·\s*$/,''),time:'Livestock'}));
+  if(d.diary_count>0) activity.push({icon:'📔',bg:'#EAF3DE',title:`${d.diary_count} diary entries logged`,sub:'Keep logging for a better credit score',time:'Diary'});
+  d.recent_questions.forEach(q=>activity.push({icon:'🤖',bg:'#F0EEE8',title:'AI question asked',sub:q.q,time:q.at?q.at.slice(5,10):''}));
+
+  if(!activity.length) activity.push({icon:'🌱',bg:'#EAF3DE',title:'Welcome to your farm dashboard',sub:'Save your crop or livestock profile to get started',time:'Now'});
+
+  document.getElementById('dashActivity').innerHTML=activity.slice(0,8).map(a=>`
+    <div class="activity-row">
+      <div class="activity-dot" style="background:${a.bg};">${a.icon}</div>
+      <div class="activity-main">
+        <div class="activity-title">${a.title}</div>
+        <div class="activity-sub">${a.sub||''}</div>
+      </div>
+      <div class="activity-time">${a.time||''}</div>
+    </div>`).join('');
+
+  // Farm tab
+  document.getElementById('dashFarm').innerHTML=d.farm?`
+    <div class="card">
+      <div style="font-size:13px;font-weight:500;color:var(--tp);margin-bottom:.75rem;">🌾 Crop farm profile</div>
+      ${[['Farm size',d.farm.farm_size?d.farm.farm_size+' '+d.farm.farm_unit:'Not set'],['Region',REGIONS[d.farm.region]||d.farm.region],['Crops',d.farm.crops||'Not set'],['Soil type',d.farm.soil_type||'Not set'],['Water source',d.farm.water_source||'Not set'],['Ghana Card',d.farm.ghana_card_valid?'✅ Validated':'⚠ Not validated'],['GPS',d.farm.latitude?'✅ Recorded':'Not recorded']].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--bd);font-size:12px;"><span style="color:var(--ts);">${k}</span><span style="font-weight:500;">${v}</span></div>`).join('')}
+    </div>`:'<div style="text-align:center;padding:1.5rem;color:var(--ts);font-size:13px;">No crop profile saved yet. Go to My Crops tab to add one.</div>';
+
+  // Animals tab
+  const validAnimals=d.animals?d.animals.filter(a=>a.animal_type&&a.animal_type!=='profile'):[];
+  document.getElementById('dashAnimals').innerHTML=validAnimals.length?validAnimals.map(a=>`
+    <div class="card" style="margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem;">
+        <span style="font-size:22px;">${ANIMAL_ICONS[a.animal_type]||'🐾'}</span>
+        <div style="font-size:13px;font-weight:500;">${ANIMAL_LABELS[a.animal_type]||a.animal_type}</div>
+        <span style="margin-left:auto;font-size:11px;padding:2px 8px;border-radius:20px;background:#FBF1E8;color:#633806;">${a.total_count||0} animals</span>
+      </div>
+      ${[['Purpose',a.purpose||'—'],['Housing',a.housing_type||'—'],['Feed source',a.feed_source||'—'],['Sick/isolated',a.sick_count||0],['Nearest vet',a.nearest_vet||'—']].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--bd);font-size:12px;"><span style="color:var(--ts);">${k}</span><span>${v}</span></div>`).join('')}
+      <button onclick="showTab('livestock')" style="width:100%;margin-top:8px;padding:7px;border:0.5px solid var(--bd);border-radius:6px;background:transparent;font-size:11px;color:var(--ts);cursor:pointer;font-family:inherit;">✏️ Update count or details</button>
+    </div>`).join(''):'<div style="text-align:center;padding:1.5rem;color:var(--ts);font-size:13px;">No livestock profiles yet. Go to Livestock tab to add animals.</div>';
+
+  // Credit tab
+  const sc=d.score;
+  document.getElementById('dashCredit').innerHTML=`
+    <div class="card">
+      <div style="font-size:13px;font-weight:500;margin-bottom:.875rem;">💳 Farming activity score</div>
+      <div style="font-size:32px;font-weight:600;color:var(--g600);">${sc.value}<span style="font-size:14px;font-weight:400;color:var(--ts);">/100</span></div>
+      <div style="height:6px;background:var(--bd);border-radius:3px;overflow:hidden;margin:8px 0;">
+        <div style="height:6px;background:var(--g600);border-radius:3px;width:${sc.value}%;transition:width .8s;"></div>
+      </div>
+      <div style="font-size:11px;color:var(--ts);margin-bottom:.875rem;">${sc.rating} score · Complete your profile to improve</div>
+      <button class="save-btn" style="background:#1A2E4A;" onclick="showTab('credit')">View full credit profile →</button>
+    </div>`;
+}
+
+function showDashTab(tab){
+  ['activity','farm','animals','credit'].forEach(t=>{
+    const el=document.getElementById('dash'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(el) el.style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('.dash-tab').forEach((b,i)=>{
+    b.classList.toggle('on',['activity','farm','animals','credit'][i]===tab);
+  });
+}
+async function handleCropSave(){
+  if(USER_REGISTERED || window._registered){
+    USER_REGISTERED = true;
+    await saveCropProfile();
+    return;
+  }
+  const phone=(document.getElementById('cFarmerPhone')||{value:''}).value.trim();
+  const regDiv=document.getElementById('cropInlineReg');
+  if(!regDiv) return;
+  const exists=phone?await checkPhoneExists(phone):false;
+  if(exists){
+    regDiv.innerHTML=`<div class="inline-login-box">
+      <div class="inline-box-title">🔑 Sign in to save your farm profile</div>
+      <input class="inline-inp" id="irPassword" type="password" placeholder="Your password"/>
+      <button class="inline-save-btn" style="background:#1A2E4A;color:#fff;" onclick="inlineCropLogin()">Sign in &amp; save →</button>
+      <div style="font-size:11px;color:var(--ts);text-align:center;margin-top:6px;"><a href="/forgot-password" style="color:#1A2E4A;">Forgot password?</a></div>
+      <div id="irErr" style="font-size:12px;color:#A32D2D;margin-top:5px;display:none;"></div>
+    </div>`;
+  } else {
+    regDiv.innerHTML=`<div class="inline-reg-box">
+      <div class="inline-box-title">🌿 Create your free account to save</div>
+      <input class="inline-inp" id="irName" type="text" placeholder="Your full name"/>
+      <input class="inline-inp" id="irPass" type="password" placeholder="Create a password (at least 6 characters)"/>
+      <button class="inline-save-btn" style="background:#2C7A3F;color:#fff;" onclick="inlineCropRegister()">Save &amp; create account →</button>
+      <div id="irErr" style="font-size:12px;color:#A32D2D;margin-top:5px;display:none;"></div>
+    </div>`;
+  }
+}
+
+async function inlineCropRegister(){
+  const name=(document.getElementById('irName')||{value:''}).value.trim();
+  const phone=(document.getElementById('cFarmerPhone')||{value:''}).value.trim();
+  const pw=(document.getElementById('irPass')||{value:''}).value.trim();
+  const region=document.getElementById('cRegion')?.value||'greater_accra';
+  const err=document.getElementById('irErr');
+  if(!name){if(err){err.textContent='Please enter your name.';err.style.display='block';} return;}
+  if(!pw||pw.length<6){if(err){err.textContent='Password must be at least 6 characters.';err.style.display='block';} return;}
+  const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,phone,password:pw,region})});
+  const d=await r.json();
+  if(d.success){
+    USER_REGISTERED = true;
+    window._registered = true;
+    document.getElementById('cropInlineReg').innerHTML='';
+    await saveCropProfile();
+  } else {
+    if(err){err.textContent=d.error||'Registration failed.';err.style.display='block';}
+  }
+}
+
+async function inlineCropLogin(){
+  const phone=(document.getElementById('cFarmerPhone')||{value:''}).value.trim();
+  const pw=(document.getElementById('irPassword')||{value:''}).value.trim();
+  const err=document.getElementById('irErr');
+  if(!pw){if(err){err.textContent='Please enter your password.';err.style.display='block';} return;}
+  const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({phone,password:pw})});
+  const d=await r.json();
+  if(d.success){
+    USER_REGISTERED = true;
+    window._registered = true;
+    document.getElementById('cropInlineReg').innerHTML='';
+    await saveCropProfile();
+  } else {
+    if(err){err.textContent=d.error||'Sign in failed.';err.style.display='block';}
+  }
+}
+
+async function handleLiveSave(){
+  if(USER_REGISTERED || window._registered){
+    USER_REGISTERED = true;
+    await saveLivestockProfile();
+    return;
+  }
+  const phone=(document.getElementById('lFarmerPhone')||{value:''}).value.trim();
+  const regDiv=document.getElementById('liveInlineReg');
+  if(!regDiv) return;
+  const exists=phone?await checkPhoneExists(phone):false;
+  if(exists){
+    regDiv.innerHTML=`<div class="inline-login-box">
+      <div class="inline-box-title">🔑 Sign in to save your livestock profile</div>
+      <input class="inline-inp" id="lirPassword" type="password" placeholder="Your password"/>
+      <button class="inline-save-btn" style="background:#1A2E4A;color:#fff;" onclick="inlineLiveLogin()">Sign in &amp; save →</button>
+      <div style="font-size:11px;color:var(--ts);text-align:center;margin-top:6px;"><a href="/forgot-password" style="color:#1A2E4A;">Forgot password?</a></div>
+      <div id="lirErr" style="font-size:12px;color:#A32D2D;margin-top:5px;display:none;"></div>
+    </div>`;
+  } else {
+    regDiv.innerHTML=`<div class="inline-reg-box">
+      <div class="inline-box-title">🌿 Create your free account to save</div>
+      <input class="inline-inp" id="lirName" type="text" placeholder="Your full name"/>
+      <input class="inline-inp" id="lirPass" type="password" placeholder="Create a password (at least 6 characters)"/>
+      <button class="inline-save-btn" style="background:#2C7A3F;color:#fff;" onclick="inlineLiveRegister()">Save &amp; create account →</button>
+      <div id="lirErr" style="font-size:12px;color:#A32D2D;margin-top:5px;display:none;"></div>
+    </div>`;
+  }
+}
+
+async function inlineLiveRegister(){
+  const name=(document.getElementById('lirName')||{value:''}).value.trim();
+  const phone=(document.getElementById('lFarmerPhone')||{value:''}).value.trim();
+  const pw=(document.getElementById('lirPass')||{value:''}).value.trim();
+  const region=document.getElementById('lRegion')?.value||'greater_accra';
+  const err=document.getElementById('lirErr');
+  if(!name){if(err){err.textContent='Please enter your name.';err.style.display='block';}return;}
+  if(!pw||pw.length<6){if(err){err.textContent='Password must be at least 6 characters.';err.style.display='block';}return;}
+  const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,phone,password:pw,region})});
+  const d=await r.json();
+  if(d.success){
+    USER_REGISTERED=true; window._registered=true;
+    document.getElementById('liveInlineReg').innerHTML='';
+    await saveLivestockProfile();
+  } else {
+    if(err){err.textContent=d.error||'Registration failed.';err.style.display='block';}
+  }
+}
+
+async function inlineLiveLogin(){
+  const phone=(document.getElementById('lFarmerPhone')||{value:''}).value.trim();
+  const pw=(document.getElementById('lirPassword')||{value:''}).value.trim();
+  const err=document.getElementById('lirErr');
+  if(!pw){if(err){err.textContent='Please enter your password.';err.style.display='block';}return;}
+  const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({phone,password:pw})});
+  const d=await r.json();
+  if(d.success){
+    USER_REGISTERED=true; window._registered=true;
+    document.getElementById('liveInlineReg').innerHTML='';
+    await saveLivestockProfile();
+  } else {
+    if(err){err.textContent=d.error||'Sign in failed.';err.style.display='block';}
+  }
+}
+
+
+{% raw %}
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js',new Date());
+  // gtag('config','G-XXXXXXXXXX'); // replace with real ID
+  function trackTab(name){gtag('event','tab_view',{event_category:'navigation',event_label:name});}
+  function trackSave(type){gtag('event','profile_save',{event_category:'engagement',event_label:type});}
+  function trackUpgrade(){gtag('event','upgrade_click',{event_category:'monetisation',event_label:'pro_upgrade'});}
+{% endraw %}
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --g50:#EAF3DE;--g100:#C0DD97;--g600:#3B6D11;--g900:#1A4D15;
+  --a50:#FAEEDA;--a100:#FAC775;--a600:#C4873A;--a900:#633806;
+  --r50:#FCEBEB;--r600:#A32D2D;
+  --blue:#185FA5;--blue50:#E6F1FB;
+  --teal:#0F6E56;--teal50:#E1F5EE;--teal100:#9FE1CB;
+  --tp:#1a1a18;--ts:#5F5E5A;--tt:#9C9B97;
+  --bd:#d6d4cc;--bg:#f7f6f2;--card:#ffffff;--muted:#f1efe8;
+  --rm:8px;--rl:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tp);min-height:100vh;display:flex;flex-direction:column;}
+
+/* ── AUTH BAR ── */
+.auth-bar{background:#fff;border-bottom:0.5px solid var(--bd);padding:7px .75rem;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;}
+.auth-info{display:flex;align-items:center;gap:6px;flex:1;min-width:0;}
+.auth-name{font-size:12px;font-weight:500;color:var(--tp);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pro-pill{font-size:10px;padding:2px 8px;border-radius:20px;background:#E6F1FB;color:#185FA5;font-weight:600;white-space:nowrap;}
+.auth-link{font-size:11px;color:var(--ts);text-decoration:none;padding:5px 9px;border:0.5px solid var(--bd);border-radius:6px;white-space:nowrap;}
+.auth-link:hover{background:var(--muted);}
+.auth-btn{font-size:11px;color:#fff;text-decoration:none;padding:5px 10px;border-radius:6px;background:var(--g600);font-weight:500;white-space:nowrap;}
+.auth-btn:hover{background:var(--g900);}
+
+
+
+/* ── INLINE REGISTRATION ── */
+.inline-reg-box{background:#EAF3DE;border:0.5px solid #C0DD97;border-radius:var(--rl);padding:1rem;margin-top:.875rem;}
+.inline-login-box{background:#E8EDF5;border:0.5px solid #B5D4F4;border-radius:var(--rl);padding:1rem;margin-top:.875rem;}
+.inline-box-title{font-size:12px;font-weight:500;margin-bottom:.75rem;display:flex;align-items:center;gap:6px;}
+.inline-reg-box .inline-box-title{color:#27500A;}
+.inline-login-box .inline-box-title{color:#0C447C;}
+.inline-inp{width:100%;padding:9px 12px;border:0.5px solid var(--bd);border-radius:var(--rm);font-size:13px;font-family:inherit;background:#fff;color:var(--tp);outline:none;margin-bottom:7px;}
+.inline-inp:focus{border-color:#3B6D11;}
+.inline-save-btn{width:100%;padding:10px;border:none;border-radius:var(--rm);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+
+/* ── FARMER DASHBOARD ── */
+.dash-farmer-header{display:flex;align-items:center;gap:10px;background:var(--g900);border-radius:var(--rl);padding:1rem;margin-bottom:1rem;}
+.dash-avatar{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.dash-farmer-name{font-size:15px;font-weight:500;color:#fff;}
+.dash-farmer-sub{font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;}
+.dash-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem;}
+.dash-metric{background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;}
+.dash-metric-val{font-size:24px;font-weight:600;color:var(--tp);}
+.dash-metric-lbl{font-size:11px;color:var(--ts);margin-top:2px;}
+.dash-tabs{display:flex;gap:4px;margin-bottom:.875rem;border-bottom:0.5px solid var(--bd);padding-bottom:8px;overflow-x:auto;}
+.dash-tab{font-size:11px;padding:5px 12px;border-radius:var(--rm);border:none;background:transparent;color:var(--ts);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.dash-tab.on{background:var(--g50);color:var(--g600);font-weight:500;}
+.activity-feed{display:flex;flex-direction:column;gap:0;}
+.activity-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--bd);}
+.activity-row:last-child{border-bottom:none;}
+.activity-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;}
+.activity-main{flex:1;min-width:0;}
+.activity-title{font-size:13px;font-weight:500;color:var(--tp);}
+.activity-sub{font-size:11px;color:var(--ts);margin-top:2px;line-height:1.4;}
+.activity-time{font-size:10px;color:var(--tt);white-space:nowrap;flex-shrink:0;}
+.animal-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.875rem;}
+.animal-type-card{border:0.5px solid var(--bd);border-radius:var(--rm);padding:.75rem;cursor:pointer;transition:border-color .15s,background .15s;}
+.animal-type-card.selected{border-color:var(--a600);background:var(--a50);}
+.animal-type-card:hover{border-color:var(--a600);}
+.atc-icon{font-size:22px;margin-bottom:3px;}
+.atc-name{font-size:12px;font-weight:500;color:var(--tp);}
+.atc-count{font-size:11px;color:var(--ts);}
+.add-animal-btn{border:0.5px dashed var(--bd);border-radius:var(--rm);padding:.75rem;text-align:center;color:var(--ts);font-size:12px;cursor:pointer;background:transparent;width:100%;font-family:inherit;}
+.add-animal-btn:hover{border-color:var(--a600);color:var(--a600);}
+
+/* ── GPS LOCATION ── */
+.gps-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;font-weight:500;color:#1A2E4A;cursor:pointer;font-family:inherit;transition:all .15s;width:100%;}
+.gps-btn:hover{background:#E8EDF5;border-color:#1A2E4A;}
+.gps-btn.got{background:#EAF3DE;border-color:#C0DD97;color:#2C7A3F;}
+.gps-btn.loading{background:#F4F6FB;color:#8A9099;cursor:not-allowed;}
+.gps-result{font-size:11px;color:#5F5E5A;margin-top:5px;line-height:1.5;padding:7px 10px;background:#F4F6FA;border-radius:6px;display:none;}
+.gps-result.show{display:block;}
+.gps-err{font-size:11px;color:#A32D2D;margin-top:5px;display:none;}
+.gps-err.show{display:block;}
+
+
+/* ── INLINE REGISTRATION ── */
+.inline-reg-box{background:#EAF3DE;border:0.5px solid #C0DD97;border-radius:var(--rl);padding:1rem;margin-top:.875rem;}
+.inline-login-box{background:#E8EDF5;border:0.5px solid #B5D4F4;border-radius:var(--rl);padding:1rem;margin-top:.875rem;}
+.inline-box-title{font-size:12px;font-weight:500;margin-bottom:.75rem;display:flex;align-items:center;gap:6px;}
+.inline-reg-box .inline-box-title{color:#27500A;}
+.inline-login-box .inline-box-title{color:#0C447C;}
+.inline-inp{width:100%;padding:9px 12px;border:0.5px solid var(--bd);border-radius:var(--rm);font-size:13px;font-family:inherit;background:#fff;color:var(--tp);outline:none;margin-bottom:7px;}
+.inline-inp:focus{border-color:#3B6D11;}
+.inline-save-btn{width:100%;padding:10px;border:none;border-radius:var(--rm);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+
+/* ── FARMER DASHBOARD ── */
+.dash-farmer-header{display:flex;align-items:center;gap:10px;background:var(--g900);border-radius:var(--rl);padding:1rem;margin-bottom:1rem;}
+.dash-avatar{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.dash-farmer-name{font-size:15px;font-weight:500;color:#fff;}
+.dash-farmer-sub{font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;}
+.dash-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem;}
+.dash-metric{background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;}
+.dash-metric-val{font-size:24px;font-weight:600;color:var(--tp);}
+.dash-metric-lbl{font-size:11px;color:var(--ts);margin-top:2px;}
+.dash-tabs{display:flex;gap:4px;margin-bottom:.875rem;border-bottom:0.5px solid var(--bd);padding-bottom:8px;overflow-x:auto;}
+.dash-tab{font-size:11px;padding:5px 12px;border-radius:var(--rm);border:none;background:transparent;color:var(--ts);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.dash-tab.on{background:var(--g50);color:var(--g600);font-weight:500;}
+.activity-feed{display:flex;flex-direction:column;gap:0;}
+.activity-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--bd);}
+.activity-row:last-child{border-bottom:none;}
+.activity-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;}
+.activity-main{flex:1;min-width:0;}
+.activity-title{font-size:13px;font-weight:500;color:var(--tp);}
+.activity-sub{font-size:11px;color:var(--ts);margin-top:2px;line-height:1.4;}
+.activity-time{font-size:10px;color:var(--tt);white-space:nowrap;flex-shrink:0;}
+.animal-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.875rem;}
+.animal-type-card{border:0.5px solid var(--bd);border-radius:var(--rm);padding:.75rem;cursor:pointer;transition:border-color .15s,background .15s;}
+.animal-type-card.selected{border-color:var(--a600);background:var(--a50);}
+.animal-type-card:hover{border-color:var(--a600);}
+.atc-icon{font-size:22px;margin-bottom:3px;}
+.atc-name{font-size:12px;font-weight:500;color:var(--tp);}
+.atc-count{font-size:11px;color:var(--ts);}
+.add-animal-btn{border:0.5px dashed var(--bd);border-radius:var(--rm);padding:.75rem;text-align:center;color:var(--ts);font-size:12px;cursor:pointer;background:transparent;width:100%;font-family:inherit;}
+.add-animal-btn:hover{border-color:var(--a600);color:var(--a600);}
+
+/* ── GPS LOCATION ── */
+.gps-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;font-weight:500;color:#1A2E4A;cursor:pointer;font-family:inherit;transition:all .15s;width:100%;text-align:left;}
+.gps-btn:hover{background:#E8EDF5;border-color:#1A2E4A;}
+.gps-btn.got{background:#EAF3DE;border-color:#C0DD97;color:#2C7A3F;}
+.gps-btn.loading{background:#F4F6FB;color:#8A9099;cursor:not-allowed;}
+.gps-result{font-size:11px;color:#5F5E5A;margin-top:5px;line-height:1.5;padding:7px 10px;background:#F4F6FA;border-radius:6px;display:none;}
+.gps-result.show{display:block;}
+.gps-err{font-size:11px;color:#A32D2D;margin-top:5px;display:none;}
+.gps-err.show{display:block;}
+/* ── PRO LOCK BAR ── */
+.pro-lock-bar{
+  background:linear-gradient(135deg,#1A2E4A,#2E5F8A);
+  color:#fff;padding:.75rem 1rem;border-radius:var(--rl);
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;margin-bottom:1rem;flex-wrap:wrap;
+}
+.pro-lock-bar span{font-size:12px;flex:1;min-width:160px;}
+.pro-lock-bar strong{color:#7EC850;}
+.pro-lock-btn{
+  padding:8px 14px;border:none;border-radius:var(--rm);
+  background:#7EC850;color:#1A4D15;
+  font-size:12px;font-weight:700;cursor:pointer;
+  font-family:inherit;white-space:nowrap;
+  flex-shrink:0;
+}
+.pro-lock-btn:hover{background:#fff;}
+@media(max-width:400px){
+  .pro-lock-bar{flex-direction:column;align-items:flex-start;gap:10px;}
+  .pro-lock-btn{width:100%;text-align:center;padding:10px;}
+}
+.gate-modal{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem;}
+.gate-modal.open{display:flex;}
+.gate-card{background:#fff;border-radius:16px;padding:1.75rem 1.5rem;width:100%;max-width:360px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.18);}
+.gate-icon{font-size:36px;margin-bottom:.75rem;}
+.gate-title{font-size:18px;font-weight:600;color:var(--tp);margin-bottom:.375rem;}
+.gate-sub{font-size:13px;color:var(--ts);line-height:1.55;margin-bottom:1.25rem;}
+.gate-btns{display:flex;flex-direction:column;gap:.625rem;}
+.gate-primary{padding:11px;border:none;border-radius:10px;background:var(--g600);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;display:block;}
+.gate-primary:hover{background:var(--g900);}
+.gate-secondary{padding:11px;border:1px solid var(--bd);border-radius:10px;background:#fff;color:var(--ts);font-size:14px;cursor:pointer;font-family:inherit;text-decoration:none;display:block;}
+.gate-close{margin-top:.75rem;font-size:12px;color:var(--ts);cursor:pointer;background:none;border:none;font-family:inherit;}
+.persist-banner{
+  background:linear-gradient(135deg,var(--g900),var(--g600));
+  color:#fff;padding:.75rem .875rem;
+  display:flex;align-items:flex-start;gap:8px;
+  position:relative;flex-wrap:wrap;
+}
+.persist-banner.hidden{display:none;}
+.pb-icon{font-size:18px;flex-shrink:0;margin-top:2px;}
+.pb-text{flex:1;font-size:12px;line-height:1.5;min-width:160px;}
+.pb-text strong{font-weight:600;color:var(--g100);}
+.pb-cta{
+  padding:6px 12px;border:none;border-radius:var(--rm);
+  background:var(--g300);color:var(--g900);
+  font-size:11px;font-weight:700;cursor:pointer;
+  font-family:inherit;white-space:nowrap;flex-shrink:0;margin-top:2px;
+}
+.pb-cta:hover{background:#fff;}
+.pb-close{
+  position:absolute;top:5px;right:6px;
+  background:none;border:none;color:rgba(255,255,255,0.5);
+  font-size:14px;cursor:pointer;padding:2px 5px;line-height:1;
+}
+.pb-close:hover{color:#fff;}
+.topbar{background:var(--card);border-bottom:1px solid var(--bd);padding:0 .75rem;display:flex;align-items:center;gap:6px;height:50px;position:sticky;top:0;z-index:10;}
+.app-sub{display:none;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.app-sub{font-size:10px;color:var(--ts);}
+@media(max-width:480px){
+  .app-sub{display:none;}
+  .api-ok,.api-warn{display:none;}
+  .upgrade-pill{font-size:10px;padding:4px 8px;}
+}
+.logo{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--a600),var(--g600));display:flex;align-items:center;justify-content:center;font-size:20px;}
+.app-title{font-size:16px;font-weight:600;color:var(--tp);}
+.app-sub{font-size:11px;color:var(--ts);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.api-ok{font-size:12px;padding:4px 10px;border-radius:20px;background:var(--g50);color:var(--g600);font-weight:500;}
+.api-warn{font-size:12px;padding:4px 10px;border-radius:20px;background:var(--a50);color:var(--a600);font-weight:500;}
+.pro-badge{font-size:11px;padding:4px 10px;border-radius:20px;background:var(--g50);color:var(--g600);font-weight:500;}
+.upgrade-pill{font-size:11px;padding:4px 10px;border-radius:20px;background:var(--a50);color:var(--a600);font-weight:500;cursor:pointer;border:none;}
+.lang-toggle{background:var(--muted);border:1px solid var(--bd);border-radius:var(--rm);padding:3px 2px;display:flex;gap:2px;}
+.lang-btn{padding:4px 9px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--ts);}
+.lang-btn.active{background:var(--g600);color:#fff;}
+
+/* ── LAYOUT ── */
+.main-content{flex:1;}
+.container{max-width:900px;margin:0 auto;padding:1rem 0.75rem;}
+@media(min-width:600px){.container{padding:1.25rem 1rem;}}
+
+/* ── USAGE BAR ── */
+.usage-bar{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:12px;}
+.usage-label{font-size:12px;color:var(--ts);white-space:nowrap;}
+.usage-track{flex:1;height:6px;background:var(--muted);border-radius:3px;overflow:hidden;}
+.usage-fill{height:6px;border-radius:3px;transition:width .3s;}
+.fill-ok{background:var(--g600);}.fill-warn{background:#EF9F27;}.fill-full{background:#E24B4A;}
+.usage-count{font-size:12px;font-weight:500;white-space:nowrap;}
+
+/* ── MAIN TABS ── */
+/* ── TABS — mobile first ── */
+.tabs{
+  display:flex;
+  gap:3px;
+  margin-bottom:1rem;
+  background:var(--card);
+  border:1px solid var(--bd);
+  border-radius:var(--rl);
+  padding:5px;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none;}
+.tabs-row2{display:none;}
+.tab-btn{
+  flex:0 0 auto;
+  min-width:64px;
+  padding:8px 6px;
+  border:none;
+  border-radius:var(--rm);
+  background:transparent;
+  font-size:10px;
+  color:var(--ts);
+  cursor:pointer;
+  font-weight:500;
+  text-align:center;
+  line-height:1.3;
+}
+.tab-btn .tab-icon{font-size:18px;display:block;margin-bottom:2px;}
+.tab-btn .tab-lbl{font-size:10px;display:block;white-space:nowrap;}
+.tab-btn.crop.active{background:var(--g50);color:var(--g600);}
+.tab-btn.live.active{background:var(--a50);color:var(--a600);}
+.tab-btn.voice.active{background:var(--blue50);color:var(--blue);}
+.tab-btn.teal.active{background:var(--teal50);color:var(--teal);}
+.tab-btn.shared.active{background:var(--muted);color:var(--tp);}
+.tab-btn.credit.active{background:#E8EDF5;color:#1A2E4A;}
+.tab-btn.dash.active{background:#EAF3DE;color:#2C7A3F;}
+
+@media(min-width:700px){
+  .tab-btn{min-width:80px;padding:9px 6px;}
+  .tab-btn .tab-icon{font-size:16px;}
+  .tab-btn .tab-lbl{font-size:11px;}
+}
+
+/* ── AGRONOMIST ── */
+.agro-filter{display:flex;gap:6px;margin-bottom:1rem;overflow-x:auto;flex-wrap:wrap;}
+.agro-chip{padding:5px 13px;border:1px solid var(--bd);border-radius:20px;font-size:12px;font-weight:500;color:var(--ts);cursor:pointer;background:var(--card);white-space:nowrap;}
+.agro-chip.on{border-color:var(--teal);background:var(--teal50);color:var(--teal);}
+.agro-card{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:1.25rem;margin-bottom:.875rem;display:flex;align-items:flex-start;gap:14px;}
+.agro-avatar{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;flex-shrink:0;color:#fff;}
+.agro-name{font-size:15px;font-weight:600;color:var(--tp);margin-bottom:3px;}
+.agro-title{font-size:12px;color:var(--ts);margin-bottom:4px;}
+.agro-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+.agro-tag{font-size:10px;padding:2px 8px;border-radius:20px;background:var(--teal50);color:var(--teal);font-weight:500;}
+.agro-tag.region{background:var(--g50);color:var(--g600);}
+.agro-tag.verified{background:var(--g50);color:var(--g600);}
+.agro-stars{font-size:12px;color:#EF9F27;margin-bottom:6px;}
+.agro-stars span{color:var(--ts);font-size:11px;}
+.agro-fee{font-size:14px;font-weight:600;color:var(--teal);}
+.agro-fee-lbl{font-size:10px;color:var(--ts);}
+.agro-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;}
+.book-btn{padding:7px 16px;border:1px solid var(--teal);border-radius:var(--rm);background:var(--teal50);color:var(--teal);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.book-btn:hover{background:var(--teal100);}
+.wa-btn{padding:7px 16px;border:none;border-radius:var(--rm);background:#25D366;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.agro-register-card{background:var(--teal50);border:1px solid var(--teal100);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;text-align:center;}
+.agro-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.625rem;margin-bottom:1rem;}
+.agro-stat{background:var(--teal50);border-radius:var(--rm);padding:.75rem;text-align:center;}
+.agro-stat-val{font-size:22px;font-weight:600;color:var(--teal);}
+.agro-stat-lbl{font-size:10px;color:var(--ts);margin-top:2px;}
+
+/* ── SUB TABS ── */
+.stabs{display:flex;gap:6px;margin-bottom:1rem;overflow-x:auto;padding-bottom:2px;}
+.stab{padding:7px 14px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);font-size:12px;font-weight:500;color:var(--ts);cursor:pointer;white-space:nowrap;}
+.stab.g.on{background:var(--g50);color:var(--g600);border-color:var(--g100);}
+.stab.a.on{background:var(--a50);color:var(--a600);border-color:var(--a100);}
+
+/* ── PANELS ── */
+.panel{display:none;}.panel.active{display:block;}
+.sub-panel{display:none;}.sub-panel.active{display:block;}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;}
+.card-title{font-size:12px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.75rem;}
+.card-title.g{color:var(--g600);}.card-title.a{color:var(--a600);}.card-title.b{color:var(--blue);}
+
+/* ── FORM ── */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem;}
+@media(max-width:560px){.form-row{grid-template-columns:1fr;}}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.lbl{font-size:11px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;}
+.inp{padding:9px 12px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;color:var(--tp);background:var(--card);outline:none;font-family:inherit;}
+.inp:focus{border-color:var(--g100);}
+.inp.ok-g{border-color:var(--g600);background:var(--g50);}
+.inp.ok-a{border-color:var(--a600);background:var(--a50);}
+.inp.err{border-color:var(--r600);background:var(--r50);}
+.sel{padding:9px 12px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;color:var(--tp);background:var(--card);font-family:inherit;cursor:pointer;outline:none;}
+.hint{font-size:11px;color:var(--tt);margin-top:3px;}
+.gc-status{font-size:12px;font-weight:500;margin-top:3px;}
+.gc-ok-g{color:var(--g600);}.gc-ok-a{color:var(--a600);}.gc-err{color:var(--r600);}
+
+/* ── CROP TYPE ── */
+.crop-type-row{display:flex;gap:8px;margin-bottom:.875rem;}
+.ctype{flex:1;padding:11px;border:1px solid var(--bd);border-radius:var(--rm);text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--ts);}
+.ctype.on{border-color:var(--g600);background:var(--g50);color:var(--g600);}
+
+/* ── CHIPS ── */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:.875rem;}
+.chip{padding:5px 13px;border:1px solid var(--bd);border-radius:20px;font-size:12px;font-weight:500;color:var(--ts);cursor:pointer;user-select:none;}
+.chip.on-g{border-color:var(--g600);background:var(--g50);color:var(--g600);}
+.chip.on-a{border-color:var(--a600);background:var(--a50);color:var(--a600);}
+
+/* ── BUTTONS ── */
+.save-btn{width:100%;padding:11px;border:none;border-radius:var(--rm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.save-btn.g{background:var(--g600);}.save-btn.a{background:var(--a600);}
+.gen-btn{width:100%;padding:10px;border-radius:var(--rm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:.875rem;}
+.gen-btn.g{border:1px solid var(--g600);background:var(--g50);color:var(--g600);}
+.gen-btn.a{border:1px solid var(--a600);background:var(--a50);color:var(--a600);}
+.ask-link-btn{width:100%;padding:10px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);color:var(--ts);font-size:13px;cursor:pointer;text-align:left;margin-bottom:6px;font-family:inherit;}
+.ask-link-btn:hover{background:var(--g50);color:var(--g600);}
+.saved-ok{display:none;border-radius:var(--rm);padding:10px 14px;font-size:13px;text-align:center;margin-top:.75rem;}
+.saved-ok.show{display:block;}
+.saved-ok.g{background:var(--g50);border:1px solid var(--g100);color:var(--g600);}
+.saved-ok.a{background:var(--a50);border:1px solid var(--a100);color:var(--a600);}
+.note-box{background:var(--muted);border-radius:var(--rm);padding:8px 12px;font-size:12px;color:var(--ts);margin-bottom:.75rem;border-left:3px solid var(--a100);}
+
+/* ── WEATHER ── */
+.region-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:1rem;background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:.625rem .875rem;}
+.region-bar label{font-size:12px;font-weight:500;color:var(--ts);white-space:nowrap;}
+.region-bar .region-select{flex:1;min-width:0;}
+@media(max-width:420px){
+  .region-bar{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;}
+  .region-bar label{grid-column:1/-1;margin-bottom:0;}
+}
+.region-select{flex:1;padding:8px 12px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;background:var(--card);color:var(--tp);cursor:pointer;outline:none;}
+.refresh-btn{padding:8px 14px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.live-badge{font-size:11px;padding:3px 8px;border-radius:var(--rm);background:var(--g50);color:var(--g600);font-weight:600;white-space:nowrap;}
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem;}
+@media(max-width:560px){.metric-grid{grid-template-columns:repeat(2,1fr);}}
+.metric{background:var(--muted);border-radius:var(--rm);padding:.75rem 1rem;}
+.metric-label{font-size:12px;color:var(--ts);margin-bottom:2px;}
+.metric-value{font-size:22px;font-weight:600;}
+.forecast-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;}
+.forecast-day{flex:0 0 68px;text-align:center;background:var(--muted);border-radius:var(--rm);padding:8px 4px;}
+.day-name{font-size:11px;color:var(--ts);margin-bottom:3px;}
+.day-icon{font-size:20px;margin-bottom:3px;}
+.day-temp{font-size:14px;font-weight:600;}
+.day-rain{font-size:11px;color:var(--ts);}
+.advice-crop{background:var(--g50);border-radius:var(--rm);padding:10px 14px;font-size:13px;color:var(--g900);border-left:3px solid var(--g600);line-height:1.5;margin-bottom:.5rem;}
+.advice-live{background:var(--a50);border-radius:var(--rm);padding:10px 14px;font-size:13px;color:var(--a900);border-left:3px solid var(--a600);line-height:1.5;}
+.badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:var(--rm);font-weight:600;}
+.b-ok{background:var(--g50);color:var(--g600);}.b-warn{background:var(--a50);color:var(--a600);}.b-danger{background:var(--r50);color:var(--r600);}.b-gray{background:var(--muted);color:var(--ts);}
+
+/* ── PRICES ── */
+.price-table{width:100%;border-collapse:collapse;}
+.price-table th{text-align:left;font-size:11px;font-weight:600;color:var(--ts);text-transform:uppercase;letter-spacing:.04em;padding:0 0 10px;border-bottom:1px solid var(--bd);}
+.price-table td{padding:11px 0;border-bottom:1px solid var(--bd);font-size:14px;}
+.price-table tr:last-child td{border-bottom:none;}
+.price-value{font-size:15px;font-weight:600;}
+.pst{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:8px 0 6px;display:flex;align-items:center;gap:6px;}
+.pst-g{color:var(--g600);}.pst-a{color:var(--a600);}
+
+/* ── PESTS ── */
+.pest-item{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--bd);}
+.pest-item:last-child{border-bottom:none;}
+.pest-name{font-size:15px;font-weight:600;margin-bottom:2px;}
+.pest-crops{font-size:12px;color:var(--ts);margin-bottom:4px;}
+.pest-desc{font-size:13px;color:var(--ts);max-width:420px;}
+.pest-tip{margin-top:6px;font-size:12px;padding:5px 10px;border-radius:var(--rm);display:inline-block;}
+.pest-tip.g{background:var(--g50);color:var(--g600);}
+.pest-tip.a{background:var(--a50);color:var(--a600);}
+
+/* ── DIAGNOSE ── */
+.diag-mode-toggle{display:flex;gap:8px;margin-bottom:1rem;}
+.diag-mode-btn{flex:1;padding:10px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+.diag-mode-btn.crop-mode.active{background:var(--g50);color:var(--g600);border-color:var(--g100);}
+.diag-mode-btn.live-mode.active{background:var(--a50);color:var(--a600);border-color:var(--a100);}
+.upload-zone{border:2px dashed var(--bd);border-radius:var(--rl);padding:2rem 1rem;text-align:center;cursor:pointer;background:var(--card);}
+.upload-zone:hover{border-color:var(--g100);background:var(--g50);}
+.upload-zone.animal:hover{border-color:var(--a100);background:var(--a50);}
+.upload-zone input{display:none;}
+.upload-icon{font-size:40px;margin-bottom:.75rem;}
+.upload-title{font-size:16px;font-weight:600;margin-bottom:.25rem;}
+.upload-sub{font-size:13px;color:var(--ts);}
+.preview-img{width:100%;max-height:250px;object-fit:cover;border-radius:var(--rl);margin-bottom:1rem;display:none;}
+.diagnose-btn{width:100%;padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:1rem;}
+.diagnose-btn.amber{background:var(--a600);}
+.diagnose-btn:disabled{opacity:.5;cursor:not-allowed;}
+.result-box{background:var(--muted);border-radius:var(--rl);padding:1.25rem;font-size:14px;line-height:1.7;white-space:pre-wrap;display:none;}
+.result-box.visible{display:block;}
+
+/* ── CALENDAR ── */
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;}
+.cal-nav{width:28px;height:28px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:.875rem;}
+.dn{text-align:center;font-size:10px;color:var(--ts);padding:3px 0;font-weight:500;}
+.cd{border-radius:var(--rm);padding:4px 2px;text-align:center;font-size:11px;color:var(--ts);min-height:28px;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.cd.today{background:var(--blue50);color:var(--blue);font-weight:500;}
+.cd.ev-g{background:var(--g50);}.cd.ev-g .cdate{color:var(--g600);font-weight:500;}
+.cd.ev-a{background:var(--a50);}.cd.ev-a .cdate{color:var(--a600);font-weight:500;}
+.cdot{width:4px;height:4px;border-radius:50%;}
+.dg{background:var(--g600);}.da{background:var(--a600);}
+.cdate{font-size:11px;}
+.leg{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:.875rem;}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ts);}
+.ld{width:8px;height:8px;border-radius:2px;}
+.up-list{display:flex;flex-direction:column;gap:.5rem;}
+.up-item{display:flex;align-items:center;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--bd);}
+.up-item:last-child{border-bottom:none;}
+.up-date{min-width:40px;text-align:center;background:var(--muted);border-radius:var(--rm);padding:4px 6px;}
+.up-day{font-size:15px;font-weight:500;color:var(--tp);line-height:1;}
+.up-mon{font-size:9px;color:var(--ts);text-transform:uppercase;}
+.up-title{font-size:13px;font-weight:500;color:var(--tp);}
+.up-sub{font-size:11px;color:var(--ts);}
+.crop-tag{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;margin-left:5px;}
+.tag-g{background:var(--g50);color:var(--g600);}
+.tag-a{background:var(--a50);color:var(--a600);}
+
+/* ── DIARY ── */
+.diary-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem;}
+.ds{background:var(--muted);border-radius:var(--rm);padding:.625rem;text-align:center;}
+.ds-val{font-size:18px;font-weight:500;}
+.ds-lbl{font-size:10px;color:var(--ts);margin-top:2px;}
+.diary-ta{width:100%;padding:9px 12px;border:1px solid var(--bd);border-radius:var(--rm);font-size:13px;color:var(--tp);background:var(--card);font-family:inherit;resize:none;outline:none;line-height:1.5;}
+.diary-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;}
+.diary-sel{flex:1;min-width:120px;padding:7px 10px;border:1px solid var(--bd);border-radius:var(--rm);font-size:12px;background:var(--card);color:var(--tp);font-family:inherit;outline:none;}
+.diary-sub{padding:7px 16px;border:none;border-radius:var(--rm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.diary-sub.g{background:var(--g600);color:#fff;}
+.diary-sub.a{background:var(--a600);color:#fff;}
+.de{background:var(--muted);border-radius:var(--rm);padding:.75rem;margin-bottom:.625rem;}
+.de-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;flex-wrap:wrap;gap:4px;}
+.de-date{font-size:11px;color:var(--tt);}
+.de-tag{font-size:10px;padding:2px 7px;border-radius:var(--rm);font-weight:500;}
+.dt-g{background:var(--g50);color:var(--g600);}
+.dt-a{background:var(--a50);color:var(--a600);}
+.dt-r{background:var(--r50);color:var(--r600);}
+.de-txt{font-size:13px;color:var(--tp);line-height:1.55;}
+.de-ai{margin-top:.4rem;padding:.4rem .625rem;background:var(--card);border-radius:var(--rm);font-size:11px;color:var(--ts);}
+.de-ai.g{border-left:2px solid var(--g100);}
+.de-ai.a{border-left:2px solid var(--a100);}
+
+/* ── ANIMAL GRID ── */
+.animal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.625rem;margin-bottom:1rem;}
+.animal-card{border:1px solid var(--bd);border-radius:var(--rl);padding:.875rem;text-align:center;cursor:pointer;}
+.animal-card.on{border-color:var(--a600);background:var(--a50);}
+.animal-icon{font-size:2rem;margin-bottom:.375rem;}
+.animal-name{font-size:12px;font-weight:600;}
+.animal-sub{font-size:10px;color:var(--ts);}
+
+/* ── VOICE ── */
+.voice-center{text-align:center;padding:1.5rem 0;}
+.mic-outer{width:100px;height:100px;border-radius:50%;border:2px solid var(--g100);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;cursor:pointer;transition:all .3s;}
+.mic-outer.listening{border-color:var(--g600);box-shadow:0 0 0 8px rgba(122,200,80,0.12),0 0 0 16px rgba(122,200,80,0.06);}
+.mic-outer.speaking{border-color:var(--a600);box-shadow:0 0 0 8px rgba(196,135,58,0.12),0 0 0 16px rgba(196,135,58,0.06);}
+.mic-inner{width:68px;height:68px;border-radius:50%;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:28px;transition:background .3s;}
+.mic-inner.speaking{background:var(--a50);}
+.voice-status{font-size:15px;font-weight:600;color:var(--tp);margin-bottom:4px;}
+.voice-sub{font-size:13px;color:var(--ts);margin-bottom:1.25rem;}
+.waveform{display:flex;align-items:center;justify-content:center;gap:3px;height:44px;margin-bottom:1rem;}
+.wave-bar{width:4px;border-radius:2px;background:var(--a600);transition:height .12s;}
+.lang-voice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:1rem;}
+.lang-voice-opt{border:1px solid var(--bd);border-radius:var(--rm);padding:.625rem .5rem;text-align:center;cursor:pointer;font-size:12px;color:var(--ts);}
+.lang-voice-opt.sel{border-color:var(--g600);background:var(--g50);color:var(--g600);font-weight:500;}
+.lang-voice-flag{font-size:18px;margin-bottom:3px;}
+.transcript-box{background:var(--muted);border-radius:var(--rm);padding:.875rem;font-size:14px;color:var(--tp);line-height:1.55;margin-bottom:.75rem;min-height:48px;}
+.ai-voice-response{background:var(--g50);border-radius:var(--rm);padding:.875rem;font-size:14px;color:var(--g900);line-height:1.6;margin-bottom:.75rem;border-left:3px solid var(--g600);}
+.ai-voice-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--g600);margin-bottom:.375rem;}
+.speed-row{display:flex;align-items:center;gap:.75rem;margin-bottom:.875rem;}
+.speed-label{font-size:12px;color:var(--ts);white-space:nowrap;}
+.speed-opts{display:flex;gap:.375rem;}
+.speed-btn{padding:4px 10px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--ts);}
+.speed-btn.on{background:var(--g600);color:#fff;border-color:var(--g600);}
+.voice-controls{display:flex;gap:.5rem;margin-bottom:.875rem;}
+.vc-btn{flex:1;padding:10px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);color:var(--ts);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+.vc-btn.primary{background:var(--g600);color:#fff;border-color:var(--g600);}
+.voice-tip{background:var(--muted);border-radius:var(--rm);padding:.625rem .875rem;font-size:12px;color:var(--ts);display:flex;align-items:center;gap:8px;}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;}
+@media(max-width:560px){.quick-grid{grid-template-columns:1fr;}}
+.quick-btn{padding:10px 14px;border:1px solid var(--bd);border-radius:var(--rm);background:var(--card);color:var(--ts);font-size:13px;text-align:left;cursor:pointer;line-height:1.4;}
+.quick-btn:hover{background:var(--g50);color:var(--g600);border-color:var(--g100);}
+
+/* ── CHAT ── */
+.chat-window{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);display:flex;flex-direction:column;height:460px;}
+.chat-messages{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:10px;}
+.msg{max-width:82%;padding:10px 14px;border-radius:var(--rl);line-height:1.55;font-size:14px;white-space:pre-wrap;}
+.msg-ai{background:var(--muted);color:var(--tp);align-self:flex-start;}
+.msg-user{background:var(--g50);color:var(--g900);align-self:flex-end;}
+.chat-input-row{display:flex;gap:8px;padding:1rem;border-top:1px solid var(--bd);}
+.chat-input-row input{flex:1;padding:10px 14px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;outline:none;font-family:inherit;}
+.send-btn{padding:10px 18px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:14px;font-weight:600;cursor:pointer;}
+.send-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── UPGRADE MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border-radius:var(--rl);padding:1.5rem;max-width:380px;width:100%;}
+.close-btn{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--ts);}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem;}
+.plan-card{border:1px solid var(--bd);border-radius:var(--rl);padding:.875rem;}
+.plan-card.pro{border:2px solid var(--g600);}
+.plan-name{font-size:13px;font-weight:500;margin-bottom:4px;}
+.plan-price{font-size:22px;font-weight:600;}
+.plan-period{font-size:11px;color:var(--ts);margin-bottom:8px;}
+.plan-feat{font-size:12px;color:var(--ts);line-height:1.7;}
+.chk{color:var(--g600);}.crs{color:var(--r600);}
+.popular-pill{font-size:10px;background:var(--g50);color:var(--g600);padding:2px 7px;border-radius:20px;font-weight:500;display:inline-block;margin-bottom:5px;}
+.email-input{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;margin-bottom:.75rem;outline:none;}
+.pay-btn-main{width:100%;padding:12px;border:none;border-radius:var(--rm);background:var(--g600);color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;}
+.pay-note{text-align:center;font-size:12px;color:var(--ts);}
+.pay-success-banner{background:var(--g50);border:1px solid var(--g100);border-radius:var(--rm);padding:12px 16px;font-size:14px;color:var(--g600);margin-bottom:1rem;text-align:center;}
+
+/* ── FOOTER ── */
+.footer{background:var(--g900);color:rgba(255,255,255,0.5);text-align:center;padding:1.25rem 1rem;font-size:12px;line-height:1.8;margin-top:auto;}
+.footer a{color:var(--g100);text-decoration:none;font-weight:500;}
+.footer a:hover{color:#fff;}
+.footer-divider{display:inline-block;margin:0 8px;opacity:.3;}
+
+/* ── UTILS ── */
+.loading{display:inline-block;width:14px;height:14px;border:2px solid var(--g100);border-top-color:var(--g600);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">🌿</div>
+  <div>
+    <div class="app-title">Nkɔsoɔ AI</div>
+    <div class="app-sub">Crops · Livestock · Aquaculture</div>
+  </div>
+  <div class="topbar-right">
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('tw')">TW</button>
+    </div>
+    {% if user.plan=='pro' %}<span class="pro-badge">&#10003; Pro</span>
+    {% else %}<button class="upgrade-pill" onclick="openUpgrade()">Upgrade to Pro</button>{% endif %}
+    <span class="{{ 'api-ok' if api_ready else 'api-warn' }}">{{ '● AI ready' if api_ready else '⚠ No key' }}</span>
+  </div>
+</div>
+
+  <!-- AUTH BAR -->
+  <div class="auth-bar">
+    {% if user_registered %}
+    <div class="auth-info">
+      <span class="auth-name">👤 {{ user_name or 'Farmer' }}</span>
+      {% if user.plan == 'pro' %}<span class="pro-pill">⭐ Pro</span>{% endif %}
+    </div>
+    <a href="/logout" class="auth-link">Sign out</a>
+    {% else %}
+    <div class="auth-info">
+      <span style="font-size:12px;color:var(--ts);">Save your profile to unlock all features</span>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <a href="/login" class="auth-link">Sign in</a>
+      <a href="/register" class="auth-btn">Create account →</a>
+      <a href="/register-lender" class="auth-link" style="background:#E8EDF5;color:#1A2E4A;border-color:#C8D4E8;">🏦 Lenders</a>
+    </div>
+    {% endif %}
+  </div>
+{% if request.args.get('payment')=='success' %}
+<div class="container" style="padding-bottom:0;">
+  <div class="pay-success-banner">&#10003; Payment confirmed! You are now on Pro. Enjoy unlimited access.</div>
+</div>
+{% endif %}
+
+{% if user.plan != 'pro' %}
+<!-- PERSISTENT REGISTRATION BANNER -->
+<div class="persist-banner" id="persistBanner">
+  <div class="pb-icon">🌱</div>
+  <div class="pb-text">
+    <strong>Save your farm profile</strong> — unlock your personalised AI planting calendar, farm diary, and advice tailored to your crops and region. <strong>Free — takes 2 minutes.</strong>
+  </div>
+  <button class="pb-cta" onclick="dismissBannerAndGo()">Save profile →</button>
+  <button class="pb-close" onclick="dismissBanner()" aria-label="Close">✕</button>
+</div>
+{% endif %}
+
+<!-- UPGRADE MODAL -->
+<div class="modal-overlay" id="upgradeModal">
+  <div class="modal">
+    <button class="close-btn" onclick="closeUpgrade()">&#10005;</button>
+    <div style="font-size:17px;font-weight:600;margin-bottom:.25rem;">Upgrade to Nkɔsoɔ Pro</div>
+    <div style="font-size:13px;color:var(--ts);margin-bottom:1.25rem;">Unlimited questions, diagnoses and more.</div>
+    <div class="plan-grid">
+      <div class="plan-card">
+        <div class="plan-name">Free</div><div class="plan-price">GHS 0</div>
+        <div class="plan-period">forever</div>
+        <div class="plan-feat"><span class="chk">&#10003;</span> {{ free_limit }} questions/day<br><span class="chk">&#10003;</span> {{ diagnose_limit }} diagnoses/month<br><span class="crs">&#10005;</span> Unlimited chat</div>
+      </div>
+      <div class="plan-card pro">
+        <div class="popular-pill">Most popular</div>
+        <div class="plan-name">Pro</div><div class="plan-price">GHS 30</div>
+        <div class="plan-period">per month</div>
+        <div class="plan-feat"><span class="chk">&#10003;</span> Unlimited chat<br><span class="chk">&#10003;</span> Unlimited diagnoses<br><span class="chk">&#10003;</span> Priority support</div>
+      </div>
+    </div>
+    <input type="email" class="email-input" id="payEmail" placeholder="Enter your email address"/>
+    <button class="pay-btn-main" onclick="startPayment()">Pay GHS 30 with MoMo or Card</button>
+    <div class="pay-note">&#128274; Secured by Paystack · Cancel anytime</div>
+  </div>
+</div>
+
+<div class="main-content">
+<div class="container">
+
+  {% if user.plan!='pro' %}
+  <div class="usage-bar">
+    <span class="usage-label">Today's questions</span>
+    <div class="usage-track"><div class="usage-fill {{ 'fill-full' if used_today>=free_limit else ('fill-warn' if used_today>=free_limit-1 else 'fill-ok') }}" id="usageFill" style="width:{{ [used_today/free_limit*100,100]|min|int }}%"></div></div>
+    <span class="usage-count" id="usageCount">{{ used_today }} / {{ free_limit }}</span>
+    <button class="upgrade-pill" onclick="openUpgrade()">Upgrade</button>
+  </div>
+  {% endif %}
+
+  <!-- TABS — single scrollable row -->
+  <div class="tabs">
+    <button class="tab-btn crop active" onclick="showTab('weather')"><span class="tab-icon">🌤</span><span class="tab-lbl">Weather</span></button>
+    <button class="tab-btn crop" onclick="showTab('prices')"><span class="tab-icon">📈</span><span class="tab-lbl">Prices</span></button>
+    <button class="tab-btn crop" onclick="showTab('pests')"><span class="tab-icon">🐛</span><span class="tab-lbl">Pests</span></button>
+    <button class="tab-btn crop" onclick="showTab('diagnose')"><span class="tab-icon">📷</span><span class="tab-lbl">Diagnose</span></button>
+    <button class="tab-btn crop" onclick="showTab('mycrops')"><span class="tab-icon">🌾</span><span class="tab-lbl">My Crops</span></button>
+    <button class="tab-btn live" onclick="showTab('livestock')"><span class="tab-icon">🐄</span><span class="tab-lbl">Livestock</span></button>
+    <button class="tab-btn teal" onclick="showTab('agronomy')"><span class="tab-icon">🔬</span><span class="tab-lbl">Experts</span></button>
+    <button class="tab-btn voice" onclick="showTab('voice')"><span class="tab-icon">🎤</span><span class="tab-lbl">Voice</span></button>
+    <button class="tab-btn shared" onclick="showTab('chat')"><span class="tab-icon">🤖</span><span class="tab-lbl">Ask AI</span></button>
+    <button class="tab-btn credit" onclick="showTab('credit')"><span class="tab-icon">💳</span><span class="tab-lbl">Credit</span></button>
+    <button class="tab-btn dash" onclick="showTab('dashboard')"><span class="tab-icon">🏠</span><span class="tab-lbl">My Farm</span></button>
+  </div>
+
+  <!-- ══ WEATHER ══ -->
+  <div id="panel-weather" class="panel active">
+    <div class="region-bar">
+      <label>📍 Your region:</label>
+      <select class="region-select" id="regionSelect" onchange="loadWeather()">
+        {% for key,r in regions.items() %}<option value="{{ key }}" {% if key=='greater_accra' %}selected{% endif %}>{{ r.name }}</option>{% endfor %}
+      </select>
+      <button class="refresh-btn" onclick="loadWeather()">Update</button>
+      <span class="live-badge" id="liveBadge">🟢 Live</span>
+    </div>
+    <div class="card">
+      <div class="card-title" id="weatherLoc">{{ weather.location }} — Current conditions</div>
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-label">Today's high</div><div class="metric-value" id="wHigh">{{ weather.today_high }}°C</div></div>
+        <div class="metric"><div class="metric-label">Humidity</div><div class="metric-value" id="wHumidity">{{ weather.humidity }}%</div></div>
+        <div class="metric"><div class="metric-label">Rain chance</div><div class="metric-value" id="wRain">{{ weather.rain_chance }}%</div></div>
+        <div class="metric"><div class="metric-label">Wind</div><div class="metric-value" id="wWind">{{ weather.wind_kmh }} km/h</div></div>
+      </div>
+      <div class="card-title">7-day forecast</div>
+      <div class="forecast-strip" id="forecastStrip">
+        {% for day in weather.forecast %}<div class="forecast-day"><div class="day-name">{{ day.day }}</div><div class="day-icon">{{ day.icon }}</div><div class="day-temp">{{ day.high }}°</div><div class="day-rain">{{ day.rain }}%</div></div>{% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title g">🌾 Crop advice</div>
+      <div class="advice-crop" id="weatherAdvice">{{ weather.advice }}</div>
+      <div class="card-title a" style="margin-top:.75rem;">🐄 Livestock advice</div>
+      <div class="advice-live" id="weatherAdviceLive">{{ weather.advice_livestock }}</div>
+      <div style="margin-top:10px;"><span class="badge b-{{ weather.risk_level }}" id="weatherRisk">{{ weather.risk }}</span></div>
+    </div>
+    <button class="ask-link-btn" onclick="askAI(0)">💬 Ask AI: best crops for upcoming rains in my region →</button>
+  </div>
+
+  <!-- ══ PRICES ══ -->
+  <div id="panel-prices" class="panel">
+    <div class="region-bar" style="margin-bottom:1rem;">
+      <span style="font-size:13px;font-weight:500;color:var(--ts);">📊 Market prices</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+        {% if prices_updated %}
+        <span style="font-size:11px;color:var(--ts);">Updated: <strong>{{ prices_updated }}</strong></span>
+        {% endif %}
+        {% if prices_source %}
+        <span class="live-badge">{{ prices_source }}</span>
+        {% endif %}
+        <button class="refresh-btn" style="font-size:11px;padding:6px 12px;" onclick="refreshPrices()">🔄 Refresh</button>
+      </div>
+    </div>
+    {% if prices_season %}
+    <div class="advice-crop" style="margin-bottom:1rem;font-size:12px;">
+      📅 Prices reflect <strong>{{ prices_season }}</strong> conditions in Ghana
+    </div>
+    {% endif %}
+    <div class="card" id="cropPricesCard">
+      <div class="pst pst-g">🌾 Crop prices — GHS</div>
+      <table class="price-table" id="cropPricesTable">
+        <thead><tr><th>Crop</th><th>Unit</th><th>Price</th><th>Change</th></tr></thead>
+        <tbody>{% for p in prices %}<tr><td><strong>{{ p.crop }}</strong></td><td style="color:var(--ts)">{{ p.unit }}</td><td class="price-value">GHS {{ p.price }}</td><td>{% if p.trend=='up' %}<span class="badge b-ok">▲ {{ p.change }}%</span>{% elif p.trend=='down' %}<span class="badge b-danger">▼ {{ p.change|abs }}%</span>{% else %}<span class="badge b-gray">Stable</span>{% endif %}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    <div class="card" id="livePricesCard">
+      <div class="pst pst-a">🐄 Livestock prices — GHS</div>
+      <table class="price-table" id="livePricesTable">
+        <thead><tr><th>Animal</th><th>Unit</th><th>Price</th><th>Change</th></tr></thead>
+        <tbody>{% for lp in livestock_prices %}<tr><td><strong>{{ lp.animal }}</strong></td><td style="color:var(--ts)">{{ lp.unit }}</td><td class="price-value">GHS {{ lp.price }}</td><td>{% if lp.trend=='up' %}<span class="badge b-ok">▲ {{ lp.change }}%</span>{% elif lp.trend=='down' %}<span class="badge b-danger">▼ {{ lp.change|abs }}%</span>{% else %}<span class="badge b-gray">Stable</span>{% endif %}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    <button class="ask-link-btn" onclick="askAI(2)">💬 Ask AI: when to sell my crops for best price →</button>
+    <button class="ask-link-btn" onclick="askAI(3)">💬 Ask AI: when to sell my chickens for best price →</button>
+  </div>
+
+  <!-- ══ PESTS ══ -->
+  <div id="panel-pests" class="panel">
+    <div class="card">
+      <div class="card-title">Active alerts — crops &amp; livestock</div>
+      {% for pest in pests %}
+      <div class="pest-item">
+        <div>
+          <div class="pest-name">{{ pest.name }}</div>
+          <div class="pest-crops">Affects: {{ pest.crops }}</div>
+          <div class="pest-desc">{{ pest.description }}</div>
+          <div class="pest-tip {{ 'a' if pest.crops in ['Poultry','Cattle','Goats','Pigs','Livestock'] else 'g' }}">💡 {{ pest.tip }}</div>
+        </div>
+        <span class="badge {{ 'b-danger' if pest.level=='high' else ('b-warn' if pest.level=='medium' else 'b-ok') }}">{{ pest.level|capitalize }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ══ DIAGNOSE ══ -->
+  <div id="panel-diagnose" class="panel">
+    {% if user.plan != 'pro' %}
+    <div class="pro-lock-bar">
+      <span>📷 Photo diagnosis is a <strong>Pro feature</strong></span>
+      <button class="pro-lock-btn" onclick="openUpgrade()">Upgrade — GHS 30/month</button>
+    </div>
+    {% endif %}
+    <div class="card">
+      <div class="card-title">📷 AI photo diagnosis</div>
+      <div class="diag-mode-toggle">
+        <button class="diag-mode-btn crop-mode active" id="modeCrop" onclick="setDiagMode('crop')">🌾 Crop disease</button>
+        <button class="diag-mode-btn live-mode" id="modeLive" onclick="setDiagMode('animal')">🐄 Animal disease</button>
+      </div>
+      <p style="font-size:13px;color:var(--ts);margin-bottom:1rem;line-height:1.5;" id="diagDesc">Take a clear photo of a sick crop leaf or stem. AI identifies the disease and recommends treatment.</p>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('cropPhoto').click()">
+        <input type="file" id="cropPhoto" accept="image/*" onchange="onPhotoSelected(event)"/>
+        <div class="upload-icon" id="uploadIcon">🌿</div>
+        <div class="upload-title" id="uploadTitle">Tap to upload photo</div>
+        <div class="upload-sub">JPG or PNG · Max 5MB</div>
+      </div>
+      <img id="previewImg" class="preview-img" alt="preview"/>
+      <button id="diagnoseBtn" class="diagnose-btn" onclick="runDiagnosis()" disabled>🔍 Analyse photo</button>
+      <div class="card-title" id="resultTitle" style="display:none;">AI Diagnosis Result</div>
+      <div class="result-box" id="resultBox"></div>
+    </div>
+  </div>
+
+  <!-- ══ MY CROPS ══ -->
+  <div id="panel-mycrops" class="panel">
+    <div class="stabs">
+      <button class="stab g on" onclick="showSubPanel('mycrops','profile',this)">👤 My Profile</button>
+      <button class="stab g" onclick="showSubPanel('mycrops','cal',this)">📅 Planting Calendar</button>
+      <button class="stab g" onclick="showSubPanel('mycrops','diary',this)">📔 Farm Diary</button>
+    </div>
+
+    <!-- CROP PROFILE -->
+    <div id="mycrops-profile" class="sub-panel active">
+      <div class="card">
+        <div class="card-title g">👤 Farmer details</div>
+        <div class="form-row">
+          <div class="fg"><div class="lbl">Full name</div><input class="inp" type="text" id="cFarmerName" placeholder="e.g. Kwame Asante"/></div>
+          <div class="fg"><div class="lbl">Phone number</div><input class="inp" type="tel" id="cFarmerPhone" placeholder="e.g. 0244123456"/></div>
+        </div>
+        <div class="fg" style="margin-bottom:.75rem;">
+          <div class="lbl">🇬🇭 Ghana Card number</div>
+          <input class="inp" type="text" id="cGhanaCard" placeholder="GHA-XXXXXXXXX-X" maxlength="15" oninput="validateGC(this,'cGCStatus','g')"/>
+          <div id="cGCStatus" class="gc-status" style="display:none;"></div>
+          <div class="hint">Format: GHA-123456789-0 · Stored securely and encrypted</div>
+        </div>
+        <div class="form-row">
+          <div class="fg">
+            <div class="lbl">Region</div>
+            <select class="sel" id="cRegion">{% for key,r in regions.items() %}<option value="{{ key }}">{{ r.name }}</option>{% endfor %}</select>
+          </div>
+          <div class="fg">
+            <div class="lbl">📍 Farm GPS location <span style="font-size:11px;color:var(--ts);font-weight:400;">(optional — records exact farm coordinates)</span></div>
+            <button type="button" class="gps-btn" id="cropGpsBtn" onclick="getGPS('crop')">
+              <span id="cropGpsIcon">📍</span>&nbsp;<span id="cropGpsTxt">Tap to record farm location</span>
+            </button>
+            <div class="gps-result" id="cropGpsResult"></div>
+            <div class="gps-err" id="cropGpsErr"></div>
+            <input type="hidden" id="cropLat"/>
+            <input type="hidden" id="cropLon"/>
+            <input type="hidden" id="cropAcc"/>
+            <input type="hidden" id="cropAddr"/>
+          </div>
+          <div class="fg"><div class="lbl">Email (optional)</div><input class="inp" type="email" id="cEmail" placeholder="e.g. kwame@gmail.com"/></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title g">🌾 Farm details</div>
+        <div class="form-row">
+          <div class="fg"><div class="lbl">Farm size</div><input class="inp" type="number" id="cFarmSize" placeholder="e.g. 2.5" min="0" step="0.1"/></div>
+          <div class="fg"><div class="lbl">Unit</div><select class="sel" id="cFarmUnit"><option value="acres">Acres</option><option value="hectares">Hectares</option><option value="plots">Plots</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="fg"><div class="lbl">Soil type</div><select class="sel" id="cSoilType"><option value="">Select...</option><option>Loam</option><option>Sandy</option><option>Clay</option><option>Silt</option><option>Laterite</option><option>Not sure</option></select></div>
+          <div class="fg"><div class="lbl">Water source</div><select class="sel" id="cWaterSource"><option value="">Select...</option><option>Rain-fed</option><option>Irrigation</option><option>Borehole</option><option>River / stream</option><option>Well</option><option>Water tanker</option></select></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title g">🌱 Select crops grown</div>
+        <div class="crop-type-row">
+          <div class="ctype on" data-type="staples" onclick="selCropType(this,'staples')">🌾 Staples &amp; Vegetables</div>
+          <div class="ctype" data-type="fruits" onclick="selCropType(this,'fruits')">🍎 Fruits</div>
+        </div>
+        <div class="card-title g" style="margin-bottom:.5rem;">Choose all that apply</div>
+        <div class="chips" id="staple-chips">
+          {% set staples=['Maize','Tomatoes','Cassava','Plantain','Yam','Groundnut','Pepper','Okra','Garden Eggs','Cabbage','Cowpea','Rice','Sorghum','Cocoa'] %}
+          {% for c in staples %}<span class="chip" onclick="this.classList.toggle('on-g')" data-crop="{{ c }}">{{ c }}</span>{% endfor %}
+        </div>
+        <div class="chips" id="fruit-chips" style="display:none;">
+          {% set fruits=['Mango','Pineapple','Pawpaw','Banana','Orange','Watermelon','Coconut','Avocado','Guava'] %}
+          {% for c in fruits %}<span class="chip" onclick="this.classList.toggle('on-g')" data-crop="{{ c }}">{{ c }}</span>{% endfor %}
+        </div>
+        <div class="hint" style="margin-bottom:.875rem;">Select crops then save. Go to Planting Calendar → click Generate to get your calendar.</div>
+        <div id="cropInlineReg"></div>
+        <button class="save-btn g" onclick="handleCropSave()">💾 Save profile</button>
+        <div class="saved-ok g" id="cropSaved">✅ Profile saved! Go to Planting Calendar → Generate your calendar.</div>
+      </div>
+    </div>
+
+    <!-- PLANTING CALENDAR -->
+    <div id="mycrops-cal" class="sub-panel">
+      <div class="card">
+        <div class="card-title g">📅 Planting calendar</div>
+        <p style="font-size:13px;color:var(--ts);margin-bottom:.875rem;line-height:1.5;">A calendar is generated for each crop you selected. When you have more than one crop, each gets its own colour-coded events. Click Generate to build your calendar.</p>
+        <button class="gen-btn g" id="genCropCalBtn" onclick="generateCropCalendar()">⚡ Generate planting calendars for my crops</button>
+        <div id="crop-cal-content" style="display:none;">
+          <div class="chips" id="cal-crop-chips" style="margin-bottom:.875rem;"></div>
+          <div class="cal-hdr">
+            <span style="font-size:15px;font-weight:500;" id="calMonthLabel">May 2026</span>
+            <div style="display:flex;gap:6px;"><button class="cal-nav" onclick="changeCalMonth(-1)">‹</button><button class="cal-nav" onclick="changeCalMonth(1)">›</button></div>
+          </div>
+          <div class="cal-grid" id="calDays"></div>
+          <div class="leg" id="calLegend"></div>
+          <div class="card-title g">Upcoming activities</div>
+          <div class="up-list" id="calUpcoming"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FARM DIARY -->
+    <div id="mycrops-diary" class="sub-panel">
+      <div class="diary-stats">
+        <div class="ds"><div class="ds-val" id="cDiaryTotal">0</div><div class="ds-lbl">Total entries</div></div>
+        <div class="ds"><div class="ds-val" id="cDiaryWeek">0</div><div class="ds-lbl">This week</div></div>
+        <div class="ds"><div class="ds-val" id="cDiaryLast">—</div><div class="ds-lbl">Last entry</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title g">Write today's entry</div>
+        <textarea class="diary-ta" id="cDiaryText" rows="3" placeholder="What happened on your farm today? Describe what you planted, sprayed, observed or harvested..."></textarea>
+        <div class="diary-row">
+          <select class="diary-sel" id="cDiaryCat"><option>🌱 Planting</option><option>🌧️ Weather</option><option>🐛 Pest / disease</option><option>🌾 Harvest</option><option>💰 Sale / market</option><option>📝 General note</option></select>
+          <select class="diary-sel" id="cDiaryCrop" style="max-width:140px;"><option value="all">All crops</option></select>
+          <button class="diary-sub g" onclick="saveDiaryEntry('crop')">Save entry</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title g">Recent entries</div>
+        <div id="cDiaryEntries"><p style="font-size:13px;color:var(--ts);">No entries yet. Write your first entry above.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ LIVESTOCK ══ -->
+  <div id="panel-livestock" class="panel">
+    <div id="animalTypeGrid" class="animal-type-grid" style="margin-bottom:.875rem;"></div>
+    <div class="stabs">
+      <button class="stab a on" onclick="showSubPanel('livestock','profile',this)">👤 My Profile</button>
+      <button class="stab a" onclick="showSubPanel('livestock','animals',this)">🐄 Animal Details</button>
+      <button class="stab a" onclick="showSubPanel('livestock','cal',this)">📅 Livestock Calendar</button>
+      <button class="stab a" onclick="showSubPanel('livestock','diary',this)">📔 Livestock Diary</button>
+    </div>
+
+    <!-- LIVESTOCK PROFILE -->
+    <div id="livestock-profile" class="sub-panel active">
+      <div class="card">
+        <div class="card-title a">👤 Farmer details</div>
+        <div class="form-row">
+          <div class="fg"><div class="lbl">Full name</div><input class="inp" type="text" id="lFarmerName" placeholder="e.g. Kwame Asante"/></div>
+          <div class="fg"><div class="lbl">Phone number</div><input class="inp" type="tel" id="lFarmerPhone" placeholder="e.g. 0244123456"/></div>
+        </div>
+        <div class="fg" style="margin-bottom:.75rem;">
+          <div class="lbl">🇬🇭 Ghana Card number</div>
+          <input class="inp" type="text" id="lGhanaCard" placeholder="GHA-XXXXXXXXX-X" maxlength="15" oninput="validateGC(this,'lGCStatus','a')"/>
+          <div id="lGCStatus" class="gc-status" style="display:none;"></div>
+          <div class="hint">Format: GHA-123456789-0 · Linked to livestock ownership</div>
+        </div>
+        <div class="form-row">
+          <div class="fg"><div class="lbl">Region</div><select class="sel" id="lRegion">{% for key,r in regions.items() %}<option value="{{ key }}">{{ r.name }}</option>{% endfor %}</select></div>
+      <div class="fg" style="margin-top:.5rem;">
+        <div class="lbl">📍 Farm/livestock GPS location <span style="font-size:11px;color:var(--ts);font-weight:400;">(optional — records exact location)</span></div>
+        <button type="button" class="gps-btn" id="liveGpsBtn" onclick="getGPS('live')">
+          <span id="liveGpsIcon">📍</span>&nbsp;<span id="liveGpsTxt">Tap to record location</span>
+        </button>
+        <div class="gps-result" id="liveGpsResult"></div>
+        <div class="gps-err" id="liveGpsErr"></div>
+        <input type="hidden" id="liveLat"/>
+        <input type="hidden" id="liveLon"/>
+        <input type="hidden" id="liveAcc"/>
+        <input type="hidden" id="liveAddr"/>
+      </div>
+          <div class="fg"><div class="lbl">Email (optional)</div><input class="inp" type="email" id="lEmail" placeholder="e.g. kwame@gmail.com"/></div>
+        </div>
+        <div id="liveInlineReg"></div>
+        <button class="save-btn a" onclick="handleLiveSave()" style="margin-top:.5rem;">💾 Save profile</button>
+        <div class="saved-ok a" id="liveProfileSaved">✅ Livestock profile saved!</div>
+      </div>
+    </div>
+
+    <!-- ANIMAL DETAILS — no Ghana Card -->
+    <div id="livestock-animals" class="sub-panel">
+      <div class="note-box">ℹ Ghana Card is collected in your profile above — not needed here again.</div>
+      <div class="card">
+        <div class="card-title a">Select animal type</div>
+        <div class="animal-grid">
+          <div class="animal-card on" onclick="selAnimal(this,'poultry')"><div class="animal-icon">🐔</div><div class="animal-name">Poultry</div><div class="animal-sub">Chicken · Turkey · Guinea fowl</div></div>
+          <div class="animal-card" onclick="selAnimal(this,'cattle')"><div class="animal-icon">🐄</div><div class="animal-name">Cattle</div><div class="animal-sub">Beef · Dairy</div></div>
+          <div class="animal-card" onclick="selAnimal(this,'goats')"><div class="animal-icon">🐐</div><div class="animal-name">Goats</div><div class="animal-sub">Meat · Dairy</div></div>
+          <div class="animal-card" onclick="selAnimal(this,'sheep')"><div class="animal-icon">🐑</div><div class="animal-name">Sheep</div><div class="animal-sub">Meat · Wool</div></div>
+          <div class="animal-card" onclick="selAnimal(this,'pigs')"><div class="animal-icon">🐖</div><div class="animal-name">Pigs</div><div class="animal-sub">Pork · Breeding</div></div>
+          <div class="animal-card" onclick="selAnimal(this,'fish')"><div class="animal-icon">🐟</div><div class="animal-name">Aquaculture</div><div class="animal-sub">Tilapia · Catfish</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title a" id="animalDetailsTitle">🐔 Poultry details</div>
+        <div class="form-row">
+          <div class="fg"><div class="lbl">Total count</div><input class="inp" type="number" id="lTotalCount" placeholder="e.g. 500" min="0"/></div>
+          <div class="fg"><div class="lbl">Sick / isolated</div><input class="inp" type="number" id="lSickCount" placeholder="e.g. 3" min="0"/></div>
+        </div>
+        <div class="form-row">
+          <div class="fg"><div class="lbl">Housing type</div><select class="sel" id="lHousing"><option value="">Select...</option><option>Deep litter</option><option>Battery cage</option><option>Free range</option><option>Pen</option><option>Pond</option><option>Paddock</option></select></div>
+          <div class="fg"><div class="lbl">Main purpose</div><select class="sel" id="lPurpose"><option value="">Select...</option><option>Eggs (layers)</option><option>Meat (broilers)</option><option>Both</option><option>Dairy</option><option>Breeding</option><option>Meat</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="fg"><div class="lbl">Feed source</div><select class="sel" id="lFeed"><option value="">Select...</option><option>Commercial feed</option><option>Mixed / own</option><option>Pasture</option></select></div>
+          <div class="fg"><div class="lbl">Water source</div><select class="sel" id="lWater"><option value="">Select...</option><option>Borehole</option><option>Pipe water</option><option>River</option><option>Well</option><option>Pond</option></select></div>
+        </div>
+        <div class="fg" style="margin-bottom:.75rem;"><div class="lbl">Nearest veterinary</div><input class="inp" type="text" id="lVet" placeholder="e.g. Kumasi Veterinary Clinic"/></div>
+        <button class="save-btn a" onclick="saveAnimalDetails()">💾 Save animal details</button>
+        <div class="saved-ok a" id="animalSaved">✅ Animal details saved!</div>
+      </div>
+      <button class="ask-link-btn" onclick="askAI(3)">💬 Ask AI: my chickens are not eating — what is wrong? →</button>
+      <button class="ask-link-btn" onclick="askAI(5)">💬 Ask AI: when to sell my goats for best price →</button>
+    </div>
+
+    <!-- LIVESTOCK CALENDAR -->
+    <div id="livestock-cal" class="sub-panel">
+      <div class="card">
+        <div class="card-title a">📅 Livestock calendar</div>
+        <p style="font-size:13px;color:var(--ts);margin-bottom:.875rem;line-height:1.5;">Calendar is generated based on your selected animal type, purpose, and region. Click Generate to build your livestock plan.</p>
+        <button class="gen-btn a" id="genLiveCalBtn" onclick="generateLivestockCalendar()">⚡ Generate livestock calendar</button>
+        <div id="live-cal-content" style="display:none;">
+          <div class="chips" id="live-cal-chips" style="margin-bottom:.875rem;"></div>
+          <div class="cal-hdr">
+            <span style="font-size:15px;font-weight:500;" id="liveCalMonthLabel">May 2026</span>
+            <div style="display:flex;gap:6px;"><button class="cal-nav" onclick="changeLiveCalMonth(-1)">‹</button><button class="cal-nav" onclick="changeLiveCalMonth(1)">›</button></div>
+          </div>
+          <div class="cal-grid" id="liveCalDays"></div>
+          <div class="leg" id="liveCalLegend"></div>
+          <div class="card-title a">Upcoming livestock activities</div>
+          <div class="up-list" id="liveCalUpcoming"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVESTOCK DIARY -->
+    <div id="livestock-diary" class="sub-panel">
+      <div class="diary-stats">
+        <div class="ds"><div class="ds-val" id="lDiaryTotal">0</div><div class="ds-lbl">Total entries</div></div>
+        <div class="ds"><div class="ds-val" id="lDiaryWeek">0</div><div class="ds-lbl">This week</div></div>
+        <div class="ds"><div class="ds-val" id="lDiaryLast">—</div><div class="ds-lbl">Last entry</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title a">Write today's entry</div>
+        <textarea class="diary-ta" id="lDiaryText" rows="3" placeholder="What happened with your livestock today? Describe vaccinations, sick animals, feed changes or sales..."></textarea>
+        <div class="diary-row">
+          <select class="diary-sel" id="lDiaryCat"><option>💉 Vaccination</option><option>🏥 Health / illness</option><option>🌾 Feed change</option><option>💰 Sale</option><option>🐣 New arrivals</option><option>📝 General note</option></select>
+          <select class="diary-sel" id="lDiaryAnimal" style="max-width:140px;"><option value="all">All animals</option><option value="poultry">🐔 Poultry</option><option value="cattle">🐄 Cattle</option><option value="goats">🐐 Goats</option><option value="sheep">🐑 Sheep</option><option value="pigs">🐖 Pigs</option><option value="fish">🐟 Fish</option></select>
+          <button class="diary-sub a" onclick="saveDiaryEntry('livestock')">Save entry</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title a">Recent entries</div>
+        <div id="lDiaryEntries"><p style="font-size:13px;color:var(--ts);">No entries yet. Write your first entry above.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ AGRONOMY ══ -->
+  <div id="panel-agronomy" class="panel">
+
+    <!-- Stats -->
+    <div class="agro-stats">
+      <div class="agro-stat"><div class="agro-stat-val" id="agroCount">—</div><div class="agro-stat-lbl">Verified experts</div></div>
+      <div class="agro-stat"><div class="agro-stat-val" id="agroRegions">16</div><div class="agro-stat-lbl">Regions covered</div></div>
+      <div class="agro-stat"><div class="agro-stat-val" id="agroSpecialities">6</div><div class="agro-stat-lbl">Specialities</div></div>
+    </div>
+
+    <!-- Filter chips -->
+    <div class="agro-filter" id="agroFilter">
+      <div class="agro-chip on" onclick="filterAgro(this,'all')">All experts</div>
+      <div class="agro-chip" onclick="filterAgro(this,'crops')">🌾 Crops</div>
+      <div class="agro-chip" onclick="filterAgro(this,'livestock')">🐄 Livestock</div>
+      <div class="agro-chip" onclick="filterAgro(this,'soil')">🪨 Soil science</div>
+      <div class="agro-chip" onclick="filterAgro(this,'aquaculture')">🐟 Aquaculture</div>
+      <div class="agro-chip" onclick="filterAgro(this,'pest')">🐛 Pest management</div>
+    </div>
+
+    <!-- Expert listings -->
+    <div id="agroList">
+      <p style="font-size:13px;color:var(--ts);text-align:center;padding:2rem 0;">
+        <span class="loading"></span> Loading verified experts...
+      </p>
+    </div>
+
+    <!-- Register as agronomist -->
+    <div class="agro-register-card">
+      <div style="font-size:24px;margin-bottom:.5rem;">🔬</div>
+      <div style="font-size:15px;font-weight:600;color:var(--teal);margin-bottom:.375rem;">Are you an agronomist or vet?</div>
+      <div style="font-size:13px;color:var(--ts);margin-bottom:.875rem;line-height:1.5;">Join our verified expert directory. Connect with farmers across Ghana who need your expertise.</div>
+      <button class="book-btn" onclick="showAgroRegister()" style="width:100%;padding:10px;">Register as an expert →</button>
+    </div>
+
+    <!-- Register modal -->
+    <div id="agroRegisterModal" style="display:none;">
+      <div class="card" style="border-color:var(--teal100);">
+        <div class="card-title" style="color:var(--teal);">🔬 Register as a verified expert</div>
+        <div class="form-row">
+          <div class="fg"><div class="lbl">Full name</div><input class="inp" type="text" id="agroName" placeholder="e.g. Dr. Kofi Asante"/></div>
+          <div class="fg"><div class="lbl">Phone / WhatsApp</div><input class="inp" type="tel" id="agroPhone" placeholder="e.g. 0244123456"/></div>
+        </div>
+        <div class="form-row">
+          <div class="fg">
+            <div class="lbl">Speciality</div>
+            <select class="sel" id="agroSpec">
+              <option value="">Select...</option>
+              <option value="crops">Crop farming & agronomy</option>
+              <option value="livestock">Livestock & veterinary</option>
+              <option value="soil">Soil science & fertilizer</option>
+              <option value="aquaculture">Aquaculture & fish farming</option>
+              <option value="pest">Pest & disease management</option>
+              <option value="general">General agriculture</option>
+            </select>
+          </div>
+          <div class="fg">
+            <div class="lbl">Region</div>
+            <select class="sel" id="agroRegion">
+              {% for key,r in regions.items() %}<option value="{{ key }}">{{ r.name }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:.75rem;">
+          <div class="lbl">Qualifications / Institution</div>
+          <input class="inp" type="text" id="agroQual" placeholder="e.g. BSc Agriculture, KNUST · 10 years experience"/>
+        </div>
+        <div class="form-row">
+          <div class="fg"><div class="lbl">Consultation fee (GHS)</div><input class="inp" type="number" id="agroFee" placeholder="e.g. 80" min="0"/></div>
+          <div class="fg">
+            <div class="lbl">Consultation type</div>
+            <select class="sel" id="agroConsultType">
+              <option value="call">Phone / video call</option>
+              <option value="visit">Farm visit</option>
+              <option value="both">Both available</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:.875rem;">
+          <div class="lbl">Ghana Card number</div>
+          <input class="inp" type="text" id="agroGhanaCard" placeholder="GHA-XXXXXXXXX-X" maxlength="15" oninput="validateGC(this,'agroGCStatus','g')"/>
+          <div id="agroGCStatus" class="gc-status" style="display:none;"></div>
+          <div class="hint">Required for verification. Stored securely and encrypted.</div>
+        </div>
+        <div style="display:flex;gap:.75rem;">
+          <button class="save-btn g" style="background:var(--teal);" onclick="submitAgroRegistration()">✓ Submit for verification</button>
+          <button class="save-btn g" style="background:var(--muted);color:var(--ts);flex:0 0 auto;width:auto;padding:0 16px;" onclick="hideAgroRegister()">Cancel</button>
+        </div>
+        <div class="saved-ok g" id="agroRegSaved" style="border-color:var(--teal100);background:var(--teal50);color:var(--teal);">✅ Registration submitted! We will verify and publish your profile within 24 hours.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ VOICE ══ -->
+  <div id="panel-voice" class="panel">
+    {% if user.plan != 'pro' %}
+    <div class="pro-lock-bar">
+      <span>🎤 Voice interface is a <strong>Pro feature</strong></span>
+      <button class="pro-lock-btn" onclick="openUpgrade()">Upgrade — GHS 30/month</button>
+    </div>
+    {% endif %}
+    <div class="card">
+      <div class="card-title b">🎤 Voice farming assistant</div>
+
+      <!-- Language selector -->
+      <div class="card-title b" style="margin-bottom:.5rem;">Choose your language</div>
+      <div class="lang-voice-grid">
+        <div class="lang-voice-opt sel" onclick="selVoiceLang(this,'en')">
+          <div class="lang-voice-flag">🇬🇧</div><div>English</div>
+          <div style="font-size:9px;color:var(--g600);margin-top:2px;">🎤 Voice</div>
+        </div>
+        <div class="lang-voice-opt" onclick="selVoiceLang(this,'tw')">
+          <div class="lang-voice-flag">🇬🇭</div><div>Twi</div>
+          <div style="font-size:9px;color:var(--ts);margin-top:2px;">⌨ Type</div>
+        </div>
+        <div class="lang-voice-opt" onclick="selVoiceLang(this,'dag')">
+          <div class="lang-voice-flag">🇬🇭</div><div>Dagbani</div>
+          <div style="font-size:9px;color:var(--ts);margin-top:2px;">⌨ Type</div>
+        </div>
+        <div class="lang-voice-opt" onclick="selVoiceLang(this,'ha')">
+          <div class="lang-voice-flag">🇬🇭</div><div>Hausa</div>
+          <div style="font-size:9px;color:var(--ts);margin-top:2px;">⌨ Type</div>
+        </div>
+      </div>
+
+      <!-- ENGLISH — microphone mode -->
+      <div id="voice-en-mode">
+        <div class="voice-center">
+          <div class="mic-outer" id="micOuter" onclick="toggleVoice()">
+            <div class="mic-inner" id="micInner">🎤</div>
+          </div>
+          <div class="voice-status" id="voiceStatus">Tap to speak</div>
+          <div class="voice-sub" id="voiceSub">Ask any farming or livestock question in English</div>
+        </div>
+        <div class="waveform" id="waveform" style="display:none;">
+          <div class="wave-bar" style="height:8px;"></div><div class="wave-bar" style="height:16px;"></div>
+          <div class="wave-bar" style="height:28px;"></div><div class="wave-bar" style="height:20px;"></div>
+          <div class="wave-bar" style="height:36px;"></div><div class="wave-bar" style="height:24px;"></div>
+          <div class="wave-bar" style="height:32px;"></div><div class="wave-bar" style="height:18px;"></div>
+          <div class="wave-bar" style="height:28px;"></div><div class="wave-bar" style="height:10px;"></div>
+        </div>
+      </div>
+
+      <!-- NON-ENGLISH — type mode -->
+      <div id="voice-type-mode" style="display:none;">
+        <div style="background:var(--blue50);border-radius:var(--rm);padding:10px 14px;font-size:13px;color:var(--blue);margin-bottom:1rem;line-height:1.5;">
+          ℹ Browser voice recognition only supports English. For <strong id="selectedLangName">Twi</strong>, type your question below — Claude will respond in <strong id="selectedLangName2">Twi</strong> and read the answer aloud.
+        </div>
+        <div class="fg" style="margin-bottom:.75rem;">
+          <div class="lbl" id="typeInputLabel">Type your question in Twi</div>
+          <textarea class="diary-ta" id="voiceTypeInput" rows="2" placeholder="Type your question here..."></textarea>
+        </div>
+        <button class="save-btn g" onclick="sendTypedVoice()" style="margin-bottom:.5rem;">
+          🤖 Get answer &amp; read aloud
+        </button>
+      </div>
+    </div>
+
+    <!-- Response card -->
+    <div class="card" id="voiceResponseCard" style="display:none;">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ts);margin-bottom:.375rem;">You asked</div>
+      <div class="transcript-box" id="voiceTranscript"></div>
+      <div class="ai-voice-label">Nkɔsoɔ AI replied</div>
+      <div class="ai-voice-response" id="voiceResponse"></div>
+      <div class="speed-row">
+        <span class="speed-label">Playback speed:</span>
+        <div class="speed-opts">
+          <button class="speed-btn" onclick="setSpeed(this,0.75)">0.75x</button>
+          <button class="speed-btn on" onclick="setSpeed(this,1)">1x</button>
+          <button class="speed-btn" onclick="setSpeed(this,1.25)">1.25x</button>
+          <button class="speed-btn" onclick="setSpeed(this,1.5)">1.5x</button>
+        </div>
+      </div>
+      <div class="voice-controls">
+        <button class="vc-btn" onclick="replayVoice()">▶ Replay</button>
+        <button class="vc-btn" onclick="stopVoice()">⏹ Stop</button>
+        <button class="vc-btn primary" onclick="resetVoice()">🔄 New question</button>
+      </div>
+      <div class="voice-tip">💡 Answer saved to your AI chat history</div>
+    </div>
+
+    <!-- Quick questions -->
+    <div class="card">
+      <div class="card-title b">Quick questions</div>
+      <div class="quick-grid">
+        <button class="quick-btn" onclick="voiceQuickAsk(0)">🌾 What should I plant this season?</button>
+        <button class="quick-btn" onclick="voiceQuickAsk(1)">🐛 My maize leaves are yellow</button>
+        <button class="quick-btn" onclick="voiceQuickAsk(3)">🐔 My chickens are not eating</button>
+        <button class="quick-btn" onclick="voiceQuickAsk(2)">💰 What is the price of tomatoes today?</button>
+      </div>
+    </div>
+
+    <!-- Language note -->
+    <div class="card" style="background:var(--g50);border-color:var(--g100);">
+      <div class="card-title g">🌍 Language support</div>
+      <div style="font-size:13px;color:var(--g900);line-height:1.7;">
+        <strong>English 🇬🇧</strong> — Full voice: tap mic, speak, hear answer<br>
+        <strong>Twi 🇬🇭</strong> — Type your question, Claude responds in Twi, answer read aloud<br>
+        <strong>Dagbani 🇬🇭</strong> — Type your question, Claude responds in Dagbani, answer read aloud<br>
+        <strong>Hausa 🇬🇭</strong> — Type your question, Claude responds in Hausa, answer read aloud
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CHAT ══ -->
+  <div id="panel-chat" class="panel">
+    <div class="card-title" style="margin-bottom:.75rem;">Quick questions</div>
+    <div class="quick-grid" id="quickGrid">
+      {% for q in quick_en %}<button class="quick-btn" onclick="askAI({{ loop.index0 }})" data-en="{{ q }}" data-tw="{{ quick_tw[loop.index0] }}">{{ q }}</button>{% endfor %}
+    </div>
+    <div class="chat-window">
+      <div class="chat-messages" id="chatMessages">
+        <div class="msg msg-ai" id="welcomeMsg">👋 Hello! I'm Nkɔsoɔ AI — your Ghana farming assistant for crops, livestock and aquaculture. Ask me anything!</div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Ask about crops or livestock..." onkeydown="if(event.key==='Enter') sendMessage()"/>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+<!-- ══ CREDIT ACCESS ══ -->
+  <div id="panel-credit" class="panel">
+    <div class="sec-head">
+      <div class="sec-icon" style="background:#E8EDF5;">💳</div>
+      <div>
+        <div class="sec-title">Credit Access</div>
+        <div class="sec-sub">Download your credit profile · find lenders · apply for agricultural loans</div>
+      </div>
+    </div>
+
+    <!-- Credit score card -->
+    <div id="creditScoreCard" style="background:#1A2E4A;border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
+        <div style="font-size:13px;font-weight:500;color:#fff;">Your Farming Activity Score</div>
+        <div id="creditRating" style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.12);color:#7EC850;">Loading...</div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:.75rem;">
+        <div id="creditScoreNum" style="font-size:44px;font-weight:500;color:#7EC850;line-height:1;">0</div>
+        <div style="font-size:16px;color:rgba(255,255,255,0.4);padding-bottom:6px;">/100</div>
+      </div>
+      <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;margin-bottom:.75rem;">
+        <div id="creditScoreBar" style="height:6px;background:#7EC850;border-radius:3px;width:0%;transition:width .8s ease;"></div>
+      </div>
+      <div id="creditScoreMsg" style="font-size:11px;color:rgba(255,255,255,0.5);line-height:1.5;"></div>
+    </div>
+
+    <!-- Phase A — Credit Profile Download -->
+    <div class="card" style="margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem;">
+        <div style="width:36px;height:36px;border-radius:8px;background:#E8EDF5;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📄</div>
+        <div>
+          <div style="font-size:14px;font-weight:500;color:#1A1A18;">Farm Credit Profile</div>
+          <div style="font-size:11px;color:var(--ts);">A verified PDF summary of your farm — accepted by lenders</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--ts);line-height:1.6;margin-bottom:.875rem;">
+        Your credit profile includes your Ghana Card, farm size, crops, livestock assets, and region — everything a lender needs to assess your loan application.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="save-btn" onclick="downloadCreditProfile()" style="background:#1A2E4A;">📄 Download Credit Profile PDF</button>
+        <button class="save-btn" onclick="loadCreditScore()" style="background:transparent;color:#1A2E4A;border:1px solid #1A2E4A;">📊 View My Score</button>
+      </div>
+    </div>
+
+    <!-- Phase B — Lender Directory -->
+    <div class="card" style="margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem;">
+        <div style="width:36px;height:36px;border-radius:8px;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏦</div>
+        <div>
+          <div style="font-size:14px;font-weight:500;color:#1A1A18;">Agricultural Lenders</div>
+          <div style="font-size:11px;color:var(--ts);">Verified microfinance and agri-lenders across Ghana</div>
+          <a href="/register-lender" style="font-size:11px;color:#1A2E4A;font-weight:500;margin-top:2px;display:inline-block;">🏦 Are you a lender? Register your institution →</a>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap;">
+        <select id="lenderRegionFilter" onchange="loadLenders()" style="flex:1;min-width:150px;padding:9px 12px;border:1px solid var(--bd);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;">
+          <option value="">All regions</option>
+          {% for key,r in regions.items() %}<option value="{{ key }}">{{ r.name }}</option>{% endfor %}
+        </select>
+        <button onclick="loadLenders()" style="padding:9px 14px;background:#2C7A3F;color:#fff;border-radius:8px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;white-space:nowrap;display:flex;align-items:center;gap:5px;">🔄 Load lenders</button>
+      </div>
+      <div id="lendersList" style="display:flex;flex-direction:column;gap:8px;">
+        <div style="text-align:center;padding:1rem;color:var(--ts);font-size:13px;">Loading lenders...</div>
+      </div>
+    </div>
+
+    <!-- Phase C — Apply for Credit -->
+    <div class="card" style="margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem;">
+        <div style="width:36px;height:36px;border-radius:8px;background:#FBF1E8;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📝</div>
+        <div>
+          <div style="font-size:14px;font-weight:500;color:#1A1A18;">Apply for a Loan</div>
+          <div style="font-size:11px;color:var(--ts);">Submit your interest — we record it and guide you</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:.75rem;">
+        <select id="applyLender" style="width:100%;padding:9px 12px;border:1px solid var(--bd);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;">
+          <option value="">Select a lender</option>
+          <option value="Opportunity International Ghana">Opportunity International Ghana</option>
+          <option value="Sinapi Aba Trust">Sinapi Aba Trust</option>
+          <option value="Advans Ghana">Advans Ghana</option>
+          <option value="ARB Apex Bank">ARB Apex Bank</option>
+        </select>
+        <input id="applyAmount" type="number" placeholder="Loan amount needed (GHS)" style="width:100%;padding:9px 12px;border:1px solid var(--bd);border-radius:8px;font-size:13px;font-family:inherit;"/>
+        <textarea id="applyPurpose" placeholder="What will you use the loan for? e.g. Buy fertilizer for maize farm, purchase 100 broiler chicks..." style="width:100%;padding:9px 12px;border:1px solid var(--bd);border-radius:8px;font-size:13px;font-family:inherit;resize:none;height:80px;"></textarea>
+      </div>
+      <div id="applyMsg" style="font-size:12px;margin-bottom:.5rem;display:none;"></div>
+      <button class="save-btn" onclick="submitCreditApp()" style="background:#C4873A;">📝 Submit Application</button>
+    </div>
+
+    <!-- Phase D — Credit score info -->
+    <div class="card" style="background:#F4F6FA;border:1px solid #E8EDF5;">
+      <div style="font-size:13px;font-weight:500;color:#1A2E4A;margin-bottom:.5rem;">💡 How to improve your score</div>
+      <div style="font-size:12px;color:var(--ts);line-height:1.65;">
+        ✅ Register a free account (+15 pts)<br>
+        ✅ Validate your Ghana Card (+25 pts)<br>
+        ✅ Save your farm profile with size and crops (+20 pts)<br>
+        ✅ Add soil type and water source (+10 pts)<br>
+        📍 Record your farm GPS location (+10 pts)<br>
+        ✅ Add a livestock profile (+10 pts)<br>
+        ✅ Log 5+ diary entries (+10 pts)<br>
+        ✅ Ask 10+ AI farming questions (+5 pts)
+      </div>
+    </div>
+  </div>
+
+
+  <div id="panel-dashboard" class="panel">
+    <div id="dashLoading" style="text-align:center;padding:2rem;color:var(--ts);">Loading your farm dashboard...</div>
+    <div id="dashContent" style="display:none;">
+      <div class="dash-farmer-header">
+        <div class="dash-avatar">👨‍🌾</div>
+        <div>
+          <div class="dash-farmer-name" id="dashName">—</div>
+          <div class="dash-farmer-sub" id="dashSub">—</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div id="dashPlanBadge" style="font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.12);color:#7EC850;">Free</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;">
+        <div style="background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
+          <div style="font-size:24px;font-weight:600;color:var(--tp);" id="dashCrops">—</div>
+          <div style="font-size:11px;color:var(--ts);margin-top:2px;">Crops growing</div>
+        </div>
+        <div style="background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
+          <div style="font-size:24px;font-weight:600;color:var(--tp);" id="dashAnimalCount">—</div>
+          <div style="font-size:11px;color:var(--ts);margin-top:2px;">Animal types</div>
+        </div>
+        <div style="background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
+          <div style="font-size:24px;font-weight:600;color:var(--tp);" id="dashDiary">—</div>
+          <div style="font-size:11px;color:var(--ts);margin-top:2px;">Diary entries</div>
+        </div>
+        <div style="background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
+          <div style="font-size:24px;font-weight:600;color:var(--g600);" id="dashScore">—</div>
+          <div style="font-size:11px;color:var(--ts);margin-top:2px;">Credit score</div>
+        </div>
+      </div>
+      <div class="dash-tabs">
+        <button class="dash-tab on" onclick="showDashTab('activity')">Recent activity</button>
+        <button class="dash-tab" onclick="showDashTab('farm')">Farm profile</button>
+        <button class="dash-tab" onclick="showDashTab('animals')">Livestock</button>
+        <button class="dash-tab" onclick="showDashTab('credit')">Credit</button>
+      </div>
+      <div id="dashActivity" class="activity-feed"></div>
+      <div id="dashFarm" style="display:none;"></div>
+      <div id="dashAnimals" style="display:none;"></div>
+      <div id="dashCredit" style="display:none;"></div>
+    </div>
+    <div id="dashNotReg" style="display:none;text-align:center;padding:2rem;">
+      <div style="font-size:32px;margin-bottom:.75rem;">🌾</div>
+      <div style="font-size:15px;font-weight:500;color:var(--tp);margin-bottom:.5rem;">Your farm dashboard</div>
+      <div style="font-size:13px;color:var(--ts);margin-bottom:1.25rem;">Create a free account to see your farm activity, calendars, and credit score all in one place.</div>
+      <a href="/register" style="display:inline-block;padding:10px 24px;background:var(--g600);color:#fff;border-radius:var(--rm);font-size:13px;font-weight:500;text-decoration:none;">Create free account →</a>
+    </div>
+  </div>
+
+</div><!-- /container -->
+</div><!-- /main-content -->
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div>Nkɔsoɔ AI &mdash; Crops · Livestock · Aquaculture &mdash; Ghana 🌿</div>
+  <div>Built by <a href="https://www.dranytech.com" target="_blank" rel="noopener">DranyTech</a><span class="footer-divider">|</span><a href="mailto:support@dranytech.com">support@dranytech.com</a></div>
+  <div style="margin-top:6px;">
+    <a href="/register-lender" style="display:inline-block;padding:5px 14px;border-radius:20px;background:rgba(255,255,255,0.1);color:#C0DD97;font-size:11px;text-decoration:none;border:0.5px solid rgba(255,255,255,0.2);">🏦 Are you a lender? Register your institution →</a>
+  </div>
+  <div style="margin-top:6px;">© 2026 Nkɔsoɔ AI · All rights reserved</div>
+</footer>
+
+
+<!-- App data passed safely from Flask -->
+<script id="app-data" type="application/json">
+{
+  "quick_en": {{ quick_en|tojson }},
+  "quick_tw": {{ quick_tw|tojson }},
+  "weather": {
+    "advice": {{ weather.advice|tojson }},
+    "advice_tw": {{ weather.advice_tw|tojson }},
+    "advice_livestock": {{ weather.advice_livestock|tojson }},
+    "advice_livestock_tw": {{ weather.advice_livestock_tw|tojson }},
+    "risk": {{ weather.risk|tojson }},
+    "risk_tw": {{ weather.risk_tw|tojson }},
+    "risk_level": {{ weather.risk_level|tojson }}
+  },
+  "user_plan": {{ user.plan|tojson }},
+  "free_limit": {{ free_limit }},
+  "anon_limit": 1,
+  "user_registered": {{ "true" if user_registered else "false" }},
+  "used_today": {{ used_today }}
+}
+</script>
 
 {% raw %}
 <script>
@@ -2865,6 +4816,43 @@ async function submitAgroRegistration(){
     } else {alert('Error: '+(data.error||'Please try again.'));}
   }catch(e){alert('Connection error. Please try again.');}
 }
+
+
+
+// ── PRE-FILL FARMER IDENTITY ─────────────────────────────────
+async function prefillFarmerIdentity(prefix){
+  // prefix: 'c' for crops, 'l' for livestock
+  try{
+    const r=await fetch('/api/farmer/identity');
+    if(!r.ok) return;
+    const d=await r.json();
+    if(!d.success||!d.identity) return;
+    const id=d.identity;
+    const fields={
+      [`${prefix}FarmerName`]:id.name,
+      [`${prefix}FarmerPhone`]:id.phone,
+      [`${prefix}GhanaCard`]:id.ghana_card,
+      [`${prefix}Region`]:id.region,
+      [`${prefix}Email`]:id.email,
+    };
+    for(const [elId,val] of Object.entries(fields)){
+      const el=document.getElementById(elId);
+      if(el&&val&&!el.value) el.value=val;
+    }
+    // Validate Ghana Card if pre-filled
+    if(id.ghana_card){
+      const gcEl=document.getElementById(`${prefix}GhanaCard`);
+      const gcStatus=document.getElementById(`${prefix==='c'?'cGCStatus':'lGCStatus'}`);
+      if(gcEl&&gcStatus){
+        const valid=/^GHA-\d{9}-\d$/.test(id.ghana_card);
+        gcStatus.style.display='block';
+        gcStatus.className='gc-status '+(valid?'gc-ok':'gc-err');
+        gcStatus.textContent=valid?'✅ Valid Ghana Card format':'⚠ Invalid format';
+      }
+    }
+  }catch(e){console.log('[prefill]',e);}
+}
+
 {% endraw %}
 </script>
 
