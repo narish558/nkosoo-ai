@@ -256,7 +256,9 @@ async function loadLivestockAnimals(){
 function renderAnimalGrid(){
   const grid=document.getElementById('animalTypeGrid');
   if(!grid) return;
-  let html=_liveAnimals.map((a,i)=>`
+  // Filter out base 'profile' record — only show real animal types
+  const realAnimals=_liveAnimals.filter(a=>a.animal_type&&a.animal_type!=='profile');
+  let html=realAnimals.map((a,i)=>`
     <div class="animal-type-card${_selectedAnimalIdx===i?' selected':''}" onclick="selectAnimal(${i})">
       <div class="atc-icon">${ANIMAL_ICONS[a.animal_type]||'🐾'}</div>
       <div class="atc-name">${ANIMAL_LABELS[a.animal_type]||a.animal_type}</div>
@@ -271,8 +273,9 @@ function renderAnimalGrid(){
 
 function selectAnimal(idx){
   _selectedAnimalIdx=idx;
+  const realAnimals=_liveAnimals.filter(a=>a.animal_type&&a.animal_type!=='profile');
   renderAnimalGrid();
-  populateLivestockForm(_liveAnimals[idx]);
+  if(realAnimals[idx]) populateLivestockForm(realAnimals[idx]);
 }
 
 function populateLivestockForm(a){
@@ -289,12 +292,22 @@ function populateLivestockForm(a){
 
 function addNewAnimalType(){
   _selectedAnimalIdx=null;
-  const form=document.getElementById('liveProfileForm');
-  if(form){
-    form.reset();
-    const typeEl=document.getElementById('lAnimalType');
-    if(typeEl) typeEl.value='';
-  }
+  // Clear all livestock form fields
+  const fieldIds=['lFarmerName','lFarmerPhone','lGhanaCard','lEmail','lAnimalType',
+    'lTotalCount','lSickCount','lHousing','lPurpose','lFeed','lWater','lVet','lNotes',
+    'liveLat','liveLon','liveAcc','liveAddr'];
+  fieldIds.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  // Reset GPS button
+  const gpsBtn=document.getElementById('liveGpsBtn');
+  if(gpsBtn){gpsBtn.classList.remove('got','loading');document.getElementById('liveGpsTxt').textContent='Tap to record location';document.getElementById('liveGpsIcon').textContent='📍';}
+  const gpsResult=document.getElementById('liveGpsResult');if(gpsResult)gpsResult.classList.remove('show');
+  // Switch to My Profile sub-tab
+  const profileBtn=document.querySelector('.stab.a');
+  if(profileBtn) showSubPanel('livestock','profile',profileBtn);
+  // Scroll to form
+  // Scroll to livestock tab top
+  const panel=document.getElementById('panel-livestock');
+  if(panel) panel.scrollIntoView({behavior:'smooth',block:'start'});
   renderAnimalGrid();
 }
 
@@ -333,12 +346,13 @@ async function loadDashboard(){
     upper_west:'Upper West',volta:'Volta',brong_ahafo:'Bono',savannah:'Savannah',
     north_east:'North East',oti:'Oti',bono_east:'Bono East',western_north:'Western North',ahafo:'Ahafo'};
 
-  document.getElementById('dashName').textContent=d.farmer.name||'Farmer';
+  document.getElementById('dashName').textContent=d.farmer.name||d.farmer.phone||'My Farm';
   document.getElementById('dashSub').textContent=
     `${REGIONS[d.farmer.region]||d.farmer.region||'Ghana'} · ${d.farmer.phone||''}`;
   document.getElementById('dashPlanBadge').textContent=d.farmer.plan==='pro'?'⭐ Pro':'Free';
   document.getElementById('dashCrops').textContent=d.farm&&d.farm.crops?d.farm.crops.split(',').length:0;
-  document.getElementById('dashAnimals').textContent=d.animals?d.animals.length:0;
+  const realAnimalCount=(d.animals||[]).filter(a=>a.animal_type&&a.animal_type!=='profile').length;
+  document.getElementById('dashAnimalCount').textContent=realAnimalCount;
   document.getElementById('dashDiary').textContent=d.diary_count||0;
   document.getElementById('dashScore').textContent=d.score.value+'/100';
 
@@ -347,7 +361,8 @@ async function loadDashboard(){
   if(d.farm&&d.farm.crops) activity.push({icon:'🌾',bg:'#EAF3DE',title:'Crops profile saved',sub:d.farm.crops.split(',').slice(0,3).join(', '),time:'Profile'});
   if(d.farm&&d.farm.ghana_card_valid) activity.push({icon:'🇬🇭',bg:'#EAF3DE',title:'Ghana Card validated',sub:'Identity verified on farm profile',time:'Profile'});
   if(d.farm&&d.farm.latitude) activity.push({icon:'📍',bg:'#E8EDF5',title:'GPS location recorded',sub:'Farm coordinates saved',time:'Profile'});
-  if(d.animals&&d.animals.length) d.animals.forEach(a=>activity.push({icon:ANIMAL_ICONS[a.animal_type]||'🐾',bg:'#FBF1E8',title:`${ANIMAL_LABELS[a.animal_type]||a.animal_type} profile`,sub:`${a.total_count||0} animals · ${a.housing_type||''}`,time:'Livestock'}));
+  const actAnimals=(d.animals||[]).filter(a=>a.animal_type&&a.animal_type!=='profile');
+  if(actAnimals.length) actAnimals.forEach(a=>activity.push({icon:ANIMAL_ICONS[a.animal_type]||'🐾',bg:'#FBF1E8',title:`${ANIMAL_LABELS[a.animal_type]||a.animal_type} · ${a.total_count||0} animals`,sub:`${a.housing_type||''} · ${a.purpose||''}`.replace(/^·\s*/,'').replace(/\s*·\s*$/,''),time:'Livestock'}));
   if(d.diary_count>0) activity.push({icon:'📔',bg:'#EAF3DE',title:`${d.diary_count} diary entries logged`,sub:'Keep logging for a better credit score',time:'Diary'});
   d.recent_questions.forEach(q=>activity.push({icon:'🤖',bg:'#F0EEE8',title:'AI question asked',sub:q.q,time:q.at?q.at.slice(5,10):''}));
 
@@ -1904,7 +1919,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
           <div style="font-size:11px;color:var(--ts);margin-top:2px;">Crops growing</div>
         </div>
         <div style="background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
-          <div style="font-size:24px;font-weight:600;color:var(--tp);" id="dashAnimals">—</div>
+          <div style="font-size:24px;font-weight:600;color:var(--tp);" id="dashAnimalCount">—</div>
           <div style="font-size:11px;color:var(--ts);margin-top:2px;">Animal types</div>
         </div>
         <div style="background:var(--card);border:0.5px solid var(--bd);border-radius:var(--rm);padding:.875rem;">
@@ -2504,7 +2519,7 @@ function renderLiveCal(){
 function changeLiveCalMonth(dir){liveCalMonth.m+=dir;if(liveCalMonth.m>11){liveCalMonth.m=0;liveCalMonth.y++;}if(liveCalMonth.m<0){liveCalMonth.m=11;liveCalMonth.y--;}renderLiveCal();}
 
 // ── Diary ──
-function saveDiaryEntry(type){
+async function saveDiaryEntry(type){
   const isLive=type==='livestock';
   const textId=isLive?'lDiaryText':'cDiaryText';
   const catId=isLive?'lDiaryCat':'cDiaryCat';
@@ -2519,6 +2534,19 @@ function saveDiaryEntry(type){
   entries.unshift({...entry,aiTip});
   renderDiary(type);
   document.getElementById(textId).value='';
+  // Save to database
+  try{
+    const animalRef=isLive?document.getElementById('lDiaryAnimal')?.value:'';
+    await fetch('/api/diary',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        entry_type:type,
+        animal_type:isLive?(animalRef||'livestock'):'crop',
+        title:entry.cat,
+        description:text,
+        ai_tip:aiTip
+      })});
+  }catch(e){console.log('[diary save]',e);}
+}
 }
 
 function renderDiary(type){
