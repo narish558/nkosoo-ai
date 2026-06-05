@@ -1517,6 +1517,11 @@ def api_farmer_dashboard():
             recent_usage = db.execute(
                 "SELECT question,created_at FROM usage WHERE session_id=? ORDER BY created_at DESC LIMIT 5",
                 (sid,)).fetchall()
+            # Also check farm_diary table if it exists
+            try:
+                farm_diary = db.execute("SELECT COUNT(*) FROM farm_diary WHERE session_id=?",(sid,)).fetchone()[0]
+                diary_count += farm_diary
+            except: pass
     except Exception as e:
         print(f"[dashboard error] {e}")
         return jsonify({"success":False,"error":str(e)}),500
@@ -1537,7 +1542,10 @@ def api_farmer_dashboard():
     rating="Excellent" if score>=80 else "Good" if score>=60 else "Fair" if score>=40 else "Building"
     return jsonify({
         "success":True,
-        "farmer":{"name":user["name"] if user else "","region":user["region"] if user else "","phone":user["phone"] if user else "","plan":user["plan"] if user else "free"},
+        "farmer":{"name":(user["name"] or session.get("user_name","")) if user else session.get("user_name",""),
+                  "region":(user["region"] or "greater_accra") if user else "greater_accra",
+                  "phone":(user["phone"] or "") if user else "",
+                  "plan":(user["plan"] or "free") if user else "free"},
         "farm":dict(farm) if farm else None,
         "animals":[dict(a) for a in animals],
         "diary_count":diary_count,
@@ -1645,6 +1653,48 @@ def api_credit_apply():
             VALUES (?,?,?,?,?)""",(sid,lender_id,lender_name,amount,purpose))
         db.commit()
     return jsonify({"success":True,"message":"Application recorded. Download your credit profile and present it to the lender via WhatsApp."})
+
+@app.route("/api/diary", methods=["POST"])
+def api_save_diary():
+    """Save a diary entry to the database."""
+    if not is_registered():
+        return jsonify({"success":False}), 401
+    sid = get_sid()
+    data = request.get_json() or {}
+    entry_type = data.get("entry_type","crop")  # crop or livestock
+    animal_type = data.get("animal_type","")
+    title = data.get("title","General note")
+    description = data.get("description","").strip()
+    ai_tip = data.get("ai_tip","")
+    if not description:
+        return jsonify({"success":False,"error":"Entry text required"}), 400
+    with get_db() as db:
+        db.execute("""INSERT INTO health_logs
+            (session_id,animal_type,title,description,ai_tip,log_date)
+            VALUES (?,?,?,?,?,date('now'))""",
+            (sid, animal_type or entry_type, title, description, ai_tip))
+        db.commit()
+    return jsonify({"success":True})
+
+@app.route("/api/diary", methods=["GET"])
+def api_get_diary():
+    """Get diary entries for the logged in farmer."""
+    if not is_registered():
+        return jsonify({"success":False,"entries":[]}), 401
+    sid = get_sid()
+    entry_type = request.args.get("type","")
+    with get_db() as db:
+        if entry_type:
+            rows = db.execute(
+                """SELECT * FROM health_logs WHERE session_id=? AND animal_type=?
+                   ORDER BY created_at DESC LIMIT 50""",
+                (sid, entry_type)).fetchall()
+        else:
+            rows = db.execute(
+                """SELECT * FROM health_logs WHERE session_id=?
+                   ORDER BY created_at DESC LIMIT 50""",
+                (sid,)).fetchall()
+    return jsonify({"success":True,"entries":[dict(r) for r in rows]})
 
 @app.route("/api/credit/score", methods=["GET"])
 def api_credit_score():
