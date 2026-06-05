@@ -1388,10 +1388,11 @@ def build_credit_pdf(user, farm, livestock):
         story.append(Paragraph("FARM DETAILS", h2_style))
         story.append(HRFlowable(width="100%",thickness=1,color=green,spaceAfter=6))
         crops = farm["crops"] if farm["crops"] else "Not specified"
-        # Build GPS string
-        lat = farm.get("latitude"); lon = farm.get("longitude")
-        acc = farm.get("gps_accuracy")
-        gps_addr = farm.get("gps_address","")
+        # Build GPS string — convert to dict first for .get() support
+        farm_d = dict(farm)
+        lat = farm_d.get("latitude"); lon = farm_d.get("longitude")
+        acc = farm_d.get("gps_accuracy")
+        gps_addr = farm_d.get("gps_address","") or ""
         if lat and lon:
             gps_coords = f"{lat:.5f}, {lon:.5f}"
             gps_acc = f"±{int(acc)}m accuracy" if acc else ""
@@ -1428,10 +1429,12 @@ def build_credit_pdf(user, farm, livestock):
     if animals:
         story.append(Paragraph("LIVESTOCK ASSETS", h2_style))
         story.append(HRFlowable(width="100%",thickness=1,color=amber,spaceAfter=6))
-        for lv in animals:
-            if not lv or lv.get("animal_type") in (None,"profile",""): continue
+        for _lv in animals:
+            if not _lv: continue
+            lv = dict(_lv)
+            if lv.get("animal_type") in (None,"profile",""): continue
             l_lat = lv.get("latitude"); l_lon = lv.get("longitude")
-            l_acc = lv.get("gps_accuracy"); l_addr = lv.get("gps_address","")
+            l_acc = lv.get("gps_accuracy"); l_addr = lv.get("gps_address","") or ""
             if l_lat and l_lon:
                 l_gps = f"{l_lat:.5f}, {l_lon:.5f} (+-{int(l_acc)}m)" if l_acc else f"{l_lat:.5f}, {l_lon:.5f}"
                 l_loc = l_addr.split(",")[0] if l_addr else "Verified"
@@ -1490,8 +1493,10 @@ def api_credit_profile():
         return send_file(pdf_buf, mimetype="application/pdf",
             as_attachment=True, download_name=filename)
     except Exception as e:
+        import traceback
         print(f"[credit pdf error] {e}")
-        return jsonify({"error":"Could not generate PDF. Please try again."}),500
+        print(traceback.format_exc())
+        return jsonify({"error":f"PDF generation failed: {str(e)[:100]}"}),500
 
 @app.route("/register-lender", methods=["GET","POST"])
 def register_lender():
