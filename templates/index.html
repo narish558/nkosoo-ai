@@ -1986,6 +1986,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 }
 </script>
 
+// ── PRE-FILL FARMER IDENTITY ─────────────────────────────────
+async function prefillFarmerIdentity(prefix){
+  // prefix: 'c' for crops, 'l' for livestock
+  try{
+    const r=await fetch('/api/farmer/identity');
+    if(!r.ok) return;
+    const d=await r.json();
+    if(!d.success||!d.identity) return;
+    const id=d.identity;
+    const fields={
+      [`${prefix}FarmerName`]:id.name,
+      [`${prefix}FarmerPhone`]:id.phone,
+      [`${prefix}GhanaCard`]:id.ghana_card,
+      [`${prefix}Region`]:id.region,
+      [`${prefix}Email`]:id.email,
+    };
+    for(const [elId,val] of Object.entries(fields)){
+      const el=document.getElementById(elId);
+      if(el&&val&&!el.value) el.value=val;
+    }
+    // Validate Ghana Card if pre-filled
+    if(id.ghana_card){
+      const gcEl=document.getElementById(`${prefix}GhanaCard`);
+      const gcStatus=document.getElementById(`${prefix==='c'?'cGCStatus':'lGCStatus'}`);
+      if(gcEl&&gcStatus){
+        const valid=/^GHA-\d{9}-\d$/.test(id.ghana_card);
+        gcStatus.style.display='block';
+        gcStatus.className='gc-status '+(valid?'gc-ok':'gc-err');
+        gcStatus.textContent=valid?'✅ Valid Ghana Card format':'⚠ Invalid format';
+      }
+    }
+  }catch(e){console.log('[prefill]',e);}
+}
+
 {% raw %}
 <script>
 // Read all Flask data safely from the JSON script tag
@@ -2070,7 +2104,8 @@ function showTab(name){
   if(name==='agronomy') loadAgronomists();
   if(name==='credit'){loadLenders();loadCreditScore();}
   if(name==='dashboard') loadDashboard();
-  if(name==='livestock') loadLivestockAnimals();
+  if(name==='livestock'){loadLivestockAnimals();if(USER_REGISTERED||window._registered) prefillFarmerIdentity('l');}
+  if(name==='mycrops') if(USER_REGISTERED||window._registered) prefillFarmerIdentity('c');
   if(typeof gtag!=='undefined') trackTab(name);
 }
 
