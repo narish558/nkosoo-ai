@@ -631,6 +631,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .add-animal-btn{border:0.5px dashed var(--bd);border-radius:var(--rm);padding:.75rem;text-align:center;color:var(--ts);font-size:12px;cursor:pointer;background:transparent;width:100%;font-family:inherit;}
 .add-animal-btn:hover{border-color:var(--a600);color:var(--a600);}
 
+
+/* ── PEST ASK AI ── */
+.pest-quick-btn{width:100%;padding:9px 12px;border:0.5px solid var(--bd);border-radius:var(--rm);background:var(--card);font-size:12px;color:var(--tp);cursor:pointer;font-family:inherit;text-align:left;transition:background .15s;}
+.pest-quick-btn:hover{background:var(--g50);border-color:var(--g600);}
+
 /* ── GPS LOCATION ── */
 .gps-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;font-weight:500;color:#1A2E4A;cursor:pointer;font-family:inherit;transition:all .15s;width:100%;}
 .gps-btn:hover{background:#E8EDF5;border-color:#1A2E4A;}
@@ -681,6 +686,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .atc-count{font-size:11px;color:var(--ts);}
 .add-animal-btn{border:0.5px dashed var(--bd);border-radius:var(--rm);padding:.75rem;text-align:center;color:var(--ts);font-size:12px;cursor:pointer;background:transparent;width:100%;font-family:inherit;}
 .add-animal-btn:hover{border-color:var(--a600);color:var(--a600);}
+
+
+/* ── PEST ASK AI ── */
+.pest-quick-btn{width:100%;padding:9px 12px;border:0.5px solid var(--bd);border-radius:var(--rm);background:var(--card);font-size:12px;color:var(--tp);cursor:pointer;font-family:inherit;text-align:left;transition:background .15s;}
+.pest-quick-btn:hover{background:var(--g50);border-color:var(--g600);}
 
 /* ── GPS LOCATION ── */
 .gps-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;font-weight:500;color:#1A2E4A;cursor:pointer;font-family:inherit;transition:all .15s;width:100%;text-align:left;}
@@ -1297,6 +1307,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
         <span class="badge {{ 'b-danger' if pest.level=='high' else ('b-warn' if pest.level=='medium' else 'b-ok') }}">{{ pest.level|capitalize }}</span>
       </div>
       {% endfor %}
+    </div>
+
+    <!-- Ask AI about pests -->
+    <div class="card" style="margin-top:.75rem;">
+      <div class="card-title">🤖 Ask AI about pests &amp; diseases</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:.75rem;">
+        <button class="pest-quick-btn" onclick="askPestQuestion('How do I treat Fall Armyworm on maize?')">🐛 How do I treat Fall Armyworm on maize?</button>
+        <button class="pest-quick-btn" onclick="askPestQuestion('What are signs of Newcastle disease in poultry?')">🐔 Signs of Newcastle disease in poultry?</button>
+        <button class="pest-quick-btn" onclick="askPestQuestion('How do I prevent tomato blight in the rainy season?')">🍅 Prevent tomato blight in rainy season?</button>
+        <button class="pest-quick-btn" onclick="askPestQuestion('What pesticides are safe for vegetables in Ghana?')">🌿 Safe pesticides for vegetables in Ghana?</button>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <input id="pestAskInput" class="inp" type="text" placeholder="Ask about any pest or disease..." style="flex:1;" onkeydown="if(event.key==='Enter') askPestQuestion()"/>
+        <button class="save-btn g" onclick="askPestQuestion()" style="width:auto;padding:0 14px;flex-shrink:0;">Ask →</button>
+      </div>
+      <div id="pestAskResult" style="margin-top:.75rem;display:none;"></div>
     </div>
   </div>
 
@@ -2616,6 +2642,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .add-animal-btn{border:0.5px dashed var(--bd);border-radius:var(--rm);padding:.75rem;text-align:center;color:var(--ts);font-size:12px;cursor:pointer;background:transparent;width:100%;font-family:inherit;}
 .add-animal-btn:hover{border-color:var(--a600);color:var(--a600);}
 
+
+/* ── PEST ASK AI ── */
+.pest-quick-btn{width:100%;padding:9px 12px;border:0.5px solid var(--bd);border-radius:var(--rm);background:var(--card);font-size:12px;color:var(--tp);cursor:pointer;font-family:inherit;text-align:left;transition:background .15s;}
+.pest-quick-btn:hover{background:var(--g50);border-color:var(--g600);}
+
 /* ── GPS LOCATION ── */
 .gps-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;font-weight:500;color:#1A2E4A;cursor:pointer;font-family:inherit;transition:all .15s;width:100%;}
 .gps-btn:hover{background:#E8EDF5;border-color:#1A2E4A;}
@@ -2666,6 +2697,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .atc-count{font-size:11px;color:var(--ts);}
 .add-animal-btn{border:0.5px dashed var(--bd);border-radius:var(--rm);padding:.75rem;text-align:center;color:var(--ts);font-size:12px;cursor:pointer;background:transparent;width:100%;font-family:inherit;}
 .add-animal-btn:hover{border-color:var(--a600);color:var(--a600);}
+
+
+/* ── PEST ASK AI ── */
+.pest-quick-btn{width:100%;padding:9px 12px;border:0.5px solid var(--bd);border-radius:var(--rm);background:var(--card);font-size:12px;color:var(--tp);cursor:pointer;font-family:inherit;text-align:left;transition:background .15s;}
+.pest-quick-btn:hover{background:var(--g50);border-color:var(--g600);}
 
 /* ── GPS LOCATION ── */
 .gps-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;font-weight:500;color:#1A2E4A;cursor:pointer;font-family:inherit;transition:all .15s;width:100%;text-align:left;}
@@ -3110,6 +3146,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   "used_today": {{ used_today }}
 }
 </script>
+
 
 {% raw %}
 <script>
@@ -3993,6 +4030,32 @@ async function prefillFarmerIdentity(prefix){
   }catch(e){console.log('[prefill]',e);}
 }
 
+
+// ── PEST ASK AI ─────────────────────────────────────────────
+async function askPestQuestion(question){
+  const input=document.getElementById('pestAskInput');
+  const result=document.getElementById('pestAskResult');
+  const q=question||(input?input.value.trim():'');
+  if(!q) return;
+  if(input&&!question) input.value='';
+  result.style.display='block';
+  result.innerHTML=`<div class="result-box g" style="font-size:13px;color:var(--ts);padding:.75rem;">🤖 Getting AI advice...</div>`;
+  try{
+    const resp=await fetch('/api/ask',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question:q,lang:'en'})});
+    const data=await resp.json();
+    if(data.answer){
+      result.innerHTML=`<div class="result-box g" style="font-size:13px;line-height:1.65;padding:.875rem;white-space:pre-wrap;">${data.answer}</div>`;
+    } else if(data.gate){
+      result.innerHTML=`<div class="result-box g" style="font-size:13px;padding:.75rem;">You have used all free questions today. <button onclick="openUpgrade()" style="border:none;background:none;color:var(--g600);font-weight:500;cursor:pointer;text-decoration:underline;">Upgrade to Pro</button> for unlimited questions.</div>`;
+    } else {
+      result.innerHTML=`<div class="result-box g" style="font-size:13px;color:var(--ts);padding:.75rem;">Could not get a response. Please try again.</div>`;
+    }
+  }catch(e){
+    result.innerHTML=`<div class="result-box g" style="font-size:13px;color:var(--ts);padding:.75rem;">Connection error. Please try again.</div>`;
+  }
+}
 {% endraw %}
 </script>
 
