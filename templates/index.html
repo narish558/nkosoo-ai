@@ -2046,10 +2046,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   <!-- ══ MARKETPLACE ══ -->
   <div id="panel-marketplace" class="panel">
     <div class="mkt-stabs" id="mktStabsRow">
+      <!-- Everyone sees Browse -->
       <button class="mkt-stab on" onclick="mktTab('browse',this)">🛒 Browse</button>
-      <button class="mkt-stab" onclick="mktTab('orders',this)">📦 My orders</button>
+      <!-- Buyers only: Cart -->
+      <button class="mkt-stab mkt-buyer-only" onclick="mktTab('orders',this)" id="mktCartBtn">📦 Cart</button>
+      <!-- Farmers only: Sell + My sales (hidden until confirmed) -->
       <button class="mkt-stab mkt-farmer-only" onclick="mktTab('sell',this)" style="display:none;">🌾 Sell</button>
-      <button class="mkt-stab mkt-farmer-only" onclick="mktTab('sales',this)" style="display:none;">📊 Sales</button>
+      <button class="mkt-stab mkt-farmer-only" onclick="mktTab('sales',this)" style="display:none;">📊 My sales</button>
     </div>
 
     <!-- BROWSE TAB -->
@@ -2231,18 +2234,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
         <!-- Delivery details -->
         <div style="font-size:11px;font-weight:500;color:var(--tp);margin-bottom:.5rem;">Your details</div>
         <input id="mktBuyerName" type="text" placeholder="Your full name" class="inp g" style="margin-bottom:.5rem;"/>
-        <input id="mktBuyerPhone" type="tel" placeholder="Phone number for delivery updates" class="inp g" style="margin-bottom:.5rem;"/>
+        <input id="mktBuyerPhone" type="tel" placeholder="Phone number (MTN MoMo / Telecel Cash)" class="inp g" style="margin-bottom:.5rem;"/>
+        <input id="mktBuyerEmail" type="email" placeholder="Email address (optional — for card payment receipts)" class="inp g" style="margin-bottom:.5rem;"/>
         <input id="mktDeliveryAddr" type="text" placeholder="Delivery address or pickup location" class="inp g" style="margin-bottom:.875rem;"/>
         <!-- Payment -->
-        <div style="font-size:11px;font-weight:500;color:var(--tp);margin-bottom:.5rem;">Payment method</div>
-        <select id="mktPayMethod" class="inp g" style="margin-bottom:.75rem;">
-          <option value="momo">MTN MoMo</option>
-          <option value="telecel">Telecel Cash</option>
-          <option value="card">Visa / Mastercard</option>
-        </select>
-        <div style="background:var(--bg);border-radius:var(--rm);padding:.75rem;margin-bottom:.75rem;font-size:11px;color:var(--ts);line-height:1.5;">
-          <i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px;color:var(--g600);"></i>
-          Payment goes directly to the verified supplier. 3% platform commission applied. No escrow — items are physical products shipped to you.
+        <div style="font-size:11px;font-weight:500;color:var(--tp);margin-bottom:.5rem;">How would you like to pay?</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:.75rem;">
+          <label style="display:flex;align-items:center;gap:6px;padding:8px;border:0.5px solid var(--bd);border-radius:var(--rm);cursor:pointer;font-size:11px;">
+            <input type="radio" name="mktPayChannel" value="mobile_money" checked style="accent-color:#2C7A3F;"/> 📱 MoMo / Telecel
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:8px;border:0.5px solid var(--bd);border-radius:var(--rm);cursor:pointer;font-size:11px;">
+            <input type="radio" name="mktPayChannel" value="card" style="accent-color:#2C7A3F;"/> 💳 Visa / Mastercard
+          </label>
+        </div>
+        <div style="background:#EAF3DE;border:0.5px solid #C0DD97;border-radius:var(--rm);padding:.75rem;margin-bottom:.75rem;font-size:11px;color:#27500A;line-height:1.5;">
+          <i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px;"></i>
+          Secured by <strong>Paystack</strong> — Ghana's trusted payment gateway. Pay with MoMo, Telecel Cash, Visa, or Mastercard. You will be redirected to Paystack to complete payment safely.
         </div>
         <div id="mktOrderTotal" style="display:flex;justify-content:space-between;font-size:14px;font-weight:500;color:var(--tp);margin-bottom:.75rem;padding:.75rem;background:var(--bg);border-radius:var(--rm);">
           <span>Order total</span><span style="color:#854F0B;">GHS —</span>
@@ -3613,7 +3620,25 @@ function showTab(name){
   if(name==='dashboard') loadDashboard();
   if(name==='livestock'){loadLivestockAnimals();if(USER_REGISTERED||window._registered) prefillFarmerIdentity('l');}
   if(name==='mycrops') if(USER_REGISTERED||window._registered) prefillFarmerIdentity('c');
-  if(name==='marketplace') loadMarketListings();
+  if(name==='marketplace'){
+    loadMarketListings();
+    // Check for payment return
+    const urlParams=new URLSearchParams(window.location.search);
+    const mktPayment=urlParams.get('mkt_payment');
+    if(mktPayment==='success'){
+      const amount=urlParams.get('amount')||'';
+      setTimeout(()=>mktTab('orders',document.querySelector('.mkt-stab[onclick*=orders]')),300);
+      setTimeout(()=>{
+        const resEl=document.getElementById('mktOrderResult');
+        if(resEl){resEl.style.display='block';resEl.innerHTML='<div class="saved-ok g">✅ Payment successful! GHS '+parseFloat(amount||0).toFixed(2)+' received. The supplier will contact you for delivery details.</div>';}
+        _mktCart=[];mktUpdateCartBadge();mktUpdateCartSummary();
+      },500);
+    }
+    if(mktPayment==='failed'){
+      setTimeout(()=>mktTab('orders',document.querySelector('.mkt-stab[onclick*=orders]')),300);
+      setTimeout(()=>{const resEl=document.getElementById('mktOrderResult');if(resEl){resEl.style.display='block';resEl.innerHTML='<div style="font-size:12px;color:#A32D2D;padding:.5rem;">Payment was not completed. Please try again.</div>';}},500);
+    }
+  }
   if(typeof gtag!=='undefined') trackTab(name);
 }
 
@@ -4758,18 +4783,23 @@ async function loadMktSales(period,btn){
 
 // ── MARKETPLACE TAB VISIBILITY ────────────────────────────────
 async function mktCheckFarmerTabs(){
-  // Only show Sell + Sales tabs if user has a farm profile
-  const farmerTabs = document.querySelectorAll('.mkt-farmer-only');
-  if(!farmerTabs.length) return;
+  // Farmers: Browse + Sell + My sales (no Cart)
+  // Buyers/consumers: Browse + Cart (no Sell/My sales)
   try{
     const r = await fetch('/api/farmer/identity');
     const d = await r.json();
     const hasFarmProfile = d.success && d.identity && (d.identity.name || d.identity.ghana_card);
-    farmerTabs.forEach(tab=>{
-      tab.style.display = hasFarmProfile ? '' : 'none';
+    // Show farmer tabs, hide buyer-only cart
+    document.querySelectorAll('.mkt-farmer-only').forEach(t=>{
+      t.style.display = hasFarmProfile ? '' : 'none';
+    });
+    document.querySelectorAll('.mkt-buyer-only').forEach(t=>{
+      t.style.display = hasFarmProfile ? 'none' : '';
     });
   }catch(e){
-    farmerTabs.forEach(tab=>{ tab.style.display='none'; });
+    // Default: show cart, hide sell/sales
+    document.querySelectorAll('.mkt-farmer-only').forEach(t=>t.style.display='none');
+    document.querySelectorAll('.mkt-buyer-only').forEach(t=>t.style.display='');
   }
 }
 
@@ -4826,21 +4856,41 @@ function mktSaveGuestPhone(){
 async function mktPlaceOrder(){
   const name=document.getElementById('mktBuyerName')?.value?.trim();
   const phone=document.getElementById('mktBuyerPhone')?.value?.trim();
+  const email=document.getElementById('mktBuyerEmail')?.value?.trim();
   const addr=document.getElementById('mktDeliveryAddr')?.value?.trim();
-  const method=document.getElementById('mktPayMethod')?.value||'momo';
   const resEl=document.getElementById('mktOrderResult');
   if(!name){alert('Please enter your full name.');return;}
-  if(!phone){alert('Please enter your phone number.');return;}
-  if(!_mktCart.length){alert('Your cart is empty.');return;}
+  if(!phone){alert('Please enter your phone number for delivery updates.');return;}
+  if(!_mktCart.length){alert('Your cart is empty. Browse and add items first.');return;}
+  // Calculate total
+  const total=_mktCart.reduce((s,i)=>s+(i.qty*i.price),0);
+  const delivery=40;
+  const grandTotal=total+delivery;
   resEl.style.display='block';
-  resEl.innerHTML='<div style="font-size:12px;color:var(--ts);padding:.5rem;">Processing your order...</div>';
-  // For now simulate success — Paystack integration goes here
-  setTimeout(()=>{
-    resEl.innerHTML='<div class="saved-ok g">✅ Order placed! You will receive a confirmation on '+phone+'. The supplier will contact you for delivery details.</div>';
-    _mktCart=[];
-    mktUpdateCartBadge();
-    mktUpdateCartSummary();
-  }, 1200);
+  resEl.innerHTML='<div style="font-size:12px;color:var(--ts);padding:.5rem;text-align:center;">🔄 Connecting to Paystack...</div>';
+  try{
+    const r=await fetch('/api/marketplace/pay/initialize',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name, phone, email:email||'',
+        amount: grandTotal,
+        order_type:'produce',
+        delivery_address: addr||'',
+        cart_items: _mktCart.map(i=>({name:i.name,qty:i.qty,price:i.price}))
+      })
+    });
+    const d=await r.json();
+    if(d.success&&d.authorization_url){
+      resEl.innerHTML='<div style="font-size:12px;color:var(--ts);padding:.5rem;text-align:center;">✅ Redirecting to secure payment...</div>';
+      // Redirect to Paystack payment page
+      window.location.href=d.authorization_url;
+    } else {
+      resEl.innerHTML='<div style="font-size:12px;color:#A32D2D;padding:.5rem;">'+(d.error||'Payment could not be initialized. Please try again.')+'</div>';
+    }
+  }catch(e){
+    resEl.innerHTML='<div style="font-size:12px;color:#A32D2D;padding:.5rem;">Connection error. Please check your internet and try again.</div>';
+  }
 }
 
 {% endraw %}
