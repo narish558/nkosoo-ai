@@ -125,6 +125,70 @@ def init_db():
             ai_tip TEXT, log_date TEXT,
             created_at TEXT DEFAULT (datetime('now'))
         );
+
+        CREATE TABLE IF NOT EXISTS marketplace_training (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT UNIQUE NOT NULL,
+            module1_done INTEGER DEFAULT 0,
+            module2_done INTEGER DEFAULT 0,
+            module3_done INTEGER DEFAULT 0,
+            module4_done INTEGER DEFAULT 0,
+            terms_agreed INTEGER DEFAULT 0,
+            seller_active INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS marketplace_listings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            farmer_name TEXT,
+            ghana_card TEXT,
+            farm_location TEXT,
+            gps_lat REAL, gps_lon REAL,
+            produce_type TEXT NOT NULL,
+            produce_unit TEXT DEFAULT 'bags',
+            quantity INTEGER DEFAULT 0,
+            price_per_unit REAL DEFAULT 0,
+            grade TEXT DEFAULT 'Grade A',
+            description TEXT,
+            region TEXT,
+            status TEXT DEFAULT 'active',
+            views INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS marketplace_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            listing_id INTEGER NOT NULL,
+            seller_session_id TEXT NOT NULL,
+            buyer_name TEXT,
+            buyer_phone TEXT,
+            buyer_email TEXT,
+            quantity INTEGER DEFAULT 1,
+            unit_price REAL DEFAULT 0,
+            total_amount REAL DEFAULT 0,
+            commission_amount REAL DEFAULT 0,
+            seller_amount REAL DEFAULT 0,
+            delivery_fee REAL DEFAULT 0,
+            payment_method TEXT DEFAULT 'momo',
+            payment_ref TEXT,
+            status TEXT DEFAULT 'pending',
+            escrow_status TEXT DEFAULT 'held',
+            instant_release INTEGER DEFAULT 0,
+            instant_fee REAL DEFAULT 0,
+            delivery_confirmed INTEGER DEFAULT 0,
+            release_at TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS marketplace_notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            listing_id INTEGER NOT NULL,
+            buyer_phone TEXT,
+            buyer_email TEXT,
+            notified INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
         CREATE TABLE IF NOT EXISTS price_cache (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             data TEXT NOT NULL,
@@ -1986,3 +2050,212 @@ if __name__ == "__main__":
     print("   API key:", bool(client.api_key))
     print("   Open: http://localhost:5000\n")
     app.run(debug=True, port=5000)
+
+# ===========================================================================
+# MARKETPLACE ROUTES
+# ===========================================================================
+
+COMMISSION_RATE = 0.05      # 5% platform commission
+INSTANT_RELEASE_FEE = 0.02  # 2% instant release fee
+ESCROW_HOURS = 48           # hours before auto-release
+
+# ── Training ──────────────────────────────────────────────────
+@app.route("/api/marketplace/training", methods=["GET"])
+def mkt_get_training():
+    sid = get_sid()
+    with get_db() as db:
+        t = db.execute("SELECT * FROM marketplace_training WHERE session_id=?",(sid,)).fetchone()
+    if not t:
+        return jsonify({"module1":0,"module2":0,"module3":0,"module4":0,"terms_agreed":0,"seller_active":0})
+    return jsonify({"module1":t["module1_done"],"module2":t["module2_done"],
+                    "module3":t["module3_done"],"module4":t["module4_done"],
+                    "terms_agreed":t["terms_agreed"],"seller_active":t["seller_active"]})
+
+@app.route("/api/marketplace/training", methods=["POST"])
+def mkt_save_training():
+    if not is_registered():
+        return jsonify({"success":False,"gate":"register"}), 401
+    sid = get_sid()
+    data = request.get_json() or {}
+    module = data.get("module")
+    with get_db() as db:
+        existing = db.execute("SELECT * FROM marketplace_training WHERE session_id=?",(sid,)).fetchone()
+        if existing:
+            if module:
+                db.execute(f"UPDATE marketplace_training SET module{module}_done=1, updated_at=datetime('now') WHERE session_id=?",(sid,))
+            db.commit()
+        else:
+            db.execute("INSERT INTO marketplace_training (session_id,module1_done,module2_done,module3_done,module4_done) VALUES (?,?,?,?,?)",
+                (sid, 1 if module==1 else 0, 1 if module==2 else 0, 1 if module==3 else 0, 1 if module==4 else 0))
+            db.commit()
+    return jsonify({"success":True})
+
+@app.route("/api/marketplace/agree-terms", methods=["POST"])
+def mkt_agree_terms():
+    if not is_registered():
+        return jsonify({"success":False,"gate":"register"}), 401
+    sid = get_sid()
+    with get_db() as db:
+        existing = db.execute("SELECT * FROM marketplace_training WHERE session_id=?",(sid,)).fetchone()
+        if existing:
+            db.execute("UPDATE marketplace_training SET terms_agreed=1, seller_active=1, updated_at=datetime('now') WHERE session_id=?",(sid,))
+        else:
+            db.execute("INSERT INTO marketplace_training (session_id,terms_agreed,seller_active) VALUES (?,1,1)",(sid,))
+        db.commit()
+    return jsonify({"success":True})
+
+# ── Listings ──────────────────────────────────────────────────
+@app.route("/api/marketplace/listings", methods=["GET"])
+def mkt_get_listings():
+    region = request.args.get("region","")
+    category = request.args.get("category","")
+    search = request.args.get("search","")
+    with get_db() as db:
+        q = "SELECT * FROM marketplace_listings WHERE status='active'"
+        params = []
+        if region:
+            q += " AND region=?"; params.append(region)
+        if search:
+            q += " AND (produce_type LIKE ? OR description LIKE ?)"; params += [f"%{search}%",f"%{search}%"]
+        q += " ORDER BY created_at DESC"
+        rows = db.execute(q, params).fetchall()
+    return jsonify({"success":True,"listings":[dict(r) for r in rows]})
+
+@app.route("/api/marketplace/my-listings", methods=["GET"])
+def mkt_my_listings():
+    if not is_registered():
+        return jsonify({"success":False,"gate":"register"}), 401
+    sid = get_sid()
+    with get_db() as db:
+        rows = db.execute("SELECT * FROM marketplace_listings WHERE session_id=? ORDER BY created_at DESC",(sid,)).fetchall()
+    return jsonify({"success":True,"listings":[dict(r) for r in rows]})
+
+@app.route("/api/marketplace/listings", methods=["POST"])
+def mkt_create_listing():
+    if not is_registered():
+        return jsonify({"success":False,"gate":"register"}), 401
+    sid = get_sid()
+    # Check seller is active
+    with get_db() as db:
+        t = db.execute("SELECT seller_active FROM marketplace_training WHERE session_id=?",(sid,)).fetchone()
+        if not t or not t["seller_active"]:
+            return jsonify({"success":False,"error":"Complete training and agree to terms before listing."}), 403
+        # Get profile data
+        fp = db.execute("SELECT * FROM farm_profiles WHERE session_id=?",(sid,)).fetchone()
+        u  = db.execute("SELECT name,phone FROM users WHERE session_id=?",(sid,)).fetchone()
+    data = request.get_json() or {}
+    produce_type = data.get("produce_type","").strip()
+    if not produce_type:
+        return jsonify({"success":False,"error":"Produce type required"}), 400
+    qty = int(data.get("quantity",0))
+    price = float(data.get("price_per_unit",0))
+    if qty <= 0 or price <= 0:
+        return jsonify({"success":False,"error":"Valid quantity and price required"}), 400
+    fp_d = dict(fp) if fp else {}
+    farmer_name = (u["name"] if u else "") or fp_d.get("farmer_name","")
+    ghana_card  = fp_d.get("ghana_card","")
+    farm_loc    = data.get("farm_location","") or fp_d.get("gps_address","") or ""
+    region      = data.get("region","") or fp_d.get("region","greater_accra")
+    with get_db() as db:
+        db.execute("""INSERT INTO marketplace_listings
+            (session_id,farmer_name,ghana_card,farm_location,gps_lat,gps_lon,
+             produce_type,produce_unit,quantity,price_per_unit,grade,description,region,status)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'active')""",
+            (sid,farmer_name,ghana_card,farm_loc,
+             fp_d.get("latitude"),fp_d.get("longitude"),
+             produce_type,data.get("produce_unit","bags"),
+             qty,price,data.get("grade","Grade A"),
+             data.get("description",""),region))
+        db.commit()
+    return jsonify({"success":True})
+
+@app.route("/api/marketplace/listings/<int:lid>/status", methods=["POST"])
+def mkt_update_listing_status(lid):
+    if not is_registered():
+        return jsonify({"success":False}), 401
+    sid = get_sid()
+    data = request.get_json() or {}
+    status = data.get("status","active")
+    with get_db() as db:
+        db.execute("UPDATE marketplace_listings SET status=?,updated_at=datetime('now') WHERE id=? AND session_id=?",(status,lid,sid))
+        db.commit()
+    return jsonify({"success":True})
+
+@app.route("/api/marketplace/notify", methods=["POST"])
+def mkt_notify():
+    data = request.get_json() or {}
+    with get_db() as db:
+        db.execute("INSERT INTO marketplace_notifications (listing_id,buyer_phone,buyer_email) VALUES (?,?,?)",
+            (data.get("listing_id"),data.get("phone",""),data.get("email","")))
+        db.commit()
+    return jsonify({"success":True})
+
+# ── Orders ────────────────────────────────────────────────────
+@app.route("/api/marketplace/orders", methods=["POST"])
+def mkt_create_order():
+    data = request.get_json() or {}
+    listing_id = data.get("listing_id")
+    quantity   = int(data.get("quantity",1))
+    with get_db() as db:
+        listing = db.execute("SELECT * FROM marketplace_listings WHERE id=? AND status='active'",(listing_id,)).fetchone()
+        if not listing:
+            return jsonify({"success":False,"error":"Listing not found or sold out"}), 404
+        unit_price  = listing["price_per_unit"]
+        total       = unit_price * quantity
+        commission  = round(total * COMMISSION_RATE, 2)
+        seller_amt  = round(total - commission, 2)
+        delivery    = float(data.get("delivery_fee",0))
+        import datetime
+        release_at  = (datetime.datetime.utcnow() + datetime.timedelta(hours=ESCROW_HOURS)).strftime("%Y-%m-%d %H:%M:%S")
+        db.execute("""INSERT INTO marketplace_orders
+            (listing_id,seller_session_id,buyer_name,buyer_phone,buyer_email,
+             quantity,unit_price,total_amount,commission_amount,seller_amount,
+             delivery_fee,payment_method,status,escrow_status,release_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'confirmed','held',?)""",
+            (listing_id,listing["session_id"],
+             data.get("buyer_name",""),data.get("buyer_phone",""),data.get("buyer_email",""),
+             quantity,unit_price,total,commission,seller_amt,
+             delivery,data.get("payment_method","momo"),release_at))
+        db.commit()
+    return jsonify({"success":True,"total":total,"commission":commission,"seller_amount":seller_amt})
+
+@app.route("/api/marketplace/orders/my", methods=["GET"])
+def mkt_my_orders():
+    if not is_registered():
+        return jsonify({"success":False}), 401
+    sid = get_sid()
+    period = request.args.get("period","month")
+    with get_db() as db:
+        if period == "today":
+            rows = db.execute("SELECT * FROM marketplace_orders WHERE seller_session_id=? AND date(created_at)=date('now') ORDER BY created_at DESC",(sid,)).fetchall()
+        elif period == "all":
+            rows = db.execute("SELECT * FROM marketplace_orders WHERE seller_session_id=? ORDER BY created_at DESC",(sid,)).fetchall()
+        else:
+            rows = db.execute("SELECT * FROM marketplace_orders WHERE seller_session_id=? AND strftime('%Y-%m',created_at)=strftime('%Y-%m','now') ORDER BY created_at DESC",(sid,)).fetchall()
+        orders = [dict(r) for r in rows]
+    total_rev  = sum(o["seller_amount"] for o in orders)
+    total_comm = sum(o["commission_amount"] for o in orders)
+    pending    = sum(1 for o in orders if o["escrow_status"]=="held")
+    return jsonify({"success":True,"orders":orders,"total_revenue":round(total_rev,2),
+                    "total_commission":round(total_comm,2),"pending_release":pending,"order_count":len(orders)})
+
+@app.route("/api/marketplace/orders/<int:oid>/release", methods=["POST"])
+def mkt_release_order(oid):
+    if not is_registered():
+        return jsonify({"success":False}), 401
+    sid = get_sid()
+    data = request.get_json() or {}
+    instant = data.get("instant",False)
+    with get_db() as db:
+        o = db.execute("SELECT * FROM marketplace_orders WHERE id=? AND seller_session_id=?",(oid,sid)).fetchone()
+        if not o:
+            return jsonify({"success":False,"error":"Order not found"}), 404
+        instant_fee = round(o["seller_amount"] * INSTANT_RELEASE_FEE, 2) if instant else 0
+        payout = round(o["seller_amount"] - instant_fee, 2)
+        db.execute("""UPDATE marketplace_orders SET
+            escrow_status='released',instant_release=?,instant_fee=?,
+            updated_at=datetime('now') WHERE id=?""",
+            (1 if instant else 0, instant_fee, oid))
+        db.commit()
+    return jsonify({"success":True,"payout":payout,"instant_fee":instant_fee})
+
