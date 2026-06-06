@@ -1250,6 +1250,19 @@ def admin():
             except Exception:
                 mkt_listings=0; mkt_active=0; mkt_orders=0; mkt_gmv=0
                 mkt_commission=0; mkt_sellers=0; mkt_recent_listings=[]
+            # Farm inputs stats
+            try:
+                inp_suppliers    = db.execute("SELECT COUNT(*) FROM inputs_suppliers WHERE verified=1 AND active=1").fetchone()[0]
+                inp_products     = db.execute("SELECT COUNT(*) FROM inputs_products WHERE status='active'").fetchone()[0]
+                inp_orders       = db.execute("SELECT COUNT(*) FROM inputs_orders WHERE status='confirmed'").fetchone()[0]
+                inp_gmv_row      = db.execute("SELECT SUM(total_amount) FROM inputs_orders WHERE status='confirmed'").fetchone()[0]
+                inp_gmv          = round(inp_gmv_row or 0, 2)
+                inp_commission   = round(inp_gmv * 0.03, 2)
+                inp_top_cat      = db.execute("SELECT category,COUNT(*) as cnt FROM inputs_orders o JOIN inputs_products p ON p.id=o.id WHERE o.status='confirmed' GROUP BY category ORDER BY cnt DESC LIMIT 1").fetchone()
+                inp_top_category = inp_top_cat["category"].title() if inp_top_cat else "—"
+            except Exception:
+                inp_suppliers=0; inp_products=0; inp_orders=0
+                inp_gmv=0; inp_commission=0; inp_top_category="—"
     except Exception as e:
         return f"<h2>Admin Error</h2><pre>{e}</pre><p><a href='/admin/logout'>Sign out</a></p>", 500
     return render_template("admin.html",
@@ -1270,7 +1283,10 @@ def admin():
         mkt_listings=mkt_listings, mkt_active=mkt_active,
         mkt_orders=mkt_orders, mkt_gmv=mkt_gmv,
         mkt_commission=mkt_commission, mkt_sellers=mkt_sellers,
-        mkt_recent_listings=mkt_recent_listings)
+        mkt_recent_listings=mkt_recent_listings,
+        inp_suppliers=inp_suppliers, inp_products=inp_products,
+        inp_orders=inp_orders, inp_gmv=inp_gmv,
+        inp_commission=inp_commission, inp_top_category=inp_top_category)
 
 @app.route("/admin/logout")
 def admin_logout():
