@@ -635,6 +635,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
 /* ── MARKETPLACE ── */
 .tab-btn.mkt.active{background:#FBF1E8;color:#854F0B;}
+.tab-btn.inp.active{background:#E6F1FB;color:#185FA5;}
+
 .mkt-stabs{display:flex;gap:4px;margin-bottom:.875rem;}
 .mkt-stab{flex:1;padding:7px 4px;border:0.5px solid var(--bd);border-radius:var(--rm);font-size:11px;font-weight:500;text-align:center;cursor:pointer;background:var(--card);color:var(--ts);font-family:inherit;}
 .mkt-stab.on{background:#1A2E4A;color:#fff;border-color:#1A2E4A;}
@@ -730,6 +732,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
 /* ── MARKETPLACE ── */
 .tab-btn.mkt.active{background:#FBF1E8;color:#854F0B;}
+.tab-btn.inp.active{background:#E6F1FB;color:#185FA5;}
+
 .mkt-stabs{display:flex;gap:4px;margin-bottom:.875rem;}
 .mkt-stab{flex:1;padding:7px 4px;border:0.5px solid var(--bd);border-radius:var(--rm);font-size:11px;font-weight:500;text-align:center;cursor:pointer;background:var(--card);color:var(--ts);font-family:inherit;}
 .mkt-stab.on{background:#1A2E4A;color:#fff;border-color:#1A2E4A;}
@@ -1294,6 +1298,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <button class="tab-btn crop" onclick="showTab('mycrops')"><span class="tab-icon">🌾</span><span class="tab-lbl">My Crops</span></button>
     <button class="tab-btn live" onclick="showTab('livestock')"><span class="tab-icon">🐄</span><span class="tab-lbl">Livestock</span></button>
     <button class="tab-btn mkt" onclick="showTab('marketplace')"><span class="tab-icon">🛒</span><span class="tab-lbl">Market</span></button>
+    <button class="tab-btn inp" onclick="showTab('inputs')"><span class="tab-icon">🌱</span><span class="tab-lbl">Inputs</span></button>
     <button class="tab-btn teal" onclick="showTab('agronomy')"><span class="tab-icon">🔬</span><span class="tab-lbl">Experts</span></button>
     <button class="tab-btn voice" onclick="showTab('voice')"><span class="tab-icon">🎤</span><span class="tab-lbl">Voice</span></button>
     <button class="tab-btn shared" onclick="showTab('chat')"><span class="tab-icon">🤖</span><span class="tab-lbl">Ask AI</span></button>
@@ -2952,6 +2957,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
 /* ── MARKETPLACE ── */
 .tab-btn.mkt.active{background:#FBF1E8;color:#854F0B;}
+.tab-btn.inp.active{background:#E6F1FB;color:#185FA5;}
+
 .mkt-stabs{display:flex;gap:4px;margin-bottom:.875rem;}
 .mkt-stab{flex:1;padding:7px 4px;border:0.5px solid var(--bd);border-radius:var(--rm);font-size:11px;font-weight:500;text-align:center;cursor:pointer;background:var(--card);color:var(--ts);font-family:inherit;}
 .mkt-stab.on{background:#1A2E4A;color:#fff;border-color:#1A2E4A;}
@@ -3047,6 +3054,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
 /* ── MARKETPLACE ── */
 .tab-btn.mkt.active{background:#FBF1E8;color:#854F0B;}
+.tab-btn.inp.active{background:#E6F1FB;color:#185FA5;}
+
 .mkt-stabs{display:flex;gap:4px;margin-bottom:.875rem;}
 .mkt-stab{flex:1;padding:7px 4px;border:0.5px solid var(--bd);border-radius:var(--rm);font-size:11px;font-weight:500;text-align:center;cursor:pointer;background:var(--card);color:var(--ts);font-family:inherit;}
 .mkt-stab.on{background:#1A2E4A;color:#fff;border-color:#1A2E4A;}
@@ -3612,7 +3621,7 @@ function setLang(lang){
 
 // ── Tabs ──
 function showTab(name){
-  const names=['weather','prices','pests','diagnose','mycrops','livestock','marketplace','agronomy','voice','chat','credit','dashboard'];
+  const names=['weather','prices','pests','diagnose','mycrops','livestock','marketplace','inputs','agronomy','voice','chat','credit','dashboard'];
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',names[i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name));
   if(name==='agronomy') loadAgronomists();
@@ -4893,8 +4902,269 @@ async function mktPlaceOrder(){
   }
 }
 
+
+// ── FARM INPUTS ──────────────────────────────────────────────
+const INP_COMMISSION = 0.03;
+let _inpCategory = '';
+let _inpCart = [];
+
+const CAT_ICONS = {seeds:'🌱',fertilizer:'🌿',pesticides:'🧴',animal_feed:'🌾',vet_products:'💉',tools:'🔧',irrigation:'💧'};
+const SUP_COLORS = {'Agroline Ghana':'#185FA5','SeedMaster Ghana':'#2C7A3F','VetSupply Ghana':'#854F0B','FarmTools GH':'#0F6E56','Antiko Feeds':'#C4873A'};
+
+function inpTab(name,btn){
+  ['browse','recommended','cart'].forEach(t=>{
+    const el=document.getElementById('inp-'+t);
+    if(el) el.style.display=t===name?'':'none';
+  });
+  document.querySelectorAll('#panel-inputs .mkt-stab').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  if(name==='recommended') loadInpRecommended();
+  if(name==='cart') inpUpdateCartSummary();
+}
+
+function filterInputs(cat,btn){
+  _inpCategory=cat;
+  document.querySelectorAll('#inpFilterRow .mkt-chip').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  loadInputsProducts();
+}
+
+async function loadInputsProducts(){
+  const search=document.getElementById('inpSearch')?.value||'';
+  const el=document.getElementById('inpProducts');
+  if(!el) return;
+  el.innerHTML='<div style="text-align:center;padding:1.5rem;color:var(--ts);font-size:13px;">Loading products...</div>';
+  try{
+    let url='/api/inputs/products?';
+    if(_inpCategory) url+='category='+_inpCategory+'&';
+    if(search) url+='search='+encodeURIComponent(search);
+    const r=await fetch(url);
+    const d=await r.json();
+    if(!d.products||!d.products.length){
+      el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--ts);font-size:13px;">No products found for this category.</div>';
+      return;
+    }
+    el.innerHTML=d.products.map(p=>inpProductCard(p)).join('');
+  }catch(e){
+    el.innerHTML='<div style="text-align:center;padding:1.5rem;color:var(--ts);">Could not load products. Please try again.</div>';
+  }
+}
+
+async function loadInpRecommended(){
+  const el=document.getElementById('inpRecommended');
+  const profEl=document.getElementById('inpRecProfile');
+  if(!el) return;
+  try{
+    const r=await fetch('/api/inputs/products');
+    const d=await r.json();
+    const recs=d.products?d.products.filter(p=>p.recommended):[];
+    if(profEl&&d.recommended_for&&d.recommended_for.length){
+      profEl.textContent='Based on your '+d.recommended_for.slice(0,3).join(', ')+' profile';
+    }
+    if(!recs.length){
+      el.innerHTML='<div class="card"><div style="font-size:12px;color:var(--ts);text-align:center;padding:1rem;">Save your crop and livestock profile to get personalised recommendations.</div><button class="save-btn g" onclick="showTab('mycrops')" style="margin-top:.5rem;">Save crop profile →</button></div>';
+      return;
+    }
+    el.innerHTML=recs.map(p=>inpProductCard(p,true)).join('');
+  }catch(e){
+    el.innerHTML='<div style="color:var(--ts);font-size:12px;text-align:center;padding:1rem;">Could not load recommendations.</div>';
+  }
+}
+
+function inpProductCard(p, highlighted=false){
+  const catIcon=CAT_ICONS[p.category]||'📦';
+  const initials=(p.business_name||'SU').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const lowStock=p.stock_qty>0&&p.stock_qty<20;
+  const inStock=p.stock_qty>0;
+  const recBadge=p.recommended?'<div style="font-size:9px;font-weight:500;color:#27500A;margin-bottom:4px;">⭐ Recommended for your farm</div>':'';
+  const borderStyle=highlighted&&p.recommended?'border-left:3px solid #2C7A3F;border-radius:0 var(--rm) var(--rm) 0;':'';
+  return `<div class="produce-card" style="${borderStyle}${!inStock?'opacity:.6;':''}">
+    ${recBadge}
+    <div class="produce-top">
+      <div>
+        <div class="produce-name">${catIcon} ${p.name}</div>
+        <div class="produce-meta">${p.description||''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div class="produce-price">GHS ${Number(p.price).toFixed(0)}/${p.unit.replace(/s$/,'')}</div>
+        <span class="badge ${inStock?(lowStock?'b-warn':'b-ok'):'b-danger'}" style="margin-top:3px;display:inline-block;">${inStock?(lowStock?'Low stock':'In stock'):'Out of stock'}</span>
+      </div>
+    </div>
+    <div class="farmer-verified">
+      <div style="width:22px;height:22px;border-radius:4px;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:9px;color:#0C447C;font-weight:500;flex-shrink:0;">${initials}</div>
+      <div style="font-size:11px;color:var(--ts);">${p.business_name} · <span class="badge b-ok" style="font-size:9px;">Verified supplier</span></div>
+    </div>
+    ${inStock?`<div class="add-row">
+      <input id="inpqty_${p.id}" type="number" value="1" min="1" style="width:55px;padding:7px 8px;border:0.5px solid var(--bd);border-radius:6px;font-size:12px;background:var(--card);color:var(--tp);"/>
+      <button class="save-btn g" style="flex:1;padding:8px;font-size:12px;margin-bottom:0;" onclick="inpAddToCart(${p.id},'${p.name.replace(/'/g,'').substring(0,40)}',${p.price},'${p.unit}')">Add to cart</button>
+    </div>`:`<div style="font-size:11px;color:var(--ts);margin-top:6px;text-align:center;">Currently out of stock</div>`}
+  </div>`;
+}
+
+function inpAddToCart(id,name,price,unit){
+  const qty=parseInt(document.getElementById('inpqty_'+id)?.value||1);
+  const existing=_inpCart.findIndex(i=>i.id===id);
+  if(existing>=0) _inpCart[existing].qty=qty;
+  else _inpCart.push({id,name,price,unit,qty});
+  // Update badge
+  const count=_inpCart.reduce((s,i)=>s+i.qty,0);
+  const cartBtn=document.getElementById('inpCartBtn');
+  if(cartBtn) cartBtn.textContent=count>0?`🛒 Cart (${count})`:'🛒 Cart';
+  // Show feedback and switch to cart
+  inpTab('cart',document.getElementById('inpCartBtn'));
+  // Make sure the cart btn is 'on'
+  document.querySelectorAll('#panel-inputs .mkt-stab').forEach(b=>b.classList.remove('on'));
+  if(document.getElementById('inpCartBtn')) document.getElementById('inpCartBtn').classList.add('on');
+}
+
+function inpUpdateCartSummary(){
+  const el=document.getElementById('inpCartSummary');
+  const totalEl=document.getElementById('inpOrderTotal');
+  const formEl=document.getElementById('inpCheckoutForm');
+  if(!el) return;
+  if(!_inpCart.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--ts);text-align:center;padding:1rem;">Cart is empty. Browse and add items.</div>';
+    if(formEl) formEl.style.display='none';
+    return;
+  }
+  let total=0;
+  el.innerHTML='<div style="border:0.5px solid var(--bd);border-radius:var(--rm);overflow:hidden;margin-bottom:.75rem;">'+
+    _inpCart.map(item=>{
+      const sub=item.qty*item.price; total+=sub;
+      return `<div style="display:flex;justify-content:space-between;font-size:12px;padding:8px .75rem;border-bottom:0.5px solid var(--bd);">
+        <div>
+          <div style="font-weight:500;">${item.name}</div>
+          <div style="font-size:10px;color:var(--ts);">${item.qty} ${item.unit} × GHS ${item.price.toFixed(0)}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <span style="font-weight:500;color:#854F0B;">GHS ${sub.toFixed(0)}</span>
+          <button onclick="inpRemoveFromCart(${item.id})" style="font-size:10px;color:var(--ts);background:none;border:none;cursor:pointer;">Remove</button>
+        </div>
+      </div>`;
+    }).join('')+
+    `<div style="display:flex;justify-content:space-between;font-size:12px;padding:8px .75rem;color:var(--ts);"><span>Delivery</span><span>GHS 40</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:500;padding:8px .75rem;border-top:0.5px solid var(--bd);"><span>Total</span><span style="color:#854F0B;">GHS ${(total+40).toFixed(2)}</span></div>
+    </div>`;
+  if(totalEl) totalEl.querySelector('span:last-child').textContent='GHS '+(total+40).toFixed(2);
+  if(formEl) formEl.style.display='block';
+}
+
+function inpRemoveFromCart(id){
+  _inpCart=_inpCart.filter(i=>i.id!==id);
+  const count=_inpCart.reduce((s,i)=>s+i.qty,0);
+  const cartBtn=document.getElementById('inpCartBtn');
+  if(cartBtn) cartBtn.textContent=count>0?`🛒 Cart (${count})`:'🛒 Cart';
+  inpUpdateCartSummary();
+}
+
+async function inpPlaceOrder(){
+  const name=document.getElementById('inpBuyerName')?.value?.trim();
+  const phone=document.getElementById('inpBuyerPhone')?.value?.trim();
+  const email=document.getElementById('inpBuyerEmail')?.value?.trim();
+  const addr=document.getElementById('inpDeliveryAddr')?.value?.trim();
+  const resEl=document.getElementById('inpOrderResult');
+  if(!name){alert('Please enter your full name.');return;}
+  if(!phone){alert('Please enter your phone number.');return;}
+  if(!_inpCart.length){alert('Your cart is empty.');return;}
+  const total=_inpCart.reduce((s,i)=>s+(i.qty*i.price),0)+40;
+  resEl.style.display='block';
+  resEl.innerHTML='<div style="font-size:12px;color:var(--ts);padding:.5rem;text-align:center;">🔄 Connecting to Paystack...</div>';
+  try{
+    const r=await fetch('/api/inputs/pay/initialize',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name,phone,email:email||'',
+        amount:total,
+        delivery_address:addr||'',
+        cart_items:_inpCart.map(i=>({id:i.id,name:i.name,qty:i.qty,price:i.price,unit:i.unit}))
+      })
+    });
+    const d=await r.json();
+    if(d.success&&d.authorization_url){
+      resEl.innerHTML='<div style="font-size:12px;color:var(--ts);padding:.5rem;text-align:center;">✅ Redirecting to Paystack...</div>';
+      window.location.href=d.authorization_url;
+    } else {
+      resEl.innerHTML='<div style="font-size:12px;color:#A32D2D;padding:.5rem;">'+(d.error||'Payment could not be initialized.')+'</div>';
+    }
+  }catch(e){
+    resEl.innerHTML='<div style="font-size:12px;color:#A32D2D;padding:.5rem;">Connection error. Please check your internet.</div>';
+  }
+}
+
 {% endraw %}
 </script>
+
+  <!-- ══ FARM INPUTS ══ -->
+  <div id="panel-inputs" class="panel">
+    <div class="mkt-stabs">
+      <button class="mkt-stab on" onclick="inpTab('browse',this)">🌱 Browse</button>
+      <button class="mkt-stab" onclick="inpTab('recommended',this)">⭐ For my farm</button>
+      <button class="mkt-stab" onclick="inpTab('cart',this)" id="inpCartBtn">🛒 Cart</button>
+    </div>
+
+    <!-- BROWSE -->
+    <div id="inp-browse">
+      <div style="display:flex;gap:6px;margin-bottom:.625rem;">
+        <input id="inpSearch" class="inp g" type="text" placeholder="Search seeds, fertilizer, feed..." style="flex:1;" oninput="loadInputsProducts()"/>
+      </div>
+      <div class="mkt-filter-row" id="inpFilterRow">
+        <button class="mkt-chip on" onclick="filterInputs('',this)">All</button>
+        <button class="mkt-chip" onclick="filterInputs('seeds',this)">🌱 Seeds</button>
+        <button class="mkt-chip" onclick="filterInputs('fertilizer',this)">🌿 Fertilizer</button>
+        <button class="mkt-chip" onclick="filterInputs('pesticides',this)">🧴 Pesticides</button>
+        <button class="mkt-chip" onclick="filterInputs('animal_feed',this)">🌾 Animal feed</button>
+        <button class="mkt-chip" onclick="filterInputs('vet_products',this)">💉 Vet products</button>
+        <button class="mkt-chip" onclick="filterInputs('tools',this)">🔧 Tools</button>
+        <button class="mkt-chip" onclick="filterInputs('irrigation',this)">💧 Irrigation</button>
+      </div>
+      <div id="inpProducts"><div style="text-align:center;padding:2rem;color:var(--ts);font-size:13px;">Loading products...</div></div>
+    </div>
+
+    <!-- RECOMMENDED -->
+    <div id="inp-recommended" style="display:none;">
+      <div class="card" style="background:#EAF3DE;border-color:#C0DD97;margin-bottom:.75rem;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:30px;height:30px;border-radius:50%;background:#2C7A3F;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-bulb" style="font-size:14px;color:#fff;"></i></div>
+          <div><div style="font-size:13px;font-weight:500;color:#27500A;">Recommended for your farm</div><div id="inpRecProfile" style="font-size:11px;color:#3B6D11;margin-top:1px;">Based on your crop and livestock profile</div></div>
+        </div>
+      </div>
+      <div id="inpRecommended"><div style="text-align:center;padding:1.5rem;color:var(--ts);font-size:13px;">Loading recommendations...</div></div>
+    </div>
+
+    <!-- CART + CHECKOUT -->
+    <div id="inp-cart" style="display:none;">
+      <div class="card">
+        <div class="sec-head"><div class="sec-icon" style="background:#E6F1FB;">🛒</div><div><div class="sec-title">Your cart</div><div class="sec-sub">Farm inputs — pay with MoMo or card</div></div></div>
+        <div id="inpCartSummary"><div style="font-size:12px;color:var(--ts);text-align:center;padding:1rem;">Cart is empty. Browse and add items.</div></div>
+        <div id="inpCheckoutForm" style="display:none;">
+          <div style="margin:.75rem 0;font-size:11px;font-weight:500;color:var(--tp);">Your details</div>
+          <input id="inpBuyerName" type="text" placeholder="Full name" class="inp g" style="margin-bottom:.5rem;"/>
+          <input id="inpBuyerPhone" type="tel" placeholder="Phone number (MTN MoMo / Telecel)" class="inp g" style="margin-bottom:.5rem;"/>
+          <input id="inpBuyerEmail" type="email" placeholder="Email (optional — for card payment receipts)" class="inp g" style="margin-bottom:.5rem;"/>
+          <input id="inpDeliveryAddr" type="text" placeholder="Delivery address or pickup location" class="inp g" style="margin-bottom:.875rem;"/>
+          <div style="font-size:11px;font-weight:500;color:var(--tp);margin-bottom:.5rem;">Payment method</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:.75rem;">
+            <label style="display:flex;align-items:center;gap:7px;padding:8px;border:0.5px solid var(--bd);border-radius:var(--rm);cursor:pointer;font-size:11px;background:var(--card);">
+              <input type="radio" name="inpPayChannel" value="mobile_money" checked style="accent-color:#2C7A3F;"/> 📱 MoMo / Telecel
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;padding:8px;border:0.5px solid var(--bd);border-radius:var(--rm);cursor:pointer;font-size:11px;background:var(--card);">
+              <input type="radio" name="inpPayChannel" value="card" style="accent-color:#2C7A3F;"/> 💳 Visa / Mastercard
+            </label>
+          </div>
+          <div style="background:#EAF3DE;border:0.5px solid #C0DD97;border-radius:var(--rm);padding:.75rem;margin-bottom:.75rem;font-size:11px;color:#27500A;line-height:1.5;">
+            <i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px;"></i>
+            Secured by <strong>Paystack</strong> — Ghana's trusted payment gateway. You will be redirected to Paystack to complete payment safely. 3% platform commission applied.
+          </div>
+          <div id="inpOrderTotal" style="display:flex;justify-content:space-between;font-size:14px;font-weight:500;padding:.75rem;background:var(--bg);border-radius:var(--rm);margin-bottom:.75rem;">
+            <span>Order total</span><span style="color:#854F0B;">GHS —</span>
+          </div>
+          <button class="save-btn g" onclick="inpPlaceOrder()" style="background:#185FA5;">Pay with Paystack →</button>
+          <div id="inpOrderResult" style="display:none;margin-top:.5rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ══ FARMER DASHBOARD ══ -->
 
