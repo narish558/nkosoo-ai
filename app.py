@@ -189,6 +189,51 @@ def init_db():
             notified INTEGER DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now'))
         );
+
+        CREATE TABLE IF NOT EXISTS inputs_suppliers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            business_name TEXT NOT NULL,
+            contact_name TEXT,
+            phone TEXT,
+            email TEXT,
+            region TEXT DEFAULT 'national',
+            categories TEXT,
+            tier TEXT DEFAULT 'basic',
+            ghana_card TEXT,
+            business_reg TEXT,
+            verified INTEGER DEFAULT 0,
+            active INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS inputs_products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            supplier_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL,
+            description TEXT,
+            unit TEXT DEFAULT 'item',
+            price REAL NOT NULL,
+            stock_qty INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'active',
+            recommended_for TEXT,
+            region TEXT DEFAULT 'national',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS inputs_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT,
+            buyer_name TEXT,
+            buyer_phone TEXT,
+            buyer_email TEXT,
+            delivery_address TEXT,
+            items_json TEXT,
+            total_amount REAL DEFAULT 0,
+            commission_amount REAL DEFAULT 0,
+            payment_ref TEXT,
+            payment_method TEXT DEFAULT 'paystack',
+            status TEXT DEFAULT 'pending',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
         CREATE TABLE IF NOT EXISTS price_cache (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             data TEXT NOT NULL,
@@ -2363,4 +2408,168 @@ def mkt_pay_verify():
     except Exception as e:
         print(f"[mkt pay verify] {e}")
         return redirect("/app?mkt_payment=failed#marketplace")
+
+
+# ===========================================================================
+# FARM INPUTS MARKETPLACE
+# ===========================================================================
+
+INPUTS_COMMISSION = 0.03  # 3% commission
+
+# Seed default suppliers and products for demo
+def seed_inputs_demo():
+    try:
+        with get_db() as db:
+            cnt = db.execute("SELECT COUNT(*) FROM inputs_suppliers").fetchone()[0]
+            if cnt > 0: return
+            suppliers = [
+                ("Agroline Ghana","Kofi Mensah","030 276 1400","info@agrolineghana.com","national","seeds,fertilizer","standard",1),
+                ("SeedMaster Ghana","Ama Asante","055 123 4567","info@seedmaster.com.gh","national","seeds","basic",1),
+                ("VetSupply Ghana","Dr. Kwame Boateng","024 987 6543","info@vetsupplygh.com","national","animal_feed,vet_products","standard",1),
+                ("FarmTools GH","Nana Kofi","020 456 7890","info@farmtoolsgh.com","national","tools,irrigation","basic",1),
+                ("Antiko Feeds","Samuel Antiko","032 234 5678","info@antikofeeds.com","national","animal_feed","standard",1),
+            ]
+            for s in suppliers:
+                db.execute("INSERT INTO inputs_suppliers (business_name,contact_name,phone,email,region,categories,tier,verified,active) VALUES (?,?,?,?,?,?,?,?,1)", s)
+            db.commit()
+            # Products
+            products = [
+                (1,"NPK 15-15-15 Fertilizer","fertilizer","50kg bag · Yara certified","bags",320,200,"maize,tomatoes,cassava","national"),
+                (1,"Urea Fertilizer 46%","fertilizer","50kg bag · nitrogen boost","bags",280,150,"maize,rice","national"),
+                (1,"Organic compost 25kg","fertilizer","CSIR approved · all crops","bags",95,300,"all","national"),
+                (2,"Maize seed — drought-tolerant hybrid","seeds","5kg pack · 90-day variety","packs",180,500,"maize","national"),
+                (2,"Tomato seed — Roma F1","seeds","10g sachet · disease resistant","sachets",45,1000,"tomatoes","national"),
+                (2,"Groundnut seed — Singa","seeds","5kg pack · high yield","packs",120,200,"groundnut","national"),
+                (2,"Pepper seed — Volta local","seeds","5g sachet","sachets",35,500,"pepper","national"),
+                (3,"Newcastle disease vaccine 100 doses","vet_products","La Sota strain · refrigerated","vials",75,200,"poultry","national"),
+                (3,"Cattle mineral lick block 10kg","animal_feed","Calcium + phosphorus","blocks",95,150,"cattle","national"),
+                (3,"Dewormer — cattle & sheep","vet_products","Albendazole 250ml","bottles",85,100,"cattle,goats,sheep","national"),
+                (4,"Knapsack sprayer 16L","tools","Manual pump · corrosion resistant","units",280,80,"all","national"),
+                (4,"Cutlass — hardened steel","tools","45cm blade","units",55,200,"all","national"),
+                (4,"Drip irrigation kit — 100m","irrigation","For 0.5 acre · includes fittings","kits",850,30,"all","national"),
+                (5,"Broiler starter feed 25kg","animal_feed","0-28 days · 22% protein","bags",145,300,"poultry","national"),
+                (5,"Broiler finisher feed 25kg","animal_feed","28-42 days · 19% protein","bags",135,300,"poultry","national"),
+                (5,"Layer mash 25kg","animal_feed","For laying hens · calcium enriched","bags",130,200,"poultry","national"),
+            ]
+            for p in products:
+                db.execute("INSERT INTO inputs_products (supplier_id,name,category,description,unit,price,stock_qty,recommended_for,region) VALUES (?,?,?,?,?,?,?,?,?)", p)
+            db.commit()
+    except Exception as e:
+        print(f"[inputs seed] {e}")
+
+
+@app.route("/api/inputs/products", methods=["GET"])
+def inputs_get_products():
+    seed_inputs_demo()
+    category = request.args.get("category","")
+    search   = request.args.get("search","")
+    sid      = get_sid()
+    # Get farmer's crops and livestock for recommendations
+    recommended_for = []
+    try:
+        with get_db() as db:
+            fp = db.execute("SELECT crops FROM farm_profiles WHERE session_id=?",(sid,)).fetchone()
+            lp = db.execute("SELECT animal_type FROM livestock_profiles WHERE session_id=?",(sid,)).fetchall()
+            if fp and fp["crops"]:
+                recommended_for += [c.strip().lower() for c in fp["crops"].split(",")]
+            for l in lp:
+                if l["animal_type"]: recommended_for.append(l["animal_type"].lower())
+    except: pass
+
+    with get_db() as db:
+        q = "SELECT p.*,s.business_name,s.tier FROM inputs_products p JOIN inputs_suppliers s ON p.supplier_id=s.id WHERE p.status='active' AND s.verified=1 AND s.active=1"
+        params = []
+        if category:
+            q += " AND p.category=?"; params.append(category)
+        if search:
+            q += " AND (p.name LIKE ? OR p.description LIKE ? OR p.recommended_for LIKE ?)"; params += [f"%{search}%"]*3
+        q += " ORDER BY s.tier DESC, p.price ASC"
+        rows = db.execute(q, params).fetchall()
+    products = [dict(r) for r in rows]
+    # Tag recommendations
+    for p in products:
+        rec_for = (p.get("recommended_for") or "").lower()
+        p["recommended"] = any(crop in rec_for or rec_for == "all" for crop in recommended_for) if recommended_for else False
+    # Sort: recommended first, then featured (premium tier), then rest
+    products.sort(key=lambda p: (0 if p["recommended"] else 1, 0 if p.get("tier")=="premium" else 1))
+    return jsonify({"success":True,"products":products,"recommended_for":recommended_for})
+
+
+@app.route("/api/inputs/pay/initialize", methods=["POST"])
+def inputs_pay_initialize():
+    if not PAYSTACK_SECRET:
+        return jsonify({"error":"Payment gateway not configured."}), 500
+    data          = request.get_json() or {}
+    buyer_name    = data.get("name","Guest")
+    buyer_phone   = data.get("phone","")
+    buyer_email   = data.get("email","") or f"{buyer_phone.replace(' ','')}@nkosooai.com"
+    amount_ghs    = float(data.get("amount",0))
+    cart_items    = data.get("cart_items",[])
+    delivery_addr = data.get("delivery_address","")
+    if amount_ghs <= 0: return jsonify({"error":"Invalid amount."}), 400
+    amount_pesewas = int(amount_ghs * 100)
+    sid = get_sid()
+    callback_url = request.host_url.rstrip("/") + f"/inputs/payment/verify?sid={sid}"
+    cart_summary = ", ".join([f"{i.get('name','')} x{i.get('qty',1)}" for i in cart_items[:5]])
+    try:
+        resp = requests.post("https://api.paystack.co/transaction/initialize",
+            headers={"Authorization":f"Bearer {PAYSTACK_SECRET}","Content-Type":"application/json"},
+            json={
+                "email": buyer_email,
+                "amount": amount_pesewas,
+                "currency": "GHS",
+                "callback_url": callback_url,
+                "channels": ["card","mobile_money"],
+                "metadata": {
+                    "buyer_name": buyer_name,
+                    "buyer_phone": buyer_phone,
+                    "order_type": "farm_inputs",
+                    "delivery_address": delivery_addr,
+                    "cart_summary": cart_summary,
+                    "platform": "nkosooai_inputs",
+                    "custom_fields": [
+                        {"display_name":"Buyer","variable_name":"buyer_name","value":buyer_name},
+                        {"display_name":"Phone","variable_name":"buyer_phone","value":buyer_phone},
+                        {"display_name":"Order","variable_name":"cart_summary","value":cart_summary},
+                    ]
+                }
+            }, timeout=15)
+        result = resp.json()
+        if result.get("status"):
+            ref = result["data"]["reference"]
+            commission = round(amount_ghs * INPUTS_COMMISSION, 2)
+            import json as _json
+            with get_db() as db:
+                db.execute(
+                    "INSERT INTO inputs_orders (session_id,buyer_name,buyer_phone,buyer_email,delivery_address,items_json,total_amount,commission_amount,payment_ref,status) VALUES (?,?,?,?,?,?,?,?,'pending','pending')",
+                    (sid,buyer_name,buyer_phone,buyer_email,delivery_addr,
+                     _json.dumps(cart_items),amount_ghs,commission,ref))
+                db.commit()
+            return jsonify({"success":True,"authorization_url":result["data"]["authorization_url"],"reference":ref})
+        return jsonify({"error":result.get("message","Payment initialization failed.")}), 500
+    except requests.exceptions.Timeout:
+        return jsonify({"error":"Payment gateway timeout. Please try again."}), 500
+    except Exception as e:
+        print(f"[inputs pay init] {e}")
+        return jsonify({"error":"Could not connect to Paystack."}), 500
+
+
+@app.route("/inputs/payment/verify")
+def inputs_pay_verify():
+    ref = request.args.get("reference") or request.args.get("trxref","")
+    if not ref or not PAYSTACK_SECRET: return redirect("/app?inputs_payment=failed")
+    try:
+        resp = requests.get(f"https://api.paystack.co/transaction/verify/{ref}",
+            headers={"Authorization":f"Bearer {PAYSTACK_SECRET}"}, timeout=15)
+        result = resp.json()
+        if result.get("status") and result["data"]["status"] == "success":
+            amount_ghs = result["data"]["amount"] / 100
+            with get_db() as db:
+                db.execute("UPDATE inputs_orders SET status='confirmed',total_amount=? WHERE payment_ref=?",(amount_ghs,ref))
+                db.commit()
+            return redirect(f"/app?inputs_payment=success&ref={ref}&amount={amount_ghs:.2f}#inputs")
+        return redirect("/app?inputs_payment=failed#inputs")
+    except Exception as e:
+        print(f"[inputs pay verify] {e}")
+        return redirect("/app?inputs_payment=failed#inputs")
 
