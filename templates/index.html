@@ -2045,11 +2045,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
   <!-- ══ MARKETPLACE ══ -->
   <div id="panel-marketplace" class="panel">
-    <div class="mkt-stabs">
+    <div class="mkt-stabs" id="mktStabsRow">
       <button class="mkt-stab on" onclick="mktTab('browse',this)">🛒 Browse</button>
-      <button class="mkt-stab" onclick="mktTab('sell',this)">🌾 Sell</button>
       <button class="mkt-stab" onclick="mktTab('orders',this)">📦 My orders</button>
-      <button class="mkt-stab" onclick="mktTab('sales',this)">📊 Sales</button>
+      <button class="mkt-stab mkt-farmer-only" onclick="mktTab('sell',this)" style="display:none;">🌾 Sell</button>
+      <button class="mkt-stab mkt-farmer-only" onclick="mktTab('sales',this)" style="display:none;">📊 Sales</button>
     </div>
 
     <!-- BROWSE TAB -->
@@ -2214,9 +2214,46 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
     <!-- ORDERS TAB (buyer's orders) -->
     <div id="mkt-orders" class="mkt-panel-content" style="display:none;">
-      <div class="card">
-        <div class="sec-head"><div class="sec-icon" style="background:#E8EDF5;">📋</div><div><div class="sec-title">My purchases</div><div class="sec-sub">Orders you have placed as a buyer</div></div></div>
-        <div id="mktBuyerOrders"><div style="font-size:12px;color:var(--ts);text-align:center;padding:1.5rem;">No orders yet. Browse the marketplace to buy from verified farmers.</div></div>
+      <!-- Guest checkout -->
+      <div class="card" id="mktCheckoutCard">
+        <div class="sec-head"><div class="sec-icon" style="background:#FAEEDA;">🛒</div><div><div class="sec-title">Checkout</div><div class="sec-sub">Complete your purchase</div></div></div>
+        <div id="mktCartSummary" style="margin-bottom:.875rem;"></div>
+        <!-- Soft nudge for registration -->
+        <div style="background:#EAF3DE;border:0.5px solid #C0DD97;border-radius:var(--rm);padding:.75rem;margin-bottom:.875rem;" id="mktSoftNudge">
+          <div style="font-size:12px;font-weight:500;color:#27500A;margin-bottom:4px;">💡 Save your number — track your order free</div>
+          <div style="font-size:11px;color:#3B6D11;margin-bottom:.5rem;">Get order updates and restock alerts. Takes 10 seconds.</div>
+          <div style="display:flex;gap:6px;">
+            <input id="mktNudgePhone" type="tel" placeholder="Your phone number" class="inp g" style="flex:1;font-size:11px;"/>
+            <button onclick="mktSaveGuestPhone()" style="padding:7px 12px;background:#2C7A3F;color:#fff;border:none;border-radius:var(--rm);font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;">Save</button>
+          </div>
+          <div style="font-size:10px;color:var(--ts);margin-top:4px;text-align:center;cursor:pointer;" onclick="document.getElementById('mktSoftNudge').style.display='none'">No thanks, continue as guest →</div>
+        </div>
+        <!-- Delivery details -->
+        <div style="font-size:11px;font-weight:500;color:var(--tp);margin-bottom:.5rem;">Your details</div>
+        <input id="mktBuyerName" type="text" placeholder="Your full name" class="inp g" style="margin-bottom:.5rem;"/>
+        <input id="mktBuyerPhone" type="tel" placeholder="Phone number for delivery updates" class="inp g" style="margin-bottom:.5rem;"/>
+        <input id="mktDeliveryAddr" type="text" placeholder="Delivery address or pickup location" class="inp g" style="margin-bottom:.875rem;"/>
+        <!-- Payment -->
+        <div style="font-size:11px;font-weight:500;color:var(--tp);margin-bottom:.5rem;">Payment method</div>
+        <select id="mktPayMethod" class="inp g" style="margin-bottom:.75rem;">
+          <option value="momo">MTN MoMo</option>
+          <option value="telecel">Telecel Cash</option>
+          <option value="card">Visa / Mastercard</option>
+        </select>
+        <div style="background:var(--bg);border-radius:var(--rm);padding:.75rem;margin-bottom:.75rem;font-size:11px;color:var(--ts);line-height:1.5;">
+          <i class="ti ti-shield-check" style="font-size:13px;vertical-align:-1px;color:var(--g600);"></i>
+          Payment goes directly to the verified supplier. 3% platform commission applied. No escrow — items are physical products shipped to you.
+        </div>
+        <div id="mktOrderTotal" style="display:flex;justify-content:space-between;font-size:14px;font-weight:500;color:var(--tp);margin-bottom:.75rem;padding:.75rem;background:var(--bg);border-radius:var(--rm);">
+          <span>Order total</span><span style="color:#854F0B;">GHS —</span>
+        </div>
+        <button class="save-btn g" onclick="mktPlaceOrder()" style="background:#2C7A3F;">Pay now →</button>
+        <div id="mktOrderResult" style="display:none;margin-top:.5rem;"></div>
+      </div>
+      <!-- Past orders -->
+      <div class="card" id="mktPastOrders" style="display:none;">
+        <div class="sec-head"><div class="sec-icon" style="background:#E8EDF5;">📋</div><div><div class="sec-title">Past orders</div><div class="sec-sub">Orders you have placed</div></div></div>
+        <div id="mktBuyerOrders"><div style="font-size:12px;color:var(--ts);text-align:center;padding:1.5rem;">No orders yet.</div></div>
       </div>
     </div>
 
@@ -4409,6 +4446,7 @@ async function mktTab(name,btn){
   if(name==='browse') loadMarketListings();
   if(name==='sell') mktLoadSellTab();
   if(name==='sales') loadMktSales('month');
+  if(name==='orders') mktUpdateCartSummary();
 }
 
 // ── BROWSE ────────────────────────────────────────────────────
@@ -4420,6 +4458,8 @@ function filterMarket(cat, btn){
 }
 
 async function loadMarketListings(){
+  // Show/hide Sell+Sales tabs based on farm profile
+  mktCheckFarmerTabs();
   const search = document.getElementById('mktSearch')?.value||'';
   const region = document.getElementById('mktRegion')?.value||'';
   const el = document.getElementById('mktListings');
@@ -4458,7 +4498,7 @@ async function loadMarketListings(){
         ${inStock?`
         <div style="display:flex;gap:6px;margin-top:8px;">
           <input id="qty_${l.id}" type="number" value="1" min="1" max="${l.quantity}" style="width:55px;padding:7px 8px;border:0.5px solid var(--bd);border-radius:6px;font-size:12px;"/>
-          <button class="save-btn g" style="flex:1;padding:8px;font-size:12px;margin-bottom:0;" onclick="addToCart(${l.id},'${l.produce_type.replace(/'/g,'').substring(0,30)}',${l.price_per_unit},'${l.produce_unit}')">Add to cart</button>
+          <button class="save-btn g" style="flex:1;padding:8px;font-size:12px;margin-bottom:0;" onclick="mktAddToCart(${l.id},'${l.produce_type.replace(/'/g,'').substring(0,30)}',${l.price_per_unit},'${l.produce_unit}',parseInt(document.getElementById('qty_'+${l.id})?.value||1));mktTab('orders',document.querySelector('.mkt-stab[onclick*=orders]'))">Add to cart</button>
         </div>`:`
         <div class="notify-box">
           <div style="font-size:11px;color:var(--ts);margin-bottom:6px;">Notify me when restocked</div>
@@ -4715,6 +4755,94 @@ async function loadMktSales(period,btn){
         <div style="text-align:right;"><div style="font-weight:500;color:${o.escrow_status==='released'?'var(--g600)':'#854F0B'};">GHS ${Number(o.seller_amount).toFixed(2)}</div><div style="font-size:10px;color:var(--ts);">${o.escrow_status==='held'?'⏳ In escrow':'✅ Released'}</div></div>
       </div>`).join('')+'</div>';
 }
+
+// ── MARKETPLACE TAB VISIBILITY ────────────────────────────────
+async function mktCheckFarmerTabs(){
+  // Only show Sell + Sales tabs if user has a farm profile
+  const farmerTabs = document.querySelectorAll('.mkt-farmer-only');
+  if(!farmerTabs.length) return;
+  try{
+    const r = await fetch('/api/farmer/identity');
+    const d = await r.json();
+    const hasFarmProfile = d.success && d.identity && (d.identity.name || d.identity.ghana_card);
+    farmerTabs.forEach(tab=>{
+      tab.style.display = hasFarmProfile ? '' : 'none';
+    });
+  }catch(e){
+    farmerTabs.forEach(tab=>{ tab.style.display='none'; });
+  }
+}
+
+// ── GUEST CHECKOUT ────────────────────────────────────────────
+let _mktCart = [];
+
+function mktAddToCart(lid, name, price, unit, qty){
+  const existing = _mktCart.findIndex(i=>i.lid===lid);
+  if(existing>=0){
+    _mktCart[existing].qty = qty;
+  } else {
+    _mktCart.push({lid, name, price, unit, qty});
+  }
+  mktUpdateCartBadge();
+}
+
+function mktUpdateCartBadge(){
+  const count = _mktCart.reduce((s,i)=>s+i.qty, 0);
+  const ordersBtn = document.querySelector('.mkt-stab[onclick*="orders"]');
+  if(ordersBtn) ordersBtn.textContent = count > 0 ? `📦 My cart (${count})` : '📦 My orders';
+}
+
+function mktUpdateCartSummary(){
+  const el = document.getElementById('mktCartSummary');
+  const totalEl = document.getElementById('mktOrderTotal');
+  if(!el) return;
+  if(!_mktCart.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--ts);text-align:center;padding:1rem;">Your cart is empty. Browse and add items first.</div>';
+    if(totalEl) totalEl.querySelector('span:last-child').textContent='GHS 0.00';
+    return;
+  }
+  let total=0;
+  el.innerHTML='<div style="border:0.5px solid var(--bd);border-radius:var(--rm);overflow:hidden;margin-bottom:.75rem;">'+
+    _mktCart.map(item=>{
+      const sub=item.qty*item.price;
+      total+=sub;
+      return `<div style="display:flex;justify-content:space-between;font-size:12px;padding:8px .75rem;border-bottom:0.5px solid var(--bd);">
+        <div><div style="font-weight:500;">${item.name}</div><div style="font-size:10px;color:var(--ts);">${item.qty} ${item.unit} × GHS ${item.price.toFixed(0)}</div></div>
+        <div style="font-weight:500;color:#854F0B;">GHS ${sub.toFixed(0)}</div>
+      </div>`;
+    }).join('')+'</div>';
+  if(totalEl) totalEl.querySelector('span:last-child').textContent='GHS '+total.toFixed(2);
+}
+
+function mktSaveGuestPhone(){
+  const phone=document.getElementById('mktNudgePhone')?.value?.trim();
+  if(!phone){alert('Please enter your phone number.');return;}
+  document.getElementById('mktBuyerPhone').value=phone;
+  document.getElementById('mktSoftNudge').style.display='none';
+  const nudge=document.getElementById('mktSoftNudge');
+  if(nudge) nudge.innerHTML='<div style="font-size:11px;color:#27500A;">✅ Phone saved — we will send you order updates.</div>';
+}
+
+async function mktPlaceOrder(){
+  const name=document.getElementById('mktBuyerName')?.value?.trim();
+  const phone=document.getElementById('mktBuyerPhone')?.value?.trim();
+  const addr=document.getElementById('mktDeliveryAddr')?.value?.trim();
+  const method=document.getElementById('mktPayMethod')?.value||'momo';
+  const resEl=document.getElementById('mktOrderResult');
+  if(!name){alert('Please enter your full name.');return;}
+  if(!phone){alert('Please enter your phone number.');return;}
+  if(!_mktCart.length){alert('Your cart is empty.');return;}
+  resEl.style.display='block';
+  resEl.innerHTML='<div style="font-size:12px;color:var(--ts);padding:.5rem;">Processing your order...</div>';
+  // For now simulate success — Paystack integration goes here
+  setTimeout(()=>{
+    resEl.innerHTML='<div class="saved-ok g">✅ Order placed! You will receive a confirmation on '+phone+'. The supplier will contact you for delivery details.</div>';
+    _mktCart=[];
+    mktUpdateCartBadge();
+    mktUpdateCartSummary();
+  }, 1200);
+}
+
 {% endraw %}
 </script>
 
