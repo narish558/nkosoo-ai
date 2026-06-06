@@ -1192,6 +1192,19 @@ def admin():
                 credit_apps=0; credit_apps_week=0; top_lender=None
                 total_requested=0; lender_count=0; lender_verified=0
                 pending_lenders=[]; credit_score_profiles=0
+            # Marketplace stats
+            try:
+                mkt_listings = db.execute("SELECT COUNT(*) FROM marketplace_listings").fetchone()[0]
+                mkt_active   = db.execute("SELECT COUNT(*) FROM marketplace_listings WHERE status='active'").fetchone()[0]
+                mkt_orders   = db.execute("SELECT COUNT(*) FROM marketplace_orders").fetchone()[0]
+                mkt_gmv_row  = db.execute("SELECT SUM(total_amount) FROM marketplace_orders WHERE status='confirmed'").fetchone()[0]
+                mkt_gmv      = round(mkt_gmv_row or 0, 2)
+                mkt_commission = round(mkt_gmv * 0.05, 2)
+                mkt_sellers  = db.execute("SELECT COUNT(*) FROM marketplace_training WHERE seller_active=1").fetchone()[0]
+                mkt_recent_listings = db.execute("SELECT * FROM marketplace_listings ORDER BY created_at DESC LIMIT 10").fetchall()
+            except Exception:
+                mkt_listings=0; mkt_active=0; mkt_orders=0; mkt_gmv=0
+                mkt_commission=0; mkt_sellers=0; mkt_recent_listings=[]
     except Exception as e:
         return f"<h2>Admin Error</h2><pre>{e}</pre><p><a href='/admin/logout'>Sign out</a></p>", 500
     return render_template("admin.html",
@@ -1208,7 +1221,11 @@ def admin():
         top_lender=top_lender, total_requested=total_requested,
         lender_count=lender_count, lender_verified=lender_verified,
         pending_lenders=pending_lenders,
-        credit_score_profiles=credit_score_profiles)
+        credit_score_profiles=credit_score_profiles,
+        mkt_listings=mkt_listings, mkt_active=mkt_active,
+        mkt_orders=mkt_orders, mkt_gmv=mkt_gmv,
+        mkt_commission=mkt_commission, mkt_sellers=mkt_sellers,
+        mkt_recent_listings=mkt_recent_listings)
 
 @app.route("/admin/logout")
 def admin_logout():
