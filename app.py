@@ -2276,3 +2276,91 @@ def mkt_release_order(oid):
         db.commit()
     return jsonify({"success":True,"payout":payout,"instant_fee":instant_fee})
 
+
+# ===========================================================================
+# MARKETPLACE PAYMENTS — Paystack
+# ===========================================================================
+
+@app.route("/api/marketplace/pay/initialize", methods=["POST"])
+def mkt_pay_initialize():
+    if not PAYSTACK_SECRET:
+        return jsonify({"error":"Payment not configured. Contact support@dranytech.com"}), 500
+    data = request.get_json() or {}
+    buyer_name    = data.get("name","Guest")
+    buyer_phone   = data.get("phone","")
+    buyer_email   = data.get("email","") or f"{buyer_phone.replace(' ','')}@nkosooai.com"
+    amount_ghs    = float(data.get("amount", 0))
+    order_type    = data.get("order_type","produce")
+    cart_items    = data.get("cart_items",[])
+    delivery_addr = data.get("delivery_address","")
+    if amount_ghs <= 0:
+        return jsonify({"error":"Invalid order amount."}), 400
+    amount_pesewas = int(amount_ghs * 100)
+    sid = get_sid()
+    callback_url = request.host_url.rstrip("/") + f"/marketplace/payment/verify?sid={sid}&type={order_type}"
+    cart_summary = ", ".join([f"{i.get('name','')} x{i.get('qty',1)}" for i in cart_items[:5]])
+    try:
+        payload = {
+            "email": buyer_email,
+            "amount": amount_pesewas,
+            "currency": "GHS",
+            "callback_url": callback_url,
+            "channels": ["card","mobile_money"],
+            "metadata": {
+                "buyer_name": buyer_name,
+                "buyer_phone": buyer_phone,
+                "order_type": order_type,
+                "delivery_address": delivery_addr,
+                "cart_summary": cart_summary,
+                "platform": "nkosooai_marketplace",
+                "custom_fields": [
+                    {"display_name":"Buyer","variable_name":"buyer_name","value":buyer_name},
+                    {"display_name":"Phone","variable_name":"buyer_phone","value":buyer_phone},
+                    {"display_name":"Order","variable_name":"cart_summary","value":cart_summary},
+                ]
+            }
+        }
+        resp = requests.post("https://api.paystack.co/transaction/initialize",
+            headers={"Authorization":f"Bearer {PAYSTACK_SECRET}","Content-Type":"application/json"},
+            json=payload, timeout=15)
+        result = resp.json()
+        if result.get("status"):
+            ref = result["data"]["reference"]
+            commission = round(amount_ghs * 0.05, 2)
+            with get_db() as db:
+                db.execute(
+                    "INSERT INTO marketplace_orders (listing_id,seller_session_id,buyer_name,buyer_phone,buyer_email,quantity,unit_price,total_amount,commission_amount,seller_amount,delivery_fee,payment_method,payment_ref,status,escrow_status,release_at) VALUES (0,'platform',?,?,?,1,?,?,?,?,0,'paystack',?,'pending','pending',datetime('now','+48 hours'))",
+                    (buyer_name,buyer_phone,buyer_email,amount_ghs,commission,round(amount_ghs-commission,2),ref))
+                db.commit()
+            return jsonify({"success":True,"authorization_url":result["data"]["authorization_url"],"reference":ref})
+        return jsonify({"error":result.get("message","Payment initialization failed. Please try again.")}), 500
+    except requests.exceptions.Timeout:
+        return jsonify({"error":"Payment gateway timeout. Please try again."}), 500
+    except Exception as e:
+        print(f"[mkt pay init] {e}")
+        return jsonify({"error":"Could not connect to Paystack. Please try again."}), 500
+
+
+@app.route("/marketplace/payment/verify")
+def mkt_pay_verify():
+    ref = request.args.get("reference") or request.args.get("trxref","")
+    order_type = request.args.get("type","produce")
+    if not ref or not PAYSTACK_SECRET:
+        return redirect("/app?mkt_payment=failed")
+    try:
+        resp = requests.get(f"https://api.paystack.co/transaction/verify/{ref}",
+            headers={"Authorization":f"Bearer {PAYSTACK_SECRET}"}, timeout=15)
+        result = resp.json()
+        if result.get("status") and result["data"]["status"] == "success":
+            amount_ghs = result["data"]["amount"] / 100
+            with get_db() as db:
+                db.execute(
+                    "UPDATE marketplace_orders SET status='confirmed',escrow_status='held',total_amount=?,updated_at=datetime('now') WHERE payment_ref=?",
+                    (amount_ghs,ref))
+                db.commit()
+            return redirect(f"/app?mkt_payment=success&ref={ref}&amount={amount_ghs:.2f}&type={order_type}#marketplace")
+        return redirect("/app?mkt_payment=failed#marketplace")
+    except Exception as e:
+        print(f"[mkt pay verify] {e}")
+        return redirect("/app?mkt_payment=failed#marketplace")
+
