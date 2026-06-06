@@ -195,6 +195,39 @@ footer a{color:#2C7A3F;text-decoration:none;}
 </div>
 {% endif %}
 
+
+<!-- MARKETPLACE -->
+<div class="st">🛒 Marketplace</div>
+<div class="mg">
+  <div class="m"><div class="ml">Total listings</div><div class="mv b">{{ mkt_listings or 0 }}</div><div class="ms">all produce</div></div>
+  <div class="m"><div class="ml">Active listings</div><div class="mv g">{{ mkt_active or 0 }}</div></div>
+  <div class="m"><div class="ml">Total orders</div><div class="mv b">{{ mkt_orders or 0 }}</div></div>
+  <div class="m"><div class="ml">Total GMV</div><div class="mv g" style="font-size:18px;">GHS {{ "{:,.0f}".format(mkt_gmv or 0) }}</div><div class="ms">gross merchandise value</div></div>
+  <div class="m"><div class="ml">Platform commission</div><div class="mv a" style="font-size:18px;">GHS {{ "{:,.0f}".format(mkt_commission or 0) }}</div><div class="ms">5% of GMV</div></div>
+  <div class="m"><div class="ml">Active sellers</div><div class="mv">{{ mkt_sellers or 0 }}</div><div class="ms">trained and approved</div></div>
+</div>
+
+{% if mkt_recent_listings %}
+<div class="card">
+  <div class="card-title">Recent marketplace listings</div>
+  <table>
+    <thead><tr><th>Produce</th><th>Farmer</th><th>Qty</th><th>Price/unit</th><th>Region</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for l in mkt_recent_listings %}
+    <tr>
+      <td><strong>{{ l.produce_type }}</strong><div style="font-size:11px;color:#8A9099;">{{ l.grade or '' }}</div></td>
+      <td>{{ l.farmer_name or '—' }}</td>
+      <td>{{ l.quantity }} {{ l.produce_unit }}</td>
+      <td>GHS {{ "{:,.0f}".format(l.price_per_unit) }}</td>
+      <td>{{ l.region or '—' }}</td>
+      <td><span class="badge {{ 'badge-green' if l.status=='active' else 'badge-amber' }}">{{ l.status|title }}</span></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
 <!-- AGRONOMISTS -->
 <div class="st">🔬 Agronomist directory</div>
 <div class="mg">

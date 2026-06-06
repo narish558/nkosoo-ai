@@ -2042,6 +2042,202 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     </div>
   </div>
 
+
+  <!-- ══ MARKETPLACE ══ -->
+  <div id="panel-marketplace" class="panel">
+    <div class="mkt-stabs">
+      <button class="mkt-stab on" onclick="mktTab('browse',this)">🛒 Browse</button>
+      <button class="mkt-stab" onclick="mktTab('sell',this)">🌾 Sell</button>
+      <button class="mkt-stab" onclick="mktTab('orders',this)">📦 My orders</button>
+      <button class="mkt-stab" onclick="mktTab('sales',this)">📊 Sales</button>
+    </div>
+
+    <!-- BROWSE TAB -->
+    <div id="mkt-browse" class="mkt-panel-content">
+      <div style="display:flex;gap:6px;margin-bottom:.625rem;">
+        <input id="mktSearch" class="inp g" type="text" placeholder="Search produce..." style="flex:1;" oninput="loadMarketListings()"/>
+        <select id="mktRegion" class="inp g" style="width:auto;" onchange="loadMarketListings()">
+          <option value="">All regions</option>
+          <option value="greater_accra">Greater Accra</option>
+          <option value="ashanti">Ashanti</option>
+          <option value="northern">Northern</option>
+          <option value="eastern">Eastern</option>
+          <option value="western">Western</option>
+          <option value="central">Central</option>
+          <option value="volta">Volta</option>
+        </select>
+      </div>
+      <div class="mkt-filter-row" id="mktFilterRow">
+        <button class="mkt-chip on" onclick="filterMarket('',this)">All</button>
+        <button class="mkt-chip" onclick="filterMarket('maize',this)">🌽 Maize</button>
+        <button class="mkt-chip" onclick="filterMarket('tomato',this)">🍅 Tomatoes</button>
+        <button class="mkt-chip" onclick="filterMarket('cassava',this)">Cassava</button>
+        <button class="mkt-chip" onclick="filterMarket('yam',this)">Yam</button>
+        <button class="mkt-chip" onclick="filterMarket('plantain',this)">Plantain</button>
+        <button class="mkt-chip" onclick="filterMarket('cattle',this)">🐄 Cattle</button>
+        <button class="mkt-chip" onclick="filterMarket('poultry',this)">🐔 Poultry</button>
+        <button class="mkt-chip" onclick="filterMarket('fish',this)">🐟 Fish</button>
+      </div>
+      <div id="mktListings"><div style="text-align:center;padding:2rem;color:var(--ts);">Loading listings...</div></div>
+    </div>
+
+    <!-- SELL TAB -->
+    <div id="mkt-sell" class="mkt-panel-content" style="display:none;">
+      <!-- Eligibility check -->
+      <div id="mktEligibility"></div>
+      <!-- Training -->
+      <div id="mktTraining" style="display:none;">
+        <div class="card">
+          <div class="sec-head"><div class="sec-icon" style="background:var(--g50);">🎓</div><div><div class="sec-title">Complete training to sell</div><div class="sec-sub">4 modules · Must complete all before listing</div></div></div>
+          <div id="mktTrainingModules"></div>
+          <div style="margin-top:.75rem;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ts);margin-bottom:4px;"><span>Progress</span><span id="mktModProgress">0 of 4</span></div>
+            <div style="height:5px;background:var(--bd);border-radius:3px;overflow:hidden;"><div id="mktModBar" style="height:5px;background:var(--g600);border-radius:3px;width:0%;transition:width .5s;"></div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Terms -->
+      <div id="mktTerms" style="display:none;">
+        <div class="card">
+          <div class="sec-head"><div class="sec-icon" style="background:#E8EDF5;">📄</div><div><div class="sec-title">Seller agreement</div><div class="sec-sub">Read and agree before listing</div></div></div>
+          <div style="font-size:12px;color:var(--ts);line-height:1.6;margin-bottom:.75rem;">
+            <div style="display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--bd);">✅ <span>Listings must accurately describe weight, grade, and condition. Misrepresentation leads to suspension.</span></div>
+            <div style="display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--bd);">✅ <span>Nkɔsoɔ AI charges <strong>5% commission</strong> on every completed sale, deducted before payout.</span></div>
+            <div style="display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--bd);">✅ <span>Payment held in escrow for <strong>48 hours</strong> after buyer confirms delivery. Standard release is free. Instant release costs an additional <strong>2%</strong>.</span></div>
+            <div style="display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--bd);">✅ <span>Mark listings out of stock within 24 hours of selling out. Repeated failure leads to suspension.</span></div>
+            <div style="display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--bd);">✅ <span>Only farmers with a <strong>verified farm profile and Ghana Card</strong> may list on the marketplace.</span></div>
+            <div style="display:flex;gap:8px;padding:5px 0;">✅ <span>Disputes are resolved by the Nkɔsoɔ AI team. Decision is final and binding on both parties.</span></div>
+          </div>
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--tp);cursor:pointer;background:var(--bg);padding:.75rem;border-radius:var(--rm);">
+            <input type="checkbox" id="mktTcCheck" style="width:15px;height:15px;accent-color:var(--g600);flex-shrink:0;margin-top:1px;"/>
+            I have read and agree to the Nkɔsoɔ AI Marketplace Seller Agreement
+          </label>
+          <button class="save-btn g" style="margin-top:.75rem;" onclick="mktAgreeTerms()">Agree and activate seller account →</button>
+        </div>
+      </div>
+      <!-- Create listing form -->
+      <div id="mktListingForm" style="display:none;">
+        <div class="card">
+          <div class="sec-head"><div class="sec-icon" style="background:var(--g50);">➕</div><div><div class="sec-title">New listing</div><div class="sec-sub">Sell your harvest or livestock</div></div></div>
+          <div id="mktProfilePrefill" style="background:#EAF3DE;border:0.5px solid var(--g100);border-radius:var(--rm);padding:.75rem;margin-bottom:.875rem;font-size:12px;color:var(--g600);display:none;">
+            ✅ Your farm profile, Ghana Card, and location have been pre-filled.
+          </div>
+          <label class="field-label">What are you selling?</label>
+          <select id="mktProduceType" class="inp g" onchange="mktUpdateEarnings()">
+            <option value="">Select produce type...</option>
+            <optgroup label="From your crop profile">
+              <option value="Maize">Maize</option>
+              <option value="Tomatoes">Tomatoes</option>
+              <option value="Cassava">Cassava</option>
+              <option value="Plantain">Plantain</option>
+              <option value="Yam">Yam</option>
+              <option value="Groundnut">Groundnut</option>
+              <option value="Rice">Rice</option>
+              <option value="Pepper">Pepper</option>
+              <option value="Garden Eggs">Garden Eggs</option>
+              <option value="Cabbage">Cabbage</option>
+              <option value="Cowpea">Cowpea</option>
+              <option value="Sorghum">Sorghum</option>
+              <option value="Cocoa">Cocoa</option>
+            </optgroup>
+            <optgroup label="From your livestock profile">
+              <option value="Cattle">Cattle</option>
+              <option value="Poultry (Broilers)">Poultry — Broilers</option>
+              <option value="Poultry (Layers)">Poultry — Layers</option>
+              <option value="Goats">Goats</option>
+              <option value="Sheep">Sheep</option>
+              <option value="Pigs">Pigs</option>
+              <option value="Fish (Tilapia)">Fish — Tilapia</option>
+              <option value="Fish (Catfish)">Fish — Catfish</option>
+            </optgroup>
+          </select>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.5rem;">
+            <div>
+              <label class="field-label">Quantity</label>
+              <input id="mktQty" class="inp g" type="number" min="1" placeholder="e.g. 50" oninput="mktUpdateEarnings()"/>
+            </div>
+            <div>
+              <label class="field-label">Unit</label>
+              <select id="mktUnit" class="inp g">
+                <option value="bags">Bags</option>
+                <option value="crates">Crates</option>
+                <option value="kg">Kg</option>
+                <option value="bunches">Bunches</option>
+                <option value="head">Head (cattle)</option>
+                <option value="birds">Birds (poultry)</option>
+                <option value="fish">Fish</option>
+              </select>
+            </div>
+          </div>
+          <label class="field-label">Price per unit (GHS)</label>
+          <input id="mktPrice" class="inp g" type="number" min="1" placeholder="e.g. 120" oninput="mktUpdateEarnings()" style="margin-bottom:.5rem;"/>
+          <label class="field-label">Grade / quality</label>
+          <select id="mktGrade" class="inp g" style="margin-bottom:.5rem;">
+            <option value="Grade A — excellent condition">Grade A — excellent condition</option>
+            <option value="Grade B — good condition">Grade B — good condition</option>
+            <option value="Grade C — average condition">Grade C — average condition</option>
+          </select>
+          <label class="field-label">Farm / pickup location</label>
+          <input id="mktLocation" class="inp g" type="text" placeholder="e.g. Adenta, Greater Accra" style="margin-bottom:.5rem;"/>
+          <label class="field-label">Region</label>
+          <select id="mktListRegion" class="inp g" style="margin-bottom:.5rem;">
+            <option value="greater_accra">Greater Accra</option>
+            <option value="ashanti">Ashanti</option>
+            <option value="central">Central</option>
+            <option value="eastern">Eastern</option>
+            <option value="western">Western</option>
+            <option value="northern">Northern</option>
+            <option value="volta">Volta</option>
+            <option value="upper_east">Upper East</option>
+            <option value="upper_west">Upper West</option>
+          </select>
+          <label class="field-label">Description for buyer</label>
+          <textarea id="mktDesc" class="inp g" style="height:70px;resize:none;" placeholder="Describe your produce — freshness, availability, delivery options..."></textarea>
+          <div class="earn-preview">
+            <div style="font-size:12px;font-weight:500;color:var(--tp);margin-bottom:6px;">Earnings preview</div>
+            <div class="earn-row"><span>Total value</span><span id="mktEarnTotal">—</span></div>
+            <div class="earn-row"><span>Platform commission (5%)</span><span id="mktEarnComm" style="color:#A32D2D;">—</span></div>
+            <div class="earn-total"><span>You receive</span><span id="mktEarnNet" style="color:var(--g600);">—</span></div>
+          </div>
+          <button class="save-btn g" onclick="mktPublishListing()">🛒 Publish listing</button>
+          <div id="mktListingResult" style="margin-top:.5rem;display:none;"></div>
+        </div>
+        <!-- My listings -->
+        <div class="card">
+          <div class="sec-head"><div class="sec-icon" style="background:var(--a50);">📦</div><div><div class="sec-title">My listings</div><div class="sec-sub">Manage your active listings</div></div></div>
+          <div id="mktMyListings"><div style="font-size:12px;color:var(--ts);text-align:center;padding:1rem;">Loading your listings...</div></div>
+        </div>
+        <!-- Pending escrow -->
+        <div id="mktEscrowPanel" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ORDERS TAB (buyer's orders) -->
+    <div id="mkt-orders" class="mkt-panel-content" style="display:none;">
+      <div class="card">
+        <div class="sec-head"><div class="sec-icon" style="background:#E8EDF5;">📋</div><div><div class="sec-title">My purchases</div><div class="sec-sub">Orders you have placed as a buyer</div></div></div>
+        <div id="mktBuyerOrders"><div style="font-size:12px;color:var(--ts);text-align:center;padding:1.5rem;">No orders yet. Browse the marketplace to buy from verified farmers.</div></div>
+      </div>
+    </div>
+
+    <!-- SALES DASHBOARD TAB -->
+    <div id="mkt-sales" class="mkt-panel-content" style="display:none;">
+      <div style="display:flex;gap:4px;margin-bottom:.875rem;">
+        <button class="mkt-chip" onclick="loadMktSales('today',this)" style="flex:1;text-align:center;">Today</button>
+        <button class="mkt-chip on" onclick="loadMktSales('month',this)" style="flex:1;text-align:center;">This month</button>
+        <button class="mkt-chip" onclick="loadMktSales('all',this)" style="flex:1;text-align:center;">All time</button>
+      </div>
+      <div class="mkt-metric-grid">
+        <div class="mkt-metric"><div class="mkt-metric-val g" id="mktRevenue">—</div><div class="mkt-metric-lbl">Revenue</div></div>
+        <div class="mkt-metric"><div class="mkt-metric-val" id="mktOrderCount">—</div><div class="mkt-metric-lbl">Orders</div></div>
+        <div class="mkt-metric"><div class="mkt-metric-val a" id="mktPending">—</div><div class="mkt-metric-lbl">Pending release</div></div>
+        <div class="mkt-metric"><div class="mkt-metric-val" id="mktCommission">—</div><div class="mkt-metric-lbl">Commission paid</div></div>
+      </div>
+      <div id="mktSalesOrders"></div>
+    </div>
+  </div>
+
+
 </div><!-- /container -->
 </div><!-- /main-content -->
 
@@ -4521,200 +4717,6 @@ async function loadMktSales(period,btn){
 }
 {% endraw %}
 </script>
-
-  <!-- ══ MARKETPLACE ══ -->
-  <div id="panel-marketplace" class="panel">
-    <div class="mkt-stabs">
-      <button class="mkt-stab on" onclick="mktTab('browse',this)">🛒 Browse</button>
-      <button class="mkt-stab" onclick="mktTab('sell',this)">🌾 Sell</button>
-      <button class="mkt-stab" onclick="mktTab('orders',this)">📦 My orders</button>
-      <button class="mkt-stab" onclick="mktTab('sales',this)">📊 Sales</button>
-    </div>
-
-    <!-- BROWSE TAB -->
-    <div id="mkt-browse" class="mkt-panel-content">
-      <div style="display:flex;gap:6px;margin-bottom:.625rem;">
-        <input id="mktSearch" class="inp g" type="text" placeholder="Search produce..." style="flex:1;" oninput="loadMarketListings()"/>
-        <select id="mktRegion" class="inp g" style="width:auto;" onchange="loadMarketListings()">
-          <option value="">All regions</option>
-          <option value="greater_accra">Greater Accra</option>
-          <option value="ashanti">Ashanti</option>
-          <option value="northern">Northern</option>
-          <option value="eastern">Eastern</option>
-          <option value="western">Western</option>
-          <option value="central">Central</option>
-          <option value="volta">Volta</option>
-        </select>
-      </div>
-      <div class="mkt-filter-row" id="mktFilterRow">
-        <button class="mkt-chip on" onclick="filterMarket('',this)">All</button>
-        <button class="mkt-chip" onclick="filterMarket('maize',this)">🌽 Maize</button>
-        <button class="mkt-chip" onclick="filterMarket('tomato',this)">🍅 Tomatoes</button>
-        <button class="mkt-chip" onclick="filterMarket('cassava',this)">Cassava</button>
-        <button class="mkt-chip" onclick="filterMarket('yam',this)">Yam</button>
-        <button class="mkt-chip" onclick="filterMarket('plantain',this)">Plantain</button>
-        <button class="mkt-chip" onclick="filterMarket('cattle',this)">🐄 Cattle</button>
-        <button class="mkt-chip" onclick="filterMarket('poultry',this)">🐔 Poultry</button>
-        <button class="mkt-chip" onclick="filterMarket('fish',this)">🐟 Fish</button>
-      </div>
-      <div id="mktListings"><div style="text-align:center;padding:2rem;color:var(--ts);">Loading listings...</div></div>
-    </div>
-
-    <!-- SELL TAB -->
-    <div id="mkt-sell" class="mkt-panel-content" style="display:none;">
-      <!-- Eligibility check -->
-      <div id="mktEligibility"></div>
-      <!-- Training -->
-      <div id="mktTraining" style="display:none;">
-        <div class="card">
-          <div class="sec-head"><div class="sec-icon" style="background:var(--g50);">🎓</div><div><div class="sec-title">Complete training to sell</div><div class="sec-sub">4 modules · Must complete all before listing</div></div></div>
-          <div id="mktTrainingModules"></div>
-          <div style="margin-top:.75rem;">
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ts);margin-bottom:4px;"><span>Progress</span><span id="mktModProgress">0 of 4</span></div>
-            <div style="height:5px;background:var(--bd);border-radius:3px;overflow:hidden;"><div id="mktModBar" style="height:5px;background:var(--g600);border-radius:3px;width:0%;transition:width .5s;"></div></div>
-          </div>
-        </div>
-      </div>
-      <!-- Terms -->
-      <div id="mktTerms" style="display:none;">
-        <div class="card">
-          <div class="sec-head"><div class="sec-icon" style="background:#E8EDF5;">📄</div><div><div class="sec-title">Seller agreement</div><div class="sec-sub">Read and agree before listing</div></div></div>
-          <div style="font-size:12px;color:var(--ts);line-height:1.6;margin-bottom:.75rem;">
-            <div style="display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--bd);">✅ <span>Listings must accurately describe weight, grade, and condition. Misrepresentation leads to suspension.</span></div>
-            <div style="display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--bd);">✅ <span>Nkɔsoɔ AI charges <strong>5% commission</strong> on every completed sale, deducted before payout.</span></div>
-            <div style="display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--bd);">✅ <span>Payment held in escrow for <strong>48 hours</strong> after buyer confirms delivery. Standard release is free. Instant release costs an additional <strong>2%</strong>.</span></div>
-            <div style="display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--bd);">✅ <span>Mark listings out of stock within 24 hours of selling out. Repeated failure leads to suspension.</span></div>
-            <div style="display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--bd);">✅ <span>Only farmers with a <strong>verified farm profile and Ghana Card</strong> may list on the marketplace.</span></div>
-            <div style="display:flex;gap:8px;padding:5px 0;">✅ <span>Disputes are resolved by the Nkɔsoɔ AI team. Decision is final and binding on both parties.</span></div>
-          </div>
-          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--tp);cursor:pointer;background:var(--bg);padding:.75rem;border-radius:var(--rm);">
-            <input type="checkbox" id="mktTcCheck" style="width:15px;height:15px;accent-color:var(--g600);flex-shrink:0;margin-top:1px;"/>
-            I have read and agree to the Nkɔsoɔ AI Marketplace Seller Agreement
-          </label>
-          <button class="save-btn g" style="margin-top:.75rem;" onclick="mktAgreeTerms()">Agree and activate seller account →</button>
-        </div>
-      </div>
-      <!-- Create listing form -->
-      <div id="mktListingForm" style="display:none;">
-        <div class="card">
-          <div class="sec-head"><div class="sec-icon" style="background:var(--g50);">➕</div><div><div class="sec-title">New listing</div><div class="sec-sub">Sell your harvest or livestock</div></div></div>
-          <div id="mktProfilePrefill" style="background:#EAF3DE;border:0.5px solid var(--g100);border-radius:var(--rm);padding:.75rem;margin-bottom:.875rem;font-size:12px;color:var(--g600);display:none;">
-            ✅ Your farm profile, Ghana Card, and location have been pre-filled.
-          </div>
-          <label class="field-label">What are you selling?</label>
-          <select id="mktProduceType" class="inp g" onchange="mktUpdateEarnings()">
-            <option value="">Select produce type...</option>
-            <optgroup label="From your crop profile">
-              <option value="Maize">Maize</option>
-              <option value="Tomatoes">Tomatoes</option>
-              <option value="Cassava">Cassava</option>
-              <option value="Plantain">Plantain</option>
-              <option value="Yam">Yam</option>
-              <option value="Groundnut">Groundnut</option>
-              <option value="Rice">Rice</option>
-              <option value="Pepper">Pepper</option>
-              <option value="Garden Eggs">Garden Eggs</option>
-              <option value="Cabbage">Cabbage</option>
-              <option value="Cowpea">Cowpea</option>
-              <option value="Sorghum">Sorghum</option>
-              <option value="Cocoa">Cocoa</option>
-            </optgroup>
-            <optgroup label="From your livestock profile">
-              <option value="Cattle">Cattle</option>
-              <option value="Poultry (Broilers)">Poultry — Broilers</option>
-              <option value="Poultry (Layers)">Poultry — Layers</option>
-              <option value="Goats">Goats</option>
-              <option value="Sheep">Sheep</option>
-              <option value="Pigs">Pigs</option>
-              <option value="Fish (Tilapia)">Fish — Tilapia</option>
-              <option value="Fish (Catfish)">Fish — Catfish</option>
-            </optgroup>
-          </select>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.5rem;">
-            <div>
-              <label class="field-label">Quantity</label>
-              <input id="mktQty" class="inp g" type="number" min="1" placeholder="e.g. 50" oninput="mktUpdateEarnings()"/>
-            </div>
-            <div>
-              <label class="field-label">Unit</label>
-              <select id="mktUnit" class="inp g">
-                <option value="bags">Bags</option>
-                <option value="crates">Crates</option>
-                <option value="kg">Kg</option>
-                <option value="bunches">Bunches</option>
-                <option value="head">Head (cattle)</option>
-                <option value="birds">Birds (poultry)</option>
-                <option value="fish">Fish</option>
-              </select>
-            </div>
-          </div>
-          <label class="field-label">Price per unit (GHS)</label>
-          <input id="mktPrice" class="inp g" type="number" min="1" placeholder="e.g. 120" oninput="mktUpdateEarnings()" style="margin-bottom:.5rem;"/>
-          <label class="field-label">Grade / quality</label>
-          <select id="mktGrade" class="inp g" style="margin-bottom:.5rem;">
-            <option value="Grade A — excellent condition">Grade A — excellent condition</option>
-            <option value="Grade B — good condition">Grade B — good condition</option>
-            <option value="Grade C — average condition">Grade C — average condition</option>
-          </select>
-          <label class="field-label">Farm / pickup location</label>
-          <input id="mktLocation" class="inp g" type="text" placeholder="e.g. Adenta, Greater Accra" style="margin-bottom:.5rem;"/>
-          <label class="field-label">Region</label>
-          <select id="mktListRegion" class="inp g" style="margin-bottom:.5rem;">
-            <option value="greater_accra">Greater Accra</option>
-            <option value="ashanti">Ashanti</option>
-            <option value="central">Central</option>
-            <option value="eastern">Eastern</option>
-            <option value="western">Western</option>
-            <option value="northern">Northern</option>
-            <option value="volta">Volta</option>
-            <option value="upper_east">Upper East</option>
-            <option value="upper_west">Upper West</option>
-          </select>
-          <label class="field-label">Description for buyer</label>
-          <textarea id="mktDesc" class="inp g" style="height:70px;resize:none;" placeholder="Describe your produce — freshness, availability, delivery options..."></textarea>
-          <div class="earn-preview">
-            <div style="font-size:12px;font-weight:500;color:var(--tp);margin-bottom:6px;">Earnings preview</div>
-            <div class="earn-row"><span>Total value</span><span id="mktEarnTotal">—</span></div>
-            <div class="earn-row"><span>Platform commission (5%)</span><span id="mktEarnComm" style="color:#A32D2D;">—</span></div>
-            <div class="earn-total"><span>You receive</span><span id="mktEarnNet" style="color:var(--g600);">—</span></div>
-          </div>
-          <button class="save-btn g" onclick="mktPublishListing()">🛒 Publish listing</button>
-          <div id="mktListingResult" style="margin-top:.5rem;display:none;"></div>
-        </div>
-        <!-- My listings -->
-        <div class="card">
-          <div class="sec-head"><div class="sec-icon" style="background:var(--a50);">📦</div><div><div class="sec-title">My listings</div><div class="sec-sub">Manage your active listings</div></div></div>
-          <div id="mktMyListings"><div style="font-size:12px;color:var(--ts);text-align:center;padding:1rem;">Loading your listings...</div></div>
-        </div>
-        <!-- Pending escrow -->
-        <div id="mktEscrowPanel" style="display:none;"></div>
-      </div>
-    </div>
-
-    <!-- ORDERS TAB (buyer's orders) -->
-    <div id="mkt-orders" class="mkt-panel-content" style="display:none;">
-      <div class="card">
-        <div class="sec-head"><div class="sec-icon" style="background:#E8EDF5;">📋</div><div><div class="sec-title">My purchases</div><div class="sec-sub">Orders you have placed as a buyer</div></div></div>
-        <div id="mktBuyerOrders"><div style="font-size:12px;color:var(--ts);text-align:center;padding:1.5rem;">No orders yet. Browse the marketplace to buy from verified farmers.</div></div>
-      </div>
-    </div>
-
-    <!-- SALES DASHBOARD TAB -->
-    <div id="mkt-sales" class="mkt-panel-content" style="display:none;">
-      <div style="display:flex;gap:4px;margin-bottom:.875rem;">
-        <button class="mkt-chip" onclick="loadMktSales('today',this)" style="flex:1;text-align:center;">Today</button>
-        <button class="mkt-chip on" onclick="loadMktSales('month',this)" style="flex:1;text-align:center;">This month</button>
-        <button class="mkt-chip" onclick="loadMktSales('all',this)" style="flex:1;text-align:center;">All time</button>
-      </div>
-      <div class="mkt-metric-grid">
-        <div class="mkt-metric"><div class="mkt-metric-val g" id="mktRevenue">—</div><div class="mkt-metric-lbl">Revenue</div></div>
-        <div class="mkt-metric"><div class="mkt-metric-val" id="mktOrderCount">—</div><div class="mkt-metric-lbl">Orders</div></div>
-        <div class="mkt-metric"><div class="mkt-metric-val a" id="mktPending">—</div><div class="mkt-metric-lbl">Pending release</div></div>
-        <div class="mkt-metric"><div class="mkt-metric-val" id="mktCommission">—</div><div class="mkt-metric-lbl">Commission paid</div></div>
-      </div>
-      <div id="mktSalesOrders"></div>
-    </div>
-  </div>
 
   <!-- ══ FARMER DASHBOARD ══ -->
 
