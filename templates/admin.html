@@ -228,6 +228,18 @@ footer a{color:#2C7A3F;text-decoration:none;}
 </div>
 {% endif %}
 
+
+<!-- FARM INPUTS -->
+<div class="st">🌱 Farm Inputs Marketplace</div>
+<div class="mg">
+  <div class="m"><div class="ml">Total suppliers</div><div class="mv b">{{ inp_suppliers or 0 }}</div><div class="ms">verified</div></div>
+  <div class="m"><div class="ml">Total products</div><div class="mv g">{{ inp_products or 0 }}</div></div>
+  <div class="m"><div class="ml">Total orders</div><div class="mv b">{{ inp_orders or 0 }}</div></div>
+  <div class="m"><div class="ml">Inputs GMV</div><div class="mv g" style="font-size:18px;">GHS {{ "{:,.0f}".format(inp_gmv or 0) }}</div><div class="ms">gross value</div></div>
+  <div class="m"><div class="ml">Commission (3%)</div><div class="mv a" style="font-size:18px;">GHS {{ "{:,.0f}".format(inp_commission or 0) }}</div></div>
+  <div class="m"><div class="ml">Top category</div><div class="mv" style="font-size:14px;padding-top:4px;">{{ inp_top_category or '—' }}</div></div>
+</div>
+
 <!-- AGRONOMISTS -->
 <div class="st">🔬 Agronomist directory</div>
 <div class="mg">
