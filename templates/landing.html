@@ -5,423 +5,349 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <meta name="description" content="Nkɔsoɔ AI — Ghana's AI-powered agricultural ecosystem. Crops, livestock, expert access, market intelligence, and voice in 4 languages. Free to start."/>
 <title>Nkɔsoɔ AI — Ghana's Agricultural Ecosystem</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
 <style>
 :root{
   --g900:#0D2B08;--g700:#1A4D15;--g600:#2A6B1F;--g500:#3B6D11;--g300:#7EC850;--g100:#C0DD97;--g50:#EAF3DE;
-  --a600:#C4873A;--a50:#FAEEDA;
-  --b600:#185FA5;--b50:#E6F1FB;
-  --t600:#0F6E56;--t50:#E1F5EE;
-  --r600:#A32D2D;--r50:#FCEBEB;
+  --a600:#C4873A;--a50:#FAEEDA;--b600:#185FA5;--b50:#E6F1FB;
   --dark:#0D1A0B;--card:#fff;--bg:#F5F4F0;--bd:#E0DED8;
-  --ts:#636058;--tt:#9A9890;
-  --rm:10px;--rl:16px;
+  --ts:#636058;--tt:#9A9890;--rm:10px;--rl:16px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:#1A1A18;line-height:1.6;overflow-x:hidden;}
 
+/* ── SCROLL REVEAL ── */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease;}
+.reveal.visible{opacity:1;transform:none;}
+.reveal-left{opacity:0;transform:translateX(-30px);transition:opacity .65s ease,transform .65s ease;}
+.reveal-left.visible{opacity:1;transform:none;}
+.reveal-right{opacity:0;transform:translateX(30px);transition:opacity .65s ease,transform .65s ease;}
+.reveal-right.visible{opacity:1;transform:none;}
+.delay-1{transition-delay:.1s;}
+.delay-2{transition-delay:.2s;}
+.delay-3{transition-delay:.3s;}
+.delay-4{transition-delay:.4s;}
+.delay-5{transition-delay:.5s;}
+
 /* ── NAV ── */
 nav{
   position:sticky;top:0;z-index:100;
   background:rgba(245,244,240,0.92);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
   border-bottom:1px solid var(--bd);
   padding:0 2rem;height:60px;
   display:flex;align-items:center;justify-content:space-between;
+  transition:box-shadow .3s;
 }
+nav.scrolled{box-shadow:0 2px 20px rgba(0,0,0,.08);}
 .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
-.nav-mark{
-  width:36px;height:36px;border-radius:50%;
-  background:var(--g700);
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;flex-shrink:0;
-}
+.nav-mark{width:36px;height:36px;border-radius:50%;background:var(--g700);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:transform .3s;}
+.nav-mark:hover{transform:rotate(15deg);}
 .nav-name{font-family:'Playfair Display',serif;font-size:18px;color:#1A1A18;font-weight:500;}
 .nav-sub{font-size:10px;color:var(--ts);letter-spacing:.04em;}
 .nav-links{display:flex;align-items:center;gap:4px;}
 .nav-a{font-size:13px;color:var(--ts);text-decoration:none;padding:7px 12px;border-radius:8px;transition:background .15s,color .15s;}
 .nav-a:hover{background:var(--g50);color:var(--g500);}
-.nav-cta{
-  background:var(--g700);color:#fff;border:none;
-  border-radius:8px;font-size:13px;font-weight:500;
-  padding:8px 18px;cursor:pointer;
-  font-family:'DM Sans',sans-serif;
-  text-decoration:none;display:inline-block;
-  transition:background .15s;
-}
-.nav-cta:hover{background:var(--g900);}
+.nav-cta{background:var(--g700);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;padding:8px 18px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;display:inline-block;transition:background .15s,transform .1s;}
+.nav-cta:hover{background:var(--g900);transform:translateY(-1px);}
 @media(max-width:600px){.nav-links{display:none;}}
 
 /* ── HERO ── */
-.hero{
-  background:var(--g700);
-  padding:5rem 2rem 4rem;
-  text-align:center;
-  position:relative;
-  overflow:hidden;
-}
-.hero::before{
-  content:'';
-  position:absolute;inset:0;
-  background:
-    radial-gradient(ellipse 60% 60% at 20% 50%,rgba(59,109,17,0.3) 0%,transparent 60%),
-    radial-gradient(ellipse 60% 60% at 80% 50%,rgba(13,43,8,0.6) 0%,transparent 60%);
-  pointer-events:none;
-}
-.hero-live{
-  display:inline-flex;align-items:center;gap:7px;
-  background:rgba(126,200,80,0.12);
-  border:1px solid rgba(126,200,80,0.3);
-  border-radius:20px;padding:5px 14px;
-  font-size:11px;color:var(--g300);
-  margin-bottom:1.5rem;position:relative;letter-spacing:.03em;
-}
-.live-dot{
-  width:7px;height:7px;border-radius:50%;
-  background:var(--g300);
-  animation:pulse 2s infinite;
-}
+.hero{background:var(--g700);padding:5rem 2rem 4rem;text-align:center;position:relative;overflow:hidden;}
+.hero-canvas{position:absolute;inset:0;pointer-events:none;}
+.hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(transparent,var(--bg));pointer-events:none;}
+.hero-live{display:inline-flex;align-items:center;gap:7px;background:rgba(126,200,80,0.12);border:1px solid rgba(126,200,80,0.3);border-radius:20px;padding:5px 14px;font-size:11px;color:var(--g300);margin-bottom:1.5rem;position:relative;letter-spacing:.03em;animation:fadeDown .8s ease both;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--g300);animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.85);}}
-.hero h1{
-  font-family:'Playfair Display',serif;
-  font-size:clamp(2.2rem,5vw,3.8rem);
-  color:#fff;line-height:1.15;
-  margin-bottom:1.25rem;
-  position:relative;
-}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-12px);}to{opacity:1;transform:none;}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,3.8rem);color:#fff;line-height:1.15;margin-bottom:1.25rem;position:relative;animation:fadeUp .9s .2s ease both;}
 .hero h1 em{color:var(--g300);font-style:normal;}
-.hero-sub{
-  font-size:16px;color:rgba(255,255,255,0.55);
-  max-width:520px;margin:0 auto 2.25rem;
-  line-height:1.7;position:relative;
-  font-weight:300;
-}
-.hero-btns{
-  display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
-  margin-bottom:3rem;position:relative;
-}
-.btn-hero-p{
-  background:var(--g300);color:var(--g900);
-  border:none;border-radius:10px;
-  font-size:14px;font-weight:500;
-  padding:13px 28px;cursor:pointer;
-  font-family:'DM Sans',sans-serif;
-  text-decoration:none;display:inline-block;
-  transition:background .15s,transform .1s;
-}
-.btn-hero-p:hover{background:#fff;transform:translateY(-1px);}
-.btn-hero-s{
-  background:transparent;color:rgba(255,255,255,0.8);
-  border:1px solid rgba(255,255,255,0.25);border-radius:10px;
-  font-size:14px;padding:13px 28px;cursor:pointer;
-  font-family:'DM Sans',sans-serif;
-  text-decoration:none;display:inline-block;
-  transition:border-color .15s,background .15s;
-}
-.btn-hero-s:hover{border-color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.05);}
-.hero-stats{
-  display:grid;grid-template-columns:repeat(4,1fr);
-  gap:10px;max-width:560px;margin:0 auto;
-  position:relative;
-}
-.hst{
-  background:rgba(255,255,255,0.07);
-  border:1px solid rgba(255,255,255,0.1);
-  border-radius:12px;padding:.875rem .5rem;
-  text-align:center;
-}
+.hero-sub{font-size:16px;color:rgba(255,255,255,0.55);max-width:520px;margin:0 auto 2.25rem;line-height:1.7;position:relative;font-weight:300;animation:fadeUp .9s .35s ease both;}
+.hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:3rem;position:relative;animation:fadeUp .9s .5s ease both;}
+.btn-hero-p{background:var(--g300);color:var(--g900);border:none;border-radius:10px;font-size:14px;font-weight:500;padding:13px 28px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;display:inline-block;transition:background .15s,transform .15s,box-shadow .15s;}
+.btn-hero-p:hover{background:#fff;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2);}
+.btn-hero-s{background:transparent;color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.25);border-radius:10px;font-size:14px;padding:13px 28px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;display:inline-block;transition:border-color .15s,background .15s,transform .15s;}
+.btn-hero-s:hover{border-color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.08);transform:translateY(-2px);}
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:560px;margin:0 auto;position:relative;animation:fadeUp .9s .65s ease both;}
+.hst{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:.875rem .5rem;text-align:center;transition:background .2s,transform .2s;}
+.hst:hover{background:rgba(255,255,255,0.12);transform:translateY(-2px);}
 .hst-v{font-family:'Playfair Display',serif;font-size:22px;color:#fff;}
 .hst-l{font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;letter-spacing:.03em;}
-@media(max-width:480px){
-  .hero-stats{grid-template-columns:repeat(2,1fr);}
-  .hero{padding:3.5rem 1.25rem 3rem;}
-}
+@media(max-width:480px){.hero-stats{grid-template-columns:repeat(2,1fr);}.hero{padding:3.5rem 1.25rem 3rem;}}
+
+/* ── TICKER ── */
+.ticker-wrap{background:var(--g900);overflow:hidden;padding:10px 0;border-top:1px solid rgba(126,200,80,.15);}
+.ticker{display:flex;gap:0;animation:ticker 30s linear infinite;}
+.ticker:hover{animation-play-state:paused;}
+.ticker-item{white-space:nowrap;padding:0 2.5rem;font-size:12px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:8px;}
+.ticker-item strong{color:var(--g300);}
+.ticker-dot{width:4px;height:4px;border-radius:50%;background:var(--g300);opacity:.5;}
+@keyframes ticker{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
 
 /* ── SECTION BASE ── */
-.section{padding:3.5rem 2rem;}
+.section{padding:4rem 2rem;}
 @media(max-width:600px){.section{padding:2.5rem 1.25rem;}}
-.sec-label{
-  font-size:10px;font-weight:500;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--g500);margin-bottom:.5rem;
-}
-.sec-title{
-  font-family:'Playfair Display',serif;
-  font-size:clamp(1.5rem,3vw,2rem);
-  color:#1A1A18;margin-bottom:.5rem;line-height:1.2;
-}
+.sec-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--g500);margin-bottom:.5rem;}
+.sec-title{font-family:'Playfair Display',serif;font-size:clamp(1.5rem,3vw,2.2rem);color:#1A1A18;margin-bottom:.5rem;line-height:1.2;}
 .sec-sub{font-size:14px;color:var(--ts);line-height:1.65;margin-bottom:2rem;max-width:540px;}
 
-/* ── FEATURES ── */
-.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
-.fc{
-  background:var(--card);border:1px solid var(--bd);
-  border-radius:var(--rl);padding:1.25rem;
-  transition:border-color .2s,transform .2s;
+/* ── HOW IT WORKS ── */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;position:relative;}
+.step{padding:1.5rem;background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);position:relative;transition:transform .25s,box-shadow .25s,border-color .25s;cursor:default;}
+.step:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.08);border-color:var(--g100);}
+.step-num{width:36px;height:36px;border-radius:50%;background:var(--g700);color:#fff;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;}
+.step-title{font-size:15px;font-weight:500;color:#1A1A18;margin-bottom:.375rem;}
+.step-desc{font-size:12px;color:var(--ts);line-height:1.6;}
+.step-connector{display:none;}
+@media(min-width:768px){
+  .steps{position:relative;}
+  .steps::before{content:'';position:absolute;top:18px;left:calc(36px/2 + 1.5rem);right:calc(36px/2 + 1.5rem);height:1px;background:var(--bd);z-index:0;}
 }
-.fc:hover{border-color:var(--g100);transform:translateY(-2px);}
-.fc-icon{
-  width:40px;height:40px;border-radius:10px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:20px;margin-bottom:.75rem;
-}
+
+/* ── FEATURES GRID ── */
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:12px;}
+.fc{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:1.25rem;transition:border-color .2s,transform .2s,box-shadow .2s;cursor:default;}
+.fc:hover{border-color:var(--g100);transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.07);}
+.fc-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:.75rem;transition:transform .3s;}
+.fc:hover .fc-icon{transform:scale(1.15) rotate(-5deg);}
 .fc-title{font-size:14px;font-weight:500;color:#1A1A18;margin-bottom:4px;}
 .fc-desc{font-size:12px;color:var(--ts);line-height:1.5;}
-.fc-badge{
-  display:inline-block;font-size:9px;font-weight:500;
-  padding:2px 7px;border-radius:20px;margin-top:6px;
-}
+.fc-badge{display:inline-block;font-size:9px;font-weight:500;padding:2px 7px;border-radius:20px;margin-top:6px;}
 .badge-live{background:var(--g50);color:var(--g500);}
 .badge-pro{background:var(--a50);color:var(--a600);}
 .badge-free{background:var(--b50);color:var(--b600);}
 
-/* ── DIVIDER ── */
-.divider{height:1px;background:var(--bd);margin:0 2rem;}
-@media(max-width:600px){.divider{margin:0 1.25rem;}}
+/* ── TABS (features filter) ── */
+.feat-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem;}
+.feat-tab{padding:6px 14px;border:1px solid var(--bd);border-radius:20px;font-size:12px;font-weight:500;color:var(--ts);cursor:pointer;background:var(--card);transition:all .2s;font-family:'DM Sans',sans-serif;}
+.feat-tab:hover{border-color:var(--g100);color:var(--g500);}
+.feat-tab.on{background:var(--g700);color:#fff;border-color:var(--g700);}
 
-/* ── REACH ── */
-.reach-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
-@media(max-width:580px){.reach-wrap{grid-template-columns:1fr;}}
-.rg{
-  background:var(--card);border:1px solid var(--bd);
-  border-radius:var(--rm);padding:1rem;
-}
-.rg-name{font-size:13px;font-weight:500;color:#1A1A18;margin-bottom:6px;}
-.rg-track{height:5px;background:var(--g50);border-radius:3px;overflow:hidden;margin-bottom:5px;}
-.rg-fill{height:5px;background:var(--g500);border-radius:3px;transition:width .8s ease;}
+/* ── COUNTERS ── */
+.counter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;}
+.counter-box{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:1.5rem;text-align:center;position:relative;overflow:hidden;transition:transform .25s,box-shadow .25s;}
+.counter-box::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--g50) 0%,transparent 70%);opacity:0;transition:opacity .3s;}
+.counter-box:hover::before{opacity:1;}
+.counter-box:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.07);}
+.counter-val{font-family:'Playfair Display',serif;font-size:2.5rem;color:var(--g700);font-weight:600;line-height:1;}
+.counter-val.amber{color:var(--a600);}
+.counter-val.blue{color:var(--b600);}
+.counter-label{font-size:12px;color:var(--ts);margin-top:.375rem;}
+
+/* ── REACH BARS ── */
+.reach-wrap{max-width:600px;}
+.rg{margin-bottom:1.25rem;}
+.rg-name{font-size:13px;font-weight:500;color:#1A1A18;margin-bottom:4px;}
+.rg-track{height:8px;background:var(--bd);border-radius:4px;overflow:hidden;margin-bottom:3px;}
+.rg-fill{height:8px;border-radius:4px;background:var(--g700);width:0;transition:width 1.4s cubic-bezier(.22,1,.36,1);}
 .rg-val{font-size:11px;color:var(--ts);}
-.rg-empty{
-  background:transparent;border:1px dashed var(--bd);
-  border-radius:var(--rm);padding:1rem;
-  display:flex;align-items:center;justify-content:center;
-  text-align:center;
-}
-.rg-empty p{font-size:12px;color:var(--tt);line-height:1.5;}
-
-/* ── BUILT LIST ── */
-.built-list{display:flex;flex-direction:column;gap:10px;}
-.bl{
-  display:flex;align-items:flex-start;gap:14px;
-  background:var(--card);border:1px solid var(--bd);
-  border-radius:var(--rm);padding:1rem 1.25rem;
-  transition:border-color .15s;
-}
-.bl:hover{border-color:var(--g100);}
-.bl-icon{
-  width:38px;height:38px;border-radius:9px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;flex-shrink:0;margin-top:2px;
-}
-.bl-title{font-size:14px;font-weight:500;color:#1A1A18;margin-bottom:3px;}
-.bl-desc{font-size:12px;color:var(--ts);line-height:1.5;}
+.rg-empty{border:1px dashed var(--bd);border-radius:12px;padding:1.25rem;text-align:center;font-size:13px;color:var(--tt);line-height:1.8;margin-top:1rem;}
 
 /* ── TRACTION ── */
-.traction-section{
-  background:var(--g700);
-  padding:3.5rem 2rem;
-  position:relative;overflow:hidden;
-}
-.traction-section::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse 70% 70% at 80% 50%,rgba(13,43,8,0.7) 0%,transparent 60%);
-  pointer-events:none;
-}
-.traction-section .sec-label{color:var(--g300);}
-.traction-section .sec-title{color:#fff;}
-.traction-section .sec-sub{color:rgba(255,255,255,0.45);}
-.tr-grid{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
-  gap:10px;position:relative;
-}
-.tr{
-  background:rgba(255,255,255,0.07);
-  border:1px solid rgba(255,255,255,0.1);
-  border-radius:12px;padding:1rem;text-align:center;
-}
-.tr-v{
-  font-family:'Playfair Display',serif;
-  font-size:22px;color:var(--g300);
-}
-.tr-l{font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;letter-spacing:.03em;}
+.traction-section{background:var(--g900);padding:4rem 2rem;text-align:center;position:relative;overflow:hidden;}
+.traction-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 80% at 50% 50%,rgba(59,109,17,0.2) 0%,transparent 70%);pointer-events:none;}
+.tr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;max-width:700px;margin:2.5rem auto 0;position:relative;}
+.tr{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:1.5rem 1rem;transition:background .25s,transform .25s;}
+.tr:hover{background:rgba(255,255,255,0.1);transform:translateY(-3px);}
+.tr-v{font-family:'Playfair Display',serif;font-size:2rem;color:#fff;line-height:1;}
+.tr-l{font-size:11px;color:rgba(255,255,255,.35);margin-top:5px;letter-spacing:.03em;}
+
+/* ── DIVIDER ── */
+.divider{height:1px;background:var(--bd);margin:0;}
+
+/* ── ECOSYSTEM ── */
+.eco-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;}
+.eco-card{border:1px solid var(--bd);border-radius:var(--rl);padding:1.25rem;background:var(--card);transition:transform .25s,border-color .25s,box-shadow .25s;}
+.eco-card:hover{transform:translateY(-3px);border-color:var(--g100);box-shadow:0 10px 28px rgba(0,0,0,.07);}
+.eco-icon{font-size:28px;margin-bottom:.625rem;}
+.eco-title{font-size:14px;font-weight:500;color:#1A1A18;margin-bottom:.25rem;}
+.eco-desc{font-size:12px;color:var(--ts);line-height:1.55;}
+.eco-link{font-size:12px;font-weight:500;color:var(--g500);text-decoration:none;display:inline-block;margin-top:.625rem;}
+.eco-link:hover{text-decoration:underline;}
+
+/* ── FAQ ── */
+.faq-item{border:1px solid var(--bd);border-radius:var(--rl);margin-bottom:8px;overflow:hidden;background:var(--card);}
+.faq-q{padding:1rem 1.25rem;font-size:14px;font-weight:500;color:#1A1A18;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;user-select:none;}
+.faq-q:hover{background:var(--g50);}
+.faq-chevron{transition:transform .3s;flex-shrink:0;font-size:12px;color:var(--ts);}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease;font-size:13px;color:var(--ts);line-height:1.7;}
+.faq-a-inner{padding:0 1.25rem 1rem;}
+.faq-item.open .faq-chevron{transform:rotate(180deg);}
+.faq-item.open .faq-a{max-height:300px;}
 
 /* ── CTA ── */
-.cta-section{
-  padding:4rem 2rem;text-align:center;
-  background:var(--card);
-  border-top:1px solid var(--bd);
-}
-.cta-section .sec-title{max-width:480px;margin:0 auto .75rem;}
-.cta-section .sec-sub{margin:0 auto 2rem;}
-.cta-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
-.btn-cta-p{
-  background:var(--g700);color:#fff;border:none;
-  border-radius:10px;font-size:14px;font-weight:500;
-  padding:13px 28px;cursor:pointer;
-  font-family:'DM Sans',sans-serif;
-  text-decoration:none;display:inline-block;
-  transition:background .15s;
-}
-.btn-cta-p:hover{background:var(--g900);}
-.btn-cta-s{
-  background:transparent;color:#1A1A18;
-  border:1px solid var(--bd);border-radius:10px;
-  font-size:14px;padding:13px 28px;cursor:pointer;
-  font-family:'DM Sans',sans-serif;
-  transition:border-color .15s;
-}
-.btn-cta-s:hover{border-color:#999;}
+.cta-section{padding:4rem 2rem;background:var(--card);text-align:center;}
+.cta-section .sec-title{font-size:clamp(1.5rem,3vw,2rem);}
+.cta-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:1.5rem;}
+.btn-cta-p{background:var(--g700);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:500;padding:13px 28px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;display:inline-block;transition:background .15s,transform .15s;}
+.btn-cta-p:hover{background:var(--g900);transform:translateY(-2px);}
+.btn-cta-s{background:transparent;color:var(--g700);border:1px solid var(--g100);border-radius:10px;font-size:14px;font-weight:500;padding:13px 28px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;display:inline-block;transition:all .15s;}
+.btn-cta-s:hover{background:var(--g50);transform:translateY(-2px);}
 
 /* ── FOOTER ── */
-footer{
-  background:var(--g900);
-  padding:2rem;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:12px;
-}
+footer{background:var(--dark);padding:2rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1rem;}
 .foot-logo{display:flex;align-items:center;gap:8px;text-decoration:none;}
-.foot-mark{
-  width:28px;height:28px;border-radius:50%;
-  background:var(--g700);display:flex;align-items:center;
-  justify-content:center;font-size:14px;
-}
-.foot-name{
-  font-family:'Playfair Display',serif;
-  font-size:14px;color:#fff;
-}
-.foot-text{font-size:11px;color:rgba(255,255,255,0.3);}
-.foot-link{font-size:11px;color:var(--g300);text-decoration:none;}
-.foot-link:hover{color:#fff;}
+.foot-mark{width:28px;height:28px;background:var(--g700);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.foot-name{font-family:'Playfair Display',serif;font-size:16px;color:#fff;}
+.foot-text{font-size:11px;color:rgba(255,255,255,.3);}
+.foot-link{font-size:12px;color:rgba(255,255,255,.4);text-decoration:none;transition:color .15s;}
+.foot-link:hover{color:var(--g300);}
+
+/* ── FLOATING BADGE ── */
+.floating-badge{position:fixed;bottom:20px;right:20px;background:var(--g700);color:#fff;border-radius:50px;padding:10px 18px;font-size:12px;font-weight:500;text-decoration:none;box-shadow:0 4px 20px rgba(0,0,0,.3);display:flex;align-items:center;gap:7px;z-index:99;transition:transform .2s,box-shadow .2s;animation:slideUp .5s 1.5s ease both;}
+.floating-badge:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.35);}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+.floating-badge .fb-dot{width:7px;height:7px;border-radius:50%;background:var(--g300);animation:pulse 2s infinite;}
 </style>
 </head>
 <body>
 
+<!-- FLOATING CTA -->
+<a href="/app" class="floating-badge">
+  <span class="fb-dot"></span>
+  Try free →
+</a>
+
 <!-- NAV -->
-<nav>
-  <a href="#" class="nav-logo">
+<nav id="mainNav">
+  <a href="/" class="nav-logo">
     <div class="nav-mark">🌿</div>
     <div>
       <div class="nav-name">Nkɔsoɔ AI</div>
-      <div class="nav-sub">Ghana's agricultural ecosystem</div>
+      <div class="nav-sub">Ghana's Agricultural Ecosystem</div>
     </div>
   </a>
   <div class="nav-links">
+    <a href="#how" class="nav-a">How it works</a>
     <a href="#features" class="nav-a">Features</a>
-    <a href="#reach" class="nav-a">Traction</a>
-    <a href="#built" class="nav-a">What's built</a>
+    <a href="#traction" class="nav-a">Traction</a>
     <a href="#partners" class="nav-a">Partners</a>
   </div>
-  <a href="/app" class="nav-cta">Try it free →</a>
+  <a href="/app" class="nav-cta">Open app →</a>
 </nav>
 
 <!-- HERO -->
-<div class="hero">
-  <div class="hero-live"><div class="live-dot"></div>Live — www.nkosooai.com</div>
-  <h1>Ghana's <em>agricultural ecosystem</em><br>powered by AI</h1>
-  <p class="hero-sub">Crops · Livestock · Expert access · Market intelligence · Voice in 4 languages. Built for Ghana's 2 million+ smallholder farmers. Free to start.</p>
+<div class="hero" id="hero">
+  <canvas class="hero-canvas" id="heroCanvas"></canvas>
+  <div class="hero-live">
+    <div class="live-dot"></div>
+    Live · www.nkosooai.com
+  </div>
+  <h1>AI built for<br>Ghana's <em>farmers.</em></h1>
+  <p class="hero-sub">Weather. Markets. Crops. Livestock. Experts. Credit. Marketplace. Voice in 4 languages. Everything a Ghanaian farmer needs — free to start.</p>
   <div class="hero-btns">
-    <a href="/app" class="btn-hero-p">Try it free →</a>
-    <a href="#partners" class="btn-hero-s">Partner with us</a>
+    <a href="/app" class="btn-hero-p">Start for free →</a>
+    <a href="#how" class="btn-hero-s">See how it works</a>
   </div>
   <div class="hero-stats">
-    <div class="hst"><div class="hst-v">1,231+</div><div class="hst-l">Farming sessions</div></div>
+    <div class="hst"><div class="hst-v" id="heroSessions">0</div><div class="hst-l">Farming sessions</div></div>
     <div class="hst"><div class="hst-v">13</div><div class="hst-l">Live features</div></div>
     <div class="hst"><div class="hst-v">4</div><div class="hst-l">Languages</div></div>
     <div class="hst"><div class="hst-v">GHS 0</div><div class="hst-l">Marketing spend</div></div>
   </div>
 </div>
 
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker" id="ticker">
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>Weather</strong> · 16 Ghana regions · live forecasts</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>Market prices</strong> · Maize · Tomatoes · Cattle · 8 crops</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>Marketplace</strong> · Buy and sell farm produce · Paystack escrow</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>Farm inputs</strong> · Seeds · Fertilizer · Vet products · Tools</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>Credit</strong> · Farming activity score · PDF for lenders</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>Voice</strong> · English · Twi · Dagbani · Hausa</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>AI diagnosis</strong> · Photo · Disease · Treatment advice</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>GPS</strong> · Farm coordinates · Reverse geocoded · Lender-ready</div>
+    <!-- duplicate for seamless loop -->
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>Weather</strong> · 16 Ghana regions · live forecasts</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>Market prices</strong> · Maize · Tomatoes · Cattle · 8 crops</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>Marketplace</strong> · Buy and sell farm produce · Paystack escrow</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>Farm inputs</strong> · Seeds · Fertilizer · Vet products · Tools</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>Credit</strong> · Farming activity score · PDF for lenders</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>Voice</strong> · English · Twi · Dagbani · Hausa</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>AI diagnosis</strong> · Photo · Disease · Treatment advice</div>
+    <div class="ticker-item"><span class="ticker-dot"></span> <strong>GPS</strong> · Farm coordinates · Reverse geocoded · Lender-ready</div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div class="section" id="how" style="background:var(--card);">
+  <div class="sec-label reveal">How it works</div>
+  <div class="sec-title reveal delay-1">From sign-up to full farm management<br>in under 5 minutes.</div>
+  <div class="steps">
+    <div class="step reveal delay-1">
+      <div class="step-num">1</div>
+      <div class="step-title">Open the app</div>
+      <div class="step-desc">Visit nkosooai.com on any phone. No download needed. Works on any browser. Instant access to weather and prices.</div>
+    </div>
+    <div class="step reveal delay-2">
+      <div class="step-num">2</div>
+      <div class="step-title">Save your profile</div>
+      <div class="step-desc">Register with your name, phone, and Ghana Card. Unlock personalised crop calendars, livestock diaries, and AI advice.</div>
+    </div>
+    <div class="step reveal delay-3">
+      <div class="step-num">3</div>
+      <div class="step-title">Get your credit score</div>
+      <div class="step-desc">Your farming activity builds a score out of 100. Download your verified PDF credit profile and apply for agricultural loans.</div>
+    </div>
+    <div class="step reveal delay-4">
+      <div class="step-num">4</div>
+      <div class="step-title">Buy, sell, and grow</div>
+      <div class="step-desc">List your harvest on the marketplace. Buy seeds and fertilizer from verified suppliers. All payments via Paystack — MoMo or card.</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
 <!-- FEATURES -->
-<div class="section" id="features" style="background:var(--card);">
-  <div class="sec-label">What is built — live today</div>
-  <div class="sec-title">Everything a farmer needs.<br>One platform.</div>
-  <p class="sec-sub">Free to start. Pro upgrade at GHS 30/month for unlimited access, photo diagnosis, and voice.</p>
-  <div class="feat-grid">
-    <div class="fc">
-      <div class="fc-icon" style="background:#EAF3DE;">🌤</div>
-      <div class="fc-title">Live weather</div>
-      <div class="fc-desc">All 16 Ghana regions · crop and livestock advice · 7-day forecast</div>
-      <div class="fc-badge badge-live">Free</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#EAF3DE;">📈</div>
-      <div class="fc-title">Market prices</div>
-      <div class="fc-desc">8 crops + 8 livestock types · GHS · AI-refreshed weekly based on market season</div>
-      <div class="fc-badge badge-live">Free</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#FAEEDA;">🇬🇭</div>
-      <div class="fc-title">Ghana Card profiles</div>
-      <div class="fc-desc">Verified crop and livestock farmer identity · farm size · soil · water · region</div>
-      <div class="fc-badge badge-free">Free account</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#EAF3DE;">📅</div>
-      <div class="fc-title">AI calendars</div>
-      <div class="fc-desc">Planting calendar per crop · vaccination calendar per animal · colour-coded</div>
-      <div class="fc-badge badge-free">Free account</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#EAF3DE;">📔</div>
-      <div class="fc-title">Farm & livestock diary</div>
-      <div class="fc-desc">Log daily entries · AI tip on every one · crop and livestock diaries</div>
-      <div class="fc-badge badge-free">Free account</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#E1F5EE;">🔬</div>
-      <div class="fc-title">Expert directory</div>
-      <div class="fc-desc">Verified agronomists and vets · WhatsApp booking · speciality filter</div>
-      <div class="fc-badge badge-free">Free account</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#FCEBEB;">🐛</div>
-      <div class="fc-title">Pest & disease alerts</div>
-      <div class="fc-desc">Crop and livestock alerts · local treatment tips in English and Twi</div>
-      <div class="fc-badge badge-live">Free</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#E6F1FB;">📷</div>
-      <div class="fc-title">AI photo diagnosis</div>
-      <div class="fc-desc">Upload crop or animal photo · Claude Vision identifies disease · treatment advice</div>
-      <div class="fc-badge badge-pro">Pro</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#E6F1FB;">🎤</div>
-      <div class="fc-title">Voice interface</div>
-      <div class="fc-desc">English microphone · Twi, Dagbani, Hausa type and hear · no literacy required</div>
-      <div class="fc-badge badge-pro">Pro</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#E8EDF5;">💳</div>
-      <div class="fc-title">Credit access</div>
-      <div class="fc-desc">Farming activity score · verified credit profile PDF · 4 agricultural lenders · loan applications</div>
-      <div class="fc-badge badge-free">Free account</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#EAF3DE;">📍</div>
-      <div class="fc-title">GPS farm location</div>
-      <div class="fc-desc">Records exact farm coordinates · reverse geocoded address · adds to credit score · lender risk assessment</div>
-      <div class="fc-badge badge-free">Free account</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#EAF3DE;">🏠</div>
-      <div class="fc-title">Farmer dashboard</div>
-      <div class="fc-desc">My Farm tab · activity feed · farm profile · all livestock · credit score · all in one place</div>
-      <div class="fc-badge badge-free">Free account</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#FAEEDA;">🛒</div>
-      <div class="fc-title">Farm produce marketplace</div>
-      <div class="fc-desc">Verified farmers list crops and livestock for sale · buyers purchase directly · 48hr escrow payment · 5% commission · instant release option</div>
-      <div class="fc-badge badge-free">Free account</div>
-    </div>
-    <div class="fc">
-      <div class="fc-icon" style="background:#E6F1FB;">🌱</div>
-      <div class="fc-title">Farm inputs marketplace</div>
-      <div class="fc-desc">Buy seeds, fertilizer, pesticides, animal feed, vet products, tools, and irrigation from verified suppliers · smart recommendations based on your crop and livestock profile · Paystack MoMo and card payment</div>
-      <div class="fc-badge badge-free">Free account</div>
-    </div>
+<div class="section" id="features" style="background:var(--bg);">
+  <div class="sec-label reveal">What is built — live today</div>
+  <div class="sec-title reveal delay-1">Everything a farmer needs.<br>One platform.</div>
+  <p class="sec-sub reveal delay-2">Free to start. Pro upgrade at GHS 30/month for unlimited AI, photo diagnosis, and voice interface.</p>
+  <div class="feat-tabs reveal delay-2">
+    <button class="feat-tab on" onclick="filterFeats('all',this)">All 13</button>
+    <button class="feat-tab" onclick="filterFeats('free',this)">Free</button>
+    <button class="feat-tab" onclick="filterFeats('account',this)">Free account</button>
+    <button class="feat-tab" onclick="filterFeats('pro',this)">Pro</button>
+    <button class="feat-tab" onclick="filterFeats('market',this)">Marketplace</button>
+  </div>
+  <div class="feat-grid" id="featGrid">
+    <div class="fc reveal delay-1" data-cat="free"><div class="fc-icon" style="background:#EAF3DE;">🌤</div><div class="fc-title">Live weather</div><div class="fc-desc">All 16 Ghana regions · crop and livestock advice · 7-day forecast · updates every 30 min</div><div class="fc-badge badge-live">Free</div></div>
+    <div class="fc reveal delay-2" data-cat="free"><div class="fc-icon" style="background:#EAF3DE;">📈</div><div class="fc-title">Market prices</div><div class="fc-desc">8 crops + 8 livestock types · GHS · AI-refreshed weekly based on season and market conditions</div><div class="fc-badge badge-live">Free</div></div>
+    <div class="fc reveal delay-1" data-cat="free"><div class="fc-icon" style="background:#FCEBEB;">🐛</div><div class="fc-title">Pest & disease alerts</div><div class="fc-desc">Crop and livestock alerts · local treatment tips · English and Twi · ask AI about any pest</div><div class="fc-badge badge-live">Free</div></div>
+    <div class="fc reveal delay-2" data-cat="account"><div class="fc-icon" style="background:#FAEEDA;">🇬🇭</div><div class="fc-title">Ghana Card profiles</div><div class="fc-desc">Verified farmer identity · farm size · soil · water source · GPS coordinates · region</div><div class="fc-badge badge-free">Free account</div></div>
+    <div class="fc reveal delay-3" data-cat="account"><div class="fc-icon" style="background:#EAF3DE;">📅</div><div class="fc-title">AI planting calendars</div><div class="fc-desc">Per crop · colour-coded · fertilizer, spray, and harvest dates · vaccination calendar per animal</div><div class="fc-badge badge-free">Free account</div></div>
+    <div class="fc reveal delay-4" data-cat="account"><div class="fc-icon" style="background:#EAF3DE;">📔</div><div class="fc-title">Farm & livestock diary</div><div class="fc-desc">Log daily entries · AI tip on every entry · crop and livestock diaries saved permanently</div><div class="fc-badge badge-free">Free account</div></div>
+    <div class="fc reveal delay-1" data-cat="account"><div class="fc-icon" style="background:#E1F5EE;">🔬</div><div class="fc-title">Expert directory</div><div class="fc-desc">Credential-verified agronomists and vets · WhatsApp booking · speciality filter · 10% commission</div><div class="fc-badge badge-free">Free account</div></div>
+    <div class="fc reveal delay-2" data-cat="account"><div class="fc-icon" style="background:#E8EDF5;">💳</div><div class="fc-title">Credit access</div><div class="fc-desc">Farming activity score out of 100 · downloadable credit profile PDF · 4 agricultural lenders</div><div class="fc-badge badge-free">Free account</div></div>
+    <div class="fc reveal delay-3" data-cat="account"><div class="fc-icon" style="background:#EAF3DE;">📍</div><div class="fc-title">GPS farm location</div><div class="fc-desc">Exact farm coordinates · reverse geocoded address · adds +10 to credit score · lender risk assessment</div><div class="fc-badge badge-free">Free account</div></div>
+    <div class="fc reveal delay-4" data-cat="account"><div class="fc-icon" style="background:#EAF3DE;">🏠</div><div class="fc-title">Farmer dashboard</div><div class="fc-desc">My Farm tab · activity feed · farm profile · all livestock types · credit score in one place</div><div class="fc-badge badge-free">Free account</div></div>
+    <div class="fc reveal delay-1" data-cat="pro"><div class="fc-icon" style="background:#E6F1FB;">📷</div><div class="fc-title">AI photo diagnosis</div><div class="fc-desc">Upload crop or animal photo · Claude Vision identifies disease · treatment advice with local products</div><div class="fc-badge badge-pro">Pro</div></div>
+    <div class="fc reveal delay-2" data-cat="pro"><div class="fc-icon" style="background:#E6F1FB;">🎤</div><div class="fc-title">Voice interface</div><div class="fc-desc">English microphone input · Twi, Dagbani, Hausa type and hear answer · no literacy required</div><div class="fc-badge badge-pro">Pro</div></div>
+    <div class="fc reveal delay-1" data-cat="market"><div class="fc-icon" style="background:#FAEEDA;">🛒</div><div class="fc-title">Produce marketplace</div><div class="fc-desc">Verified farmers list crops and livestock · buyers purchase directly · 48hr Paystack escrow · 5% commission</div><div class="fc-badge badge-free">Free account</div></div>
+    <div class="fc reveal delay-2" data-cat="market"><div class="fc-icon" style="background:#E6F1FB;">🌱</div><div class="fc-title">Farm inputs marketplace</div><div class="fc-desc">Seeds · fertilizer · animal feed · vet products · tools · smart AI recommendations from your profile</div><div class="fc-badge badge-free">Free account</div></div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- LIVE COUNTERS -->
+<div class="section" style="background:var(--card);">
+  <div class="sec-label reveal">By the numbers</div>
+  <div class="sec-title reveal delay-1">Traction that speaks<br>for itself.</div>
+  <p class="sec-sub reveal delay-2">Built by one person. No funding. No paid marketing. No sales team. Just farmers finding it and coming back.</p>
+  <div class="counter-grid">
+    <div class="counter-box reveal delay-1"><div class="counter-val" data-target="1231" data-suffix="+">0</div><div class="counter-label">Total farming sessions</div></div>
+    <div class="counter-box reveal delay-2"><div class="counter-val" data-target="13">0</div><div class="counter-label">Live features</div></div>
+    <div class="counter-box reveal delay-3"><div class="counter-val amber" data-target="0" data-prefix="GHS ">0</div><div class="counter-label">Paid marketing spend</div></div>
+    <div class="counter-box reveal delay-4"><div class="counter-val blue" data-target="3">0</div><div class="counter-label">Ghana regions reached</div></div>
+    <div class="counter-box reveal delay-2"><div class="counter-val" data-target="16">0</div><div class="counter-label">Ghana regions supported</div></div>
+    <div class="counter-box reveal delay-3"><div class="counter-val" data-target="4">0</div><div class="counter-label">Languages</div></div>
   </div>
 </div>
 
@@ -429,23 +355,23 @@ footer{
 
 <!-- REACH -->
 <div class="section" id="reach" style="background:var(--bg);">
-  <div class="sec-label">Where farmers are finding us</div>
-  <div class="sec-title">Organic reach across Ghana</div>
-  <p class="sec-sub">1,231 farming sessions. No paid marketing. No advertising. Growing by word of mouth from Greater Accra outward.</p>
-  <div class="reach-wrap">
+  <div class="sec-label reveal">Where farmers are finding us</div>
+  <div class="sec-title reveal delay-1">Organic reach across Ghana</div>
+  <p class="sec-sub reveal delay-2">1,231 farming sessions. Zero paid marketing. Growing purely by word of mouth from Greater Accra outward.</p>
+  <div class="reach-wrap reveal delay-2">
     <div class="rg">
       <div class="rg-name">Greater Accra (Accra)</div>
-      <div class="rg-track"><div class="rg-fill" style="width:100%;"></div></div>
+      <div class="rg-track"><div class="rg-fill" data-width="100%"></div></div>
       <div class="rg-val">1,229 sessions · our home base</div>
     </div>
     <div class="rg">
       <div class="rg-name">Western (Takoradi)</div>
-      <div class="rg-track"><div class="rg-fill" style="width:2%;"></div></div>
+      <div class="rg-track"><div class="rg-fill" data-width="2%"></div></div>
       <div class="rg-val">1 session · first reach outside Accra</div>
     </div>
     <div class="rg">
       <div class="rg-name">Volta (Ho)</div>
-      <div class="rg-track"><div class="rg-fill" style="width:2%;"></div></div>
+      <div class="rg-track"><div class="rg-fill" data-width="2%"></div></div>
       <div class="rg-val">1 session · first reach outside Accra</div>
     </div>
     <div class="rg-empty">
@@ -454,33 +380,93 @@ footer{
   </div>
 </div>
 
-<div class="divider"></div>
-
-<!-- TRACTION -->
-<div class="traction-section">
-  <div class="sec-label">Traction</div>
-  <div class="sec-title" style="color:#fff;font-family:'Playfair Display',serif;">Growing because it works.</div>
-  <p class="sec-sub">Built by one person. No funding. No paid marketing. No sales team. Just farmers finding it and coming back.</p>
+<!-- TRACTION DARK -->
+<div class="traction-section" id="traction">
+  <div class="sec-label reveal" style="color:var(--g300);justify-content:center;">Traction</div>
+  <div class="sec-title reveal delay-1" style="color:#fff;font-family:'Playfair Display',serif;text-align:center;">Growing because it works.</div>
+  <p style="font-size:14px;color:rgba(255,255,255,0.4);max-width:480px;margin:.5rem auto 0;text-align:center;line-height:1.7;" class="reveal delay-2">Built by one person. No funding. No paid marketing. Just farmers finding it and coming back.</p>
   <div class="tr-grid">
-    <div class="tr"><div class="tr-v">1,231+</div><div class="tr-l">Total sessions</div></div>
-    <div class="tr"><div class="tr-v">13</div><div class="tr-l">Live features</div></div>
-    <div class="tr"><div class="tr-v">GHS 0</div><div class="tr-l">Ad spend</div></div>
-    <div class="tr"><div class="tr-v">3 regions</div><div class="tr-l">Reached so far</div></div>
+    <div class="tr reveal delay-1"><div class="tr-v">1,231+</div><div class="tr-l">Total sessions</div></div>
+    <div class="tr reveal delay-2"><div class="tr-v">13</div><div class="tr-l">Live features</div></div>
+    <div class="tr reveal delay-3"><div class="tr-v">GHS 0</div><div class="tr-l">Ad spend</div></div>
+    <div class="tr reveal delay-4"><div class="tr-v">3 regions</div><div class="tr-l">Reached so far</div></div>
   </div>
 </div>
 
-<!-- CTA / PARTNERS -->
-<div class="cta-section" id="partners">
-  <div class="sec-label" style="justify-content:center;text-align:center;">Ready to grow together?</div>
-  <div class="sec-title">For farmers, partners, and believers in Ghana's farming future.</div>
-  <p class="sec-sub">Try Nkɔsoɔ AI free today — or reach out to explore pilot partnerships, NGO integrations, or investment opportunities.</p>
-  <div class="cta-btns">
-    <a href="/app" class="btn-cta-p">Try it free →</a>
+<!-- ECOSYSTEM / PARTNERS -->
+<div class="section" id="partners" style="background:var(--card);">
+  <div class="sec-label reveal">Ecosystem</div>
+  <div class="sec-title reveal delay-1">For everyone in Ghana's<br>agricultural value chain.</div>
+  <div class="eco-grid">
+    <div class="eco-card reveal delay-1">
+      <div class="eco-icon">🌾</div>
+      <div class="eco-title">Farmers</div>
+      <div class="eco-desc">Free access to weather, market prices, AI advice, and farm management tools. Register to unlock credit, calendars, and the marketplace.</div>
+      <a href="/app" class="eco-link">Open the app →</a>
+    </div>
+    <div class="eco-card reveal delay-2">
+      <div class="eco-icon">🏦</div>
+      <div class="eco-title">Agricultural lenders</div>
+      <div class="eco-desc">Get connected to verified farmers with GPS-confirmed farm locations and farming activity scores. Register your institution to receive loan applications.</div>
+      <a href="/register-lender" class="eco-link">Register as lender →</a>
+    </div>
+    <div class="eco-card reveal delay-3">
+      <div class="eco-icon">🌱</div>
+      <div class="eco-title">Input suppliers</div>
+      <div class="eco-desc">List seeds, fertilizer, animal feed, vet products, and tools. Reach farmers whose profiles match your products. Basic from GHS 50/month.</div>
+      <a href="/supplier/register" class="eco-link">Register as supplier →</a>
+    </div>
+    <div class="eco-card reveal delay-4">
+      <div class="eco-icon">🤝</div>
+      <div class="eco-title">NGOs & partners</div>
+      <div class="eco-desc">Pilot integrations with NGOs, agri-finance institutions, and development partners. API access, white-label options, and co-branding available.</div>
+      <a href="mailto:support@dranytech.com" class="eco-link">Partner with us →</a>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- FAQ -->
+<div class="section" style="background:var(--bg);">
+  <div class="sec-label reveal">FAQ</div>
+  <div class="sec-title reveal delay-1">Common questions</div>
+  <div style="max-width:640px;" class="reveal delay-2">
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Is Nkɔsoɔ AI really free? <span class="faq-chevron">▼</span></div>
+      <div class="faq-a"><div class="faq-a-inner">Yes. Weather, market prices, pest alerts, and the Ask AI (3 questions/day) are completely free with no account needed. Creating a free account unlocks your crop and livestock profiles, planting calendars, farm diary, credit score, GPS location, and the marketplace. Pro (GHS 30/month) adds unlimited AI questions, photo diagnosis, and voice interface.</div></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Do I need a smartphone? <span class="faq-chevron">▼</span></div>
+      <div class="faq-a"><div class="faq-a-inner">Any phone with a web browser works — Android, iPhone, or basic smartphone. No app download needed. The platform is designed to work on low-bandwidth connections common in rural Ghana.</div></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">How does the marketplace payment work? <span class="faq-chevron">▼</span></div>
+      <div class="faq-a"><div class="faq-a-inner">All payments go through Paystack — Ghana's trusted payment gateway. Buyers pay with MTN MoMo, Telecel Cash, Visa, or Mastercard. For produce sales, payment is held in escrow for 48 hours after the buyer confirms delivery, then released to the farmer. Instant release is available at a 2% fee. Nkɔsoɔ AI takes a 5% commission on produce sales and 3% on farm inputs.</div></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Who can list on the marketplace? <span class="faq-chavron">▼</span></div>
+      <div class="faq-a"><div class="faq-a-inner">Any farmer registered on the platform with a valid Ghana Card can list their harvest or livestock for sale. They must complete 4 training modules and agree to the seller terms before going live. Input suppliers register separately at nkosooai.com/supplier/register and are reviewed by DranyTech before being approved.</div></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Is my Ghana Card information safe? <span class="faq-chevron">▼</span></div>
+      <div class="faq-a"><div class="faq-a-inner">Your Ghana Card number is stored securely and used only for identity verification — to confirm you are a real Ghanaian farmer. It is never shared with third parties without your consent. Passwords are hashed and never stored in plain text.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta-section">
+  <div class="sec-label reveal" style="justify-content:center;text-align:center;">Ready?</div>
+  <div class="sec-title reveal delay-1">Ghana's farming future<br>starts here.</div>
+  <p class="sec-sub reveal delay-2" style="margin:0 auto 0;text-align:center;">Try Nkɔsoɔ AI free today — or reach out to explore pilot partnerships, NGO integrations, or investment opportunities.</p>
+  <div class="cta-btns reveal delay-3">
+    <a href="/app" class="btn-cta-p">Open the farmer app →</a>
     <a href="mailto:support@dranytech.com" class="btn-cta-s">Partner with us</a>
   </div>
-  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
-    <a href="/register-lender" style="display:inline-flex;align-items:center;gap:7px;padding:11px 20px;background:#1A2E4A;color:#fff;border-radius:10px;font-size:13px;font-weight:500;text-decoration:none;">🏦 Are you a lender? Register your institution →</a>
-    <a href="/supplier/register" style="display:inline-flex;align-items:center;gap:7px;padding:11px 20px;background:#185FA5;color:#fff;border-radius:10px;font-size:13px;font-weight:500;text-decoration:none;">🌱 Are you an inputs supplier? List your products →</a>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:1rem;" class="reveal delay-4">
+    <a href="/register-lender" style="display:inline-flex;align-items:center;gap:7px;padding:11px 20px;background:#1A2E4A;color:#fff;border-radius:10px;font-size:13px;font-weight:500;text-decoration:none;transition:opacity .15s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">🏦 Register as a lender →</a>
+    <a href="/supplier/register" style="display:inline-flex;align-items:center;gap:7px;padding:11px 20px;background:#185FA5;color:#fff;border-radius:10px;font-size:13px;font-weight:500;text-decoration:none;transition:opacity .15s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">🌱 Register as a supplier →</a>
   </div>
 </div>
 
@@ -496,8 +482,140 @@ footer{
     <a href="/app" class="foot-link">Farmer app</a>
     <a href="/register-lender" class="foot-link">Register as lender</a>
     <a href="/supplier/register" class="foot-link">Register as supplier</a>
+    <a href="mailto:support@dranytech.com" class="foot-link">support@dranytech.com</a>
   </div>
 </footer>
 
+<script>
+// ── NAV SCROLL SHADOW ────────────────────────────────────────
+window.addEventListener('scroll',()=>{
+  document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 20);
+});
+
+// ── HERO CANVAS PARTICLES ────────────────────────────────────
+(function(){
+  const canvas = document.getElementById('heroCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+  function resize(){ W=canvas.width=canvas.offsetWidth; H=canvas.height=canvas.offsetHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+  for(let i=0;i<55;i++){
+    particles.push({
+      x:Math.random()*1000, y:Math.random()*600,
+      r:Math.random()*2+0.5,
+      dx:(Math.random()-.5)*.3,
+      dy:-(Math.random()*.4+.1),
+      o:Math.random()*.4+.05
+    });
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach(p=>{
+      ctx.beginPath();
+      ctx.arc(p.x%W, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle=`rgba(126,200,80,${p.o})`;
+      ctx.fill();
+      p.x+=p.dx; p.y+=p.dy;
+      if(p.y<-10){p.y=H+10;p.x=Math.random()*W;}
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── HERO SESSION COUNTER ANIMATION ───────────────────────────
+(function(){
+  let done=false;
+  function animate(){
+    if(done) return;
+    const el=document.getElementById('heroSessions');
+    if(!el) return;
+    let start=0, end=1231, dur=1800, startTime=null;
+    function step(ts){
+      if(!startTime) startTime=ts;
+      const prog=Math.min((ts-startTime)/dur,1);
+      const ease=1-Math.pow(1-prog,4);
+      el.textContent=Math.floor(ease*end).toLocaleString()+'+';
+      if(prog<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    done=true;
+  }
+  setTimeout(animate,800);
+})();
+
+// ── SCROLL REVEAL ────────────────────────────────────────────
+(function(){
+  const obs=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ e.target.classList.add('visible'); }
+    });
+  },{threshold:.12});
+  document.querySelectorAll('.reveal,.reveal-left,.reveal-right').forEach(el=>obs.observe(el));
+})();
+
+// ── ANIMATED COUNTERS ────────────────────────────────────────
+(function(){
+  const obs=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting && !e.target.dataset.counted){
+        e.target.dataset.counted='1';
+        const target=parseInt(e.target.dataset.target)||0;
+        const suffix=e.target.dataset.suffix||'';
+        const prefix=e.target.dataset.prefix||'';
+        const dur=1600;
+        let startTime=null;
+        function step(ts){
+          if(!startTime) startTime=ts;
+          const prog=Math.min((ts-startTime)/dur,1);
+          const ease=1-Math.pow(1-prog,3);
+          e.target.textContent=prefix+Math.floor(ease*target).toLocaleString()+suffix;
+          if(prog<1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      }
+    });
+  },{threshold:.3});
+  document.querySelectorAll('.counter-val[data-target]').forEach(el=>obs.observe(el));
+})();
+
+// ── REACH BAR ANIMATION ──────────────────────────────────────
+(function(){
+  const obs=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        document.querySelectorAll('.rg-fill[data-width]').forEach(bar=>{
+          setTimeout(()=>{ bar.style.width=bar.dataset.width; },200);
+        });
+        obs.disconnect();
+      }
+    });
+  },{threshold:.2});
+  const wrap=document.querySelector('.reach-wrap');
+  if(wrap) obs.observe(wrap);
+})();
+
+// ── FEATURE FILTER TABS ──────────────────────────────────────
+function filterFeats(cat, btn){
+  document.querySelectorAll('.feat-tab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('#featGrid .fc').forEach(fc=>{
+    const fcCat = fc.dataset.cat;
+    const show = cat==='all' || fcCat===cat || (cat==='market' && fcCat==='market');
+    fc.style.display = show ? '' : 'none';
+    fc.style.animation = show ? 'fadeUp .4s ease both' : '';
+  });
+}
+
+// ── FAQ ACCORDION ────────────────────────────────────────────
+function toggleFaq(el){
+  const item=el.closest('.faq-item');
+  const isOpen=item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+  if(!isOpen) item.classList.add('open');
+}
+</script>
 </body>
 </html>
