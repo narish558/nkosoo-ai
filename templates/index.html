@@ -3741,7 +3741,7 @@ async function loadInpRecommended(){
       profEl.textContent='Based on your '+d.recommended_for.slice(0,3).join(', ')+' profile';
     }
     if(!recs.length){
-      el.innerHTML='<div class="card"><div style="font-size:12px;color:var(--ts);text-align:center;padding:1rem;">Save your crop and livestock profile to get personalised recommendations.</div><button class="save-btn g" onclick="showTab('mycrops')" style="margin-top:.5rem;">Save crop profile →</button></div>';
+      el.innerHTML='<div class="card"><div style="font-size:12px;color:var(--ts);text-align:center;padding:1rem;">Save your crop and livestock profile to get personalised recommendations.</div><button class="save-btn g" onclick="showTab(\'mycrops\')" style="margin-top:.5rem;">Save crop profile →</button></div>';
       return;
     }
     el.innerHTML=recs.map(p=>inpProductCard(p,true)).join('');
