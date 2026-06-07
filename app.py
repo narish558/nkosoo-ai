@@ -583,6 +583,7 @@ Hwɛ saa foto yi na ka: yareɛ din, mmoa a ɛwɔ so, yareɛ tenten, nsɛnkyerɛn
 # ---------------------------------------------------------------------------
 # Ghana regions
 # ---------------------------------------------------------------------------
+
 GHANA_REGIONS = {
     "greater_accra": {"name":"Greater Accra (Accra)",       "name_tw":"Accra Kuro",            "lat":5.55,  "lon":-0.20},
     "ashanti":       {"name":"Ashanti (Kumasi)",             "name_tw":"Ashanti (Kumasi)",       "lat":6.69,  "lon":-1.62},
@@ -2450,7 +2451,7 @@ def mkt_pay_verify():
 # ── SUPPLIER PASSWORD RESET ──────────────────────────────────────
 @app.route("/supplier/forgot-password", methods=["GET"])
 def supplier_forgot_password_page():
-    return render_template("supplier_forgot_password.html")
+    return render_template("Sforgotten_password.html")
 
 @app.route("/api/supplier/forgot-password", methods=["POST"])
 def api_supplier_forgot_password():
@@ -2670,13 +2671,9 @@ def supplier_required(f):
 # ── REGISTRATION ────────────────────────────────────────────────
 @app.route("/supplier/register", methods=["GET"])
 def supplier_register_page():
-    try:
-        regions_list = [{"key": k, "name": v["name"]} for k, v in GHANA_REGIONS.items()]
-        return render_template("supplier_register.html", regions=regions_list)
-    except Exception as e:
-        print(f"[supplier register page error] {e}")
-        import traceback; traceback.print_exc()
-        return f"<h2>Error loading page</h2><pre>{e}</pre><p><a href='/'>Home</a></p>", 500
+    regions_list = [{"key": k, "name": v["name"]} for k, v in GHANA_REGIONS.items()]
+    return render_template("Sregister.html", regions=regions_list)
+
 
 @app.route("/api/supplier/register", methods=["POST"])
 def api_supplier_register():
@@ -2735,7 +2732,7 @@ def api_supplier_register():
 def supplier_login_page():
     if get_supplier_session():
         return redirect("/supplier")
-    return render_template("supplier_login.html")
+    return render_template("Slogin.html")
 
 @app.route("/api/supplier/login", methods=["POST"])
 def api_supplier_login():
@@ -2813,7 +2810,7 @@ def supplier_portal():
         acc=None; sup=None; products=[]; orders=[]; stats={"total_revenue":0,"total_orders":0,"commission":0,"unique_buyers":0}
 
     regions_list = [{"key": k, "name": v["name"]} for k, v in GHANA_REGIONS.items()]
-    return render_template("supplier_portal.html",
+    return render_template("Sportal.html",
         acc=acc, sup=sup, products=products, orders=orders,
         stats=stats, regions=regions_list,
         supplier_name=session.get("supplier_name",""),
