@@ -190,6 +190,26 @@ def init_db():
             created_at TEXT DEFAULT (datetime('now'))
         );
 
+
+        CREATE TABLE IF NOT EXISTS inputs_supplier_accounts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            supplier_id INTEGER UNIQUE,
+            business_name TEXT NOT NULL,
+            contact_name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            ghana_card TEXT,
+            business_reg TEXT,
+            region TEXT DEFAULT 'national',
+            categories TEXT,
+            tier TEXT DEFAULT 'basic',
+            delivery_regions TEXT DEFAULT 'national',
+            status TEXT DEFAULT 'pending',
+            rejection_reason TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            last_login TEXT
+        );
         CREATE TABLE IF NOT EXISTS inputs_suppliers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             business_name TEXT NOT NULL,
@@ -2588,4 +2608,295 @@ def inputs_pay_verify():
     except Exception as e:
         print(f"[inputs pay verify] {e}")
         return redirect("/app?inputs_payment=failed#inputs")
+
+
+# ===========================================================================
+# SUPPLIER PORTAL — Registration, Login, Dashboard
+# ===========================================================================
+
+def get_supplier_session():
+    """Return supplier_id if logged in, else None."""
+    return session.get("supplier_id")
+
+def supplier_required(f):
+    """Decorator: redirect to supplier login if not logged in."""
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not get_supplier_session():
+            return redirect("/supplier/login")
+        return f(*args, **kwargs)
+    return decorated
+
+
+# ── REGISTRATION ────────────────────────────────────────────────
+@app.route("/supplier/register", methods=["GET"])
+def supplier_register_page():
+    return render_template("supplier_register.html", regions=GHANA_REGIONS)
+
+@app.route("/api/supplier/register", methods=["POST"])
+def api_supplier_register():
+    data          = request.get_json() or {}
+    business_name = (data.get("business_name","") or "").strip()
+    contact_name  = (data.get("contact_name","") or "").strip()
+    phone         = (data.get("phone","") or "").strip()
+    email         = (data.get("email","") or "").strip()
+    password      = (data.get("password","") or "").strip()
+    ghana_card    = (data.get("ghana_card","") or "").strip()
+    business_reg  = (data.get("business_reg","") or "").strip()
+    region        = (data.get("region","national") or "national").strip()
+    categories    = (data.get("categories","") or "").strip()
+    tier          = (data.get("tier","basic") or "basic").strip()
+    delivery_regions = (data.get("delivery_regions","national") or "national").strip()
+
+    # Validate
+    if not business_name:
+        return jsonify({"success":False,"error":"Business name is required."}), 400
+    if not contact_name:
+        return jsonify({"success":False,"error":"Contact name is required."}), 400
+    if not phone:
+        return jsonify({"success":False,"error":"Phone number is required."}), 400
+    if not email or "@" not in email:
+        return jsonify({"success":False,"error":"A valid email address is required."}), 400
+    if not password or len(password) < 8:
+        return jsonify({"success":False,"error":"Password must be at least 8 characters."}), 400
+    if not categories:
+        return jsonify({"success":False,"error":"Please select at least one product category."}), 400
+
+    pw_hash = hash_password(password)
+    try:
+        with get_db() as db:
+            # Check duplicate
+            existing = db.execute(
+                "SELECT id FROM inputs_supplier_accounts WHERE email=? OR phone=?",
+                (email, phone)).fetchone()
+            if existing:
+                return jsonify({"success":False,"error":"An account with this email or phone already exists."}), 409
+            db.execute("""INSERT INTO inputs_supplier_accounts
+                (business_name,contact_name,phone,email,password_hash,
+                 ghana_card,business_reg,region,categories,tier,delivery_regions,status)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,'pending')""",
+                (business_name,contact_name,phone,email,pw_hash,
+                 ghana_card,business_reg,region,categories,tier,delivery_regions))
+            db.commit()
+        return jsonify({"success":True,
+            "message":"Application submitted! DranyTech will review your details and activate your account within 48 hours. You will receive an email when you are approved."})
+    except Exception as e:
+        print(f"[supplier register] {e}")
+        return jsonify({"success":False,"error":"Registration failed. Please try again."}), 500
+
+
+# ── LOGIN ───────────────────────────────────────────────────────
+@app.route("/supplier/login", methods=["GET"])
+def supplier_login_page():
+    if get_supplier_session():
+        return redirect("/supplier")
+    return render_template("supplier_login.html")
+
+@app.route("/api/supplier/login", methods=["POST"])
+def api_supplier_login():
+    data     = request.get_json() or {}
+    email    = (data.get("email","") or "").strip()
+    password = (data.get("password","") or "").strip()
+    if not email or not password:
+        return jsonify({"success":False,"error":"Email and password are required."}), 400
+    pw_hash = hash_password(password)
+    try:
+        with get_db() as db:
+            sup = db.execute("""SELECT sa.*, s.id as sup_prod_id
+                FROM inputs_supplier_accounts sa
+                LEFT JOIN inputs_suppliers s ON s.id=sa.supplier_id
+                WHERE sa.email=? AND sa.password_hash=?""",
+                (email, pw_hash)).fetchone()
+            if not sup:
+                return jsonify({"success":False,"error":"Incorrect email or password."}), 401
+            if sup["status"] == "pending":
+                return jsonify({"success":False,"error":"Your application is still under review. We will email you when it is approved."}), 403
+            if sup["status"] == "rejected":
+                reason = sup["rejection_reason"] or "Your application was not approved."
+                return jsonify({"success":False,"error":f"Application not approved: {reason}"}), 403
+            # Log in
+            db.execute("UPDATE inputs_supplier_accounts SET last_login=datetime('now') WHERE id=?", (sup["id"],))
+            db.commit()
+        session["supplier_id"]   = sup["id"]
+        session["supplier_name"] = sup["business_name"]
+        session["supplier_tier"] = sup["tier"]
+        return jsonify({"success":True,"redirect":"/supplier"})
+    except Exception as e:
+        print(f"[supplier login] {e}")
+        return jsonify({"success":False,"error":"Login failed. Please try again."}), 500
+
+@app.route("/supplier/logout")
+def supplier_logout():
+    session.pop("supplier_id", None)
+    session.pop("supplier_name", None)
+    session.pop("supplier_tier", None)
+    return redirect("/supplier/login")
+
+
+# ── SUPPLIER PORTAL ─────────────────────────────────────────────
+@app.route("/supplier")
+@supplier_required
+def supplier_portal():
+    sup_id = get_supplier_session()
+    try:
+        with get_db() as db:
+            acc = db.execute("SELECT * FROM inputs_supplier_accounts WHERE id=?", (sup_id,)).fetchone()
+            sup = db.execute("SELECT * FROM inputs_suppliers WHERE id=?", (acc["supplier_id"],)).fetchone() if acc and acc["supplier_id"] else None
+            products = []
+            orders = []
+            stats = {"total_revenue":0,"total_orders":0,"commission":0,"unique_buyers":0}
+            if sup:
+                products = [dict(r) for r in db.execute("SELECT * FROM inputs_products WHERE supplier_id=? ORDER BY created_at DESC",(sup["id"],)).fetchall()]
+                orders_raw = db.execute("SELECT * FROM inputs_orders WHERE status='confirmed' ORDER BY created_at DESC LIMIT 20").fetchall()
+                # Filter orders that contain this supplier's products
+                import json as _j
+                for o in orders_raw:
+                    try:
+                        items = _j.loads(o["items_json"] or "[]")
+                        prod_ids = [p["id"] for p in products]
+                        if any(int(i.get("id",0)) in prod_ids for i in items):
+                            orders.append(dict(o))
+                    except: pass
+                # Stats
+                for o in orders:
+                    stats["total_revenue"] += o.get("total_amount",0) * 0.97
+                    stats["total_orders"] += 1
+                    stats["commission"] += o.get("total_amount",0) * 0.03
+                    if o.get("buyer_phone"): stats["unique_buyers"] += 1
+    except Exception as e:
+        print(f"[supplier portal] {e}")
+        acc=None; sup=None; products=[]; orders=[]; stats={"total_revenue":0,"total_orders":0,"commission":0,"unique_buyers":0}
+
+    return render_template("supplier_portal.html",
+        acc=acc, sup=sup, products=products, orders=orders,
+        stats=stats, regions=GHANA_REGIONS,
+        supplier_name=session.get("supplier_name",""),
+        supplier_tier=session.get("supplier_tier","basic"))
+
+
+# ── SUPPLIER PRODUCT MANAGEMENT ─────────────────────────────────
+@app.route("/api/supplier/products", methods=["POST"])
+@supplier_required
+def api_supplier_add_product():
+    sup_id = get_supplier_session()
+    data = request.get_json() or {}
+    try:
+        with get_db() as db:
+            acc = db.execute("SELECT supplier_id FROM inputs_supplier_accounts WHERE id=?",(sup_id,)).fetchone()
+            if not acc or not acc["supplier_id"]:
+                return jsonify({"success":False,"error":"Account not fully activated yet."}), 403
+            # Tier product limits
+            tier_limits = {"basic":10,"standard":50,"premium":9999}
+            tier = session.get("supplier_tier","basic")
+            limit = tier_limits.get(tier, 10)
+            count = db.execute("SELECT COUNT(*) FROM inputs_products WHERE supplier_id=?",(acc["supplier_id"],)).fetchone()[0]
+            if count >= limit:
+                return jsonify({"success":False,"error":f"Your {tier} tier allows up to {limit} products. Upgrade to add more."}), 403
+            name = (data.get("name","") or "").strip()
+            if not name:
+                return jsonify({"success":False,"error":"Product name is required."}), 400
+            price = float(data.get("price",0))
+            if price <= 0:
+                return jsonify({"success":False,"error":"Valid price is required."}), 400
+            db.execute("""INSERT INTO inputs_products
+                (supplier_id,name,category,description,unit,price,stock_qty,recommended_for,region,status)
+                VALUES (?,?,?,?,?,?,?,?,?,'active')""",
+                (acc["supplier_id"],
+                 name,
+                 data.get("category","seeds"),
+                 data.get("description",""),
+                 data.get("unit","bags"),
+                 price,
+                 int(data.get("stock_qty",0)),
+                 data.get("recommended_for",""),
+                 data.get("region","national")))
+            db.commit()
+        return jsonify({"success":True})
+    except Exception as e:
+        print(f"[supplier add product] {e}")
+        return jsonify({"success":False,"error":"Could not add product."}), 500
+
+@app.route("/api/supplier/products/<int:pid>", methods=["POST"])
+@supplier_required
+def api_supplier_update_product(pid):
+    sup_id = get_supplier_session()
+    data = request.get_json() or {}
+    action = data.get("action","update")
+    try:
+        with get_db() as db:
+            acc = db.execute("SELECT supplier_id FROM inputs_supplier_accounts WHERE id=?",(sup_id,)).fetchone()
+            if not acc or not acc["supplier_id"]:
+                return jsonify({"success":False}), 403
+            if action == "delete":
+                db.execute("DELETE FROM inputs_products WHERE id=? AND supplier_id=?",(pid,acc["supplier_id"]))
+            elif action == "toggle":
+                p = db.execute("SELECT status FROM inputs_products WHERE id=? AND supplier_id=?",(pid,acc["supplier_id"])).fetchone()
+                new_status = "inactive" if p and p["status"]=="active" else "active"
+                db.execute("UPDATE inputs_products SET status=? WHERE id=? AND supplier_id=?",(new_status,pid,acc["supplier_id"]))
+            else:
+                db.execute("""UPDATE inputs_products SET
+                    name=?,category=?,description=?,unit=?,price=?,stock_qty=?,recommended_for=?,region=?
+                    WHERE id=? AND supplier_id=?""",
+                    (data.get("name",""),data.get("category","seeds"),data.get("description",""),
+                     data.get("unit","bags"),float(data.get("price",0)),int(data.get("stock_qty",0)),
+                     data.get("recommended_for",""),data.get("region","national"),
+                     pid,acc["supplier_id"]))
+            db.commit()
+        return jsonify({"success":True})
+    except Exception as e:
+        print(f"[supplier update product] {e}")
+        return jsonify({"success":False}), 500
+
+
+# ── ADMIN: SUPPLIER APPROVAL ────────────────────────────────────
+@app.route("/api/admin/supplier/<int:sid>/approve", methods=["POST"])
+def admin_approve_supplier(sid):
+    if not session.get("admin"):
+        return jsonify({"success":False}), 403
+    try:
+        with get_db() as db:
+            acc = db.execute("SELECT * FROM inputs_supplier_accounts WHERE id=?",(sid,)).fetchone()
+            if not acc:
+                return jsonify({"success":False,"error":"Not found"}), 404
+            # Create or link inputs_suppliers entry
+            existing_sup = db.execute("SELECT id FROM inputs_suppliers WHERE email=?",(acc["email"],)).fetchone()
+            if existing_sup:
+                sup_id = existing_sup["id"]
+                db.execute("UPDATE inputs_suppliers SET verified=1,active=1 WHERE id=?",(sup_id,))
+            else:
+                db.execute("""INSERT INTO inputs_suppliers
+                    (business_name,contact_name,phone,email,region,categories,tier,verified,active)
+                    VALUES (?,?,?,?,?,?,?,1,1)""",
+                    (acc["business_name"],acc["contact_name"],acc["phone"],
+                     acc["email"],acc["region"],acc["categories"],acc["tier"]))
+                sup_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+            db.execute("UPDATE inputs_supplier_accounts SET status='approved',supplier_id=? WHERE id=?",(sup_id,sid))
+            db.commit()
+        return jsonify({"success":True})
+    except Exception as e:
+        print(f"[admin approve supplier] {e}")
+        return jsonify({"success":False,"error":str(e)}), 500
+
+@app.route("/api/admin/supplier/<int:sid>/reject", methods=["POST"])
+def admin_reject_supplier(sid):
+    if not session.get("admin"):
+        return jsonify({"success":False}), 403
+    data = request.get_json() or {}
+    reason = data.get("reason","Application did not meet requirements.")
+    try:
+        with get_db() as db:
+            db.execute("UPDATE inputs_supplier_accounts SET status='rejected',rejection_reason=? WHERE id=?",(reason,sid))
+            db.commit()
+        return jsonify({"success":True})
+    except Exception as e:
+        return jsonify({"success":False}), 500
+
+@app.route("/api/admin/suppliers", methods=["GET"])
+def admin_get_suppliers():
+    if not session.get("admin"):
+        return jsonify({"success":False}), 403
+    with get_db() as db:
+        rows = db.execute("SELECT * FROM inputs_supplier_accounts ORDER BY created_at DESC").fetchall()
+    return jsonify({"success":True,"suppliers":[dict(r) for r in rows]})
 
