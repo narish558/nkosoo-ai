@@ -2670,7 +2670,8 @@ def supplier_required(f):
 # ── REGISTRATION ────────────────────────────────────────────────
 @app.route("/supplier/register", methods=["GET"])
 def supplier_register_page():
-    return render_template("supplier_register.html", regions=GHANA_REGIONS)
+    regions_list = [{"key": k, "name": v["name"]} for k, v in GHANA_REGIONS.items()]
+    return render_template("supplier_register.html", regions=regions_list)
 
 @app.route("/api/supplier/register", methods=["POST"])
 def api_supplier_register():
@@ -2806,9 +2807,10 @@ def supplier_portal():
         print(f"[supplier portal] {e}")
         acc=None; sup=None; products=[]; orders=[]; stats={"total_revenue":0,"total_orders":0,"commission":0,"unique_buyers":0}
 
+    regions_list = [{"key": k, "name": v["name"]} for k, v in GHANA_REGIONS.items()]
     return render_template("supplier_portal.html",
         acc=acc, sup=sup, products=products, orders=orders,
-        stats=stats, regions=GHANA_REGIONS,
+        stats=stats, regions=regions_list,
         supplier_name=session.get("supplier_name",""),
         supplier_tier=session.get("supplier_tier","basic"))
 
