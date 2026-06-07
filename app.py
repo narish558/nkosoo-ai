@@ -2446,6 +2446,44 @@ def mkt_pay_verify():
         return redirect("/app?mkt_payment=failed#marketplace")
 
 
+
+# ── SUPPLIER PASSWORD RESET ──────────────────────────────────────
+@app.route("/supplier/forgot-password", methods=["GET"])
+def supplier_forgot_password_page():
+    return render_template("supplier_forgot_password.html")
+
+@app.route("/api/supplier/forgot-password", methods=["POST"])
+def api_supplier_forgot_password():
+    data          = request.get_json() or {}
+    email         = (data.get("email","") or "").strip()
+    business_name = (data.get("business_name","") or "").strip()
+    new_pw        = (data.get("new_password","") or "").strip()
+    confirm_pw    = (data.get("confirm_password","") or "").strip()
+    if not email or not business_name or not new_pw:
+        return jsonify({"success":False,"error":"All fields are required."}), 400
+    if len(new_pw) < 8:
+        return jsonify({"success":False,"error":"Password must be at least 8 characters."}), 400
+    if not any(c.isdigit() for c in new_pw):
+        return jsonify({"success":False,"error":"Password must contain at least one number."}), 400
+    if new_pw != confirm_pw:
+        return jsonify({"success":False,"error":"Passwords do not match."}), 400
+    try:
+        with get_db() as db:
+            acc = db.execute(
+                "SELECT id FROM inputs_supplier_accounts WHERE email=? AND LOWER(business_name)=LOWER(?)",
+                (email, business_name)).fetchone()
+            if not acc:
+                return jsonify({"success":False,
+                    "error":"No account found with that email and business name. Please check your details."}), 404
+            db.execute(
+                "UPDATE inputs_supplier_accounts SET password_hash=? WHERE id=?",
+                (hash_password(new_pw), acc["id"]))
+            db.commit()
+        return jsonify({"success":True})
+    except Exception as e:
+        print(f"[supplier forgot password] {e}")
+        return jsonify({"success":False,"error":"Reset failed. Please try again."}), 500
+
 # ===========================================================================
 # FARM INPUTS MARKETPLACE
 # ===========================================================================
