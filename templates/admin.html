@@ -240,6 +240,68 @@ footer a{color:#2C7A3F;text-decoration:none;}
   <div class="m"><div class="ml">Top category</div><div class="mv" style="font-size:14px;padding-top:4px;">{{ inp_top_category or '—' }}</div></div>
 </div>
 
+
+<!-- SUPPLIER APPLICATIONS -->
+<div class="st">🌱 Supplier Applications</div>
+<div id="supplierApps">
+  <button onclick="loadSupplierApps()" style="padding:8px 16px;background:#2C7A3F;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:1rem;">Load supplier applications</button>
+</div>
+
+<script>
+async function loadSupplierApps(){
+  const el = document.getElementById('supplierApps');
+  const r = await fetch('/api/admin/suppliers');
+  const d = await r.json();
+  if(!d.suppliers||!d.suppliers.length){
+    el.innerHTML='<p style="font-size:12px;color:#9CA3AF;">No supplier applications yet.</p>';
+    return;
+  }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+    <thead><tr style="background:#F4F1EB;">
+      <th style="padding:8px;text-align:left;border-bottom:1px solid #E0DED8;">Business</th>
+      <th style="padding:8px;text-align:left;">Tier</th>
+      <th style="padding:8px;text-align:left;">Categories</th>
+      <th style="padding:8px;text-align:left;">Status</th>
+      <th style="padding:8px;text-align:left;">Action</th>
+    </tr></thead>
+    <tbody>
+    ${d.suppliers.map(s=>`<tr>
+      <td style="padding:8px;border-bottom:0.5px solid #EEE9E0;">
+        <strong>${s.business_name}</strong>
+        <div style="font-size:10px;color:#9CA3AF;">${s.contact_name} · ${s.phone} · ${s.email}</div>
+        <div style="font-size:10px;color:#9CA3AF;">Ghana Card: ${s.ghana_card||'Not provided'} · Reg: ${s.business_reg||'Not provided'}</div>
+      </td>
+      <td style="padding:8px;border-bottom:0.5px solid #EEE9E0;">${s.tier}</td>
+      <td style="padding:8px;border-bottom:0.5px solid #EEE9E0;font-size:10px;">${(s.categories||'').replace(/,/g,' · ')}</td>
+      <td style="padding:8px;border-bottom:0.5px solid #EEE9E0;">
+        <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:${s.status==='approved'?'#EAF3DE':s.status==='rejected'?'#FCEBEB':'#FAEEDA'};color:${s.status==='approved'?'#27500A':s.status==='rejected'?'#A32D2D':'#633806'};">${s.status}</span>
+      </td>
+      <td style="padding:8px;border-bottom:0.5px solid #EEE9E0;">
+        ${s.status==='pending'?`
+          <button onclick="approveSupplier(${s.id})" style="padding:5px 10px;background:#2C7A3F;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;margin-right:4px;">Approve</button>
+          <button onclick="rejectSupplier(${s.id})" style="padding:5px 10px;background:#FCEBEB;color:#A32D2D;border:0.5px solid #F9BABA;border-radius:6px;font-size:11px;cursor:pointer;">Reject</button>
+        `:`<span style="font-size:10px;color:#9CA3AF;">—</span>`}
+      </td>
+    </tr>`).join('')}
+    </tbody></table>`;
+}
+
+async function approveSupplier(id){
+  if(!confirm('Approve this supplier? They will be able to log in and add products.')) return;
+  const r = await fetch('/api/admin/supplier/'+id+'/approve',{method:'POST'});
+  const d = await r.json();
+  if(d.success){ alert('✅ Supplier approved and activated.'); loadSupplierApps(); }
+  else alert('Error: '+(d.error||'Could not approve.'));
+}
+
+async function rejectSupplier(id){
+  const reason = prompt('Reason for rejection (optional):') || 'Application did not meet requirements.';
+  const r = await fetch('/api/admin/supplier/'+id+'/reject',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason})});
+  const d = await r.json();
+  if(d.success){ alert('Application rejected.'); loadSupplierApps(); }
+}
+</script>
+
 <!-- AGRONOMISTS -->
 <div class="st">🔬 Agronomist directory</div>
 <div class="mg">
