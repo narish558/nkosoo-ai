@@ -2670,8 +2670,13 @@ def supplier_required(f):
 # ── REGISTRATION ────────────────────────────────────────────────
 @app.route("/supplier/register", methods=["GET"])
 def supplier_register_page():
-    regions_list = [{"key": k, "name": v["name"]} for k, v in GHANA_REGIONS.items()]
-    return render_template("supplier_register.html", regions=regions_list)
+    try:
+        regions_list = [{"key": k, "name": v["name"]} for k, v in GHANA_REGIONS.items()]
+        return render_template("supplier_register.html", regions=regions_list)
+    except Exception as e:
+        print(f"[supplier register page error] {e}")
+        import traceback; traceback.print_exc()
+        return f"<h2>Error loading page</h2><pre>{e}</pre><p><a href='/'>Home</a></p>", 500
 
 @app.route("/api/supplier/register", methods=["POST"])
 def api_supplier_register():
