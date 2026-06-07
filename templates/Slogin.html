@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Supplier Login — Nkɔsoɔ AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4F1EB;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{background:#1A4D15;padding:14px 20px;display:flex;align-items:center;gap:12px;}
+.logo{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.app-name{font-size:16px;font-weight:600;color:#fff;}
+.app-sub{font-size:11px;color:rgba(255,255,255,.6);}
+.page{max-width:420px;margin:0 auto;padding:2rem 1rem 4rem;flex:1;}
+.card{background:#fff;border:.5px solid #E0DED8;border-radius:16px;padding:1.5rem;margin-bottom:1rem;}
+h2{font-size:20px;font-weight:700;color:#1A1A18;margin-bottom:.25rem;}
+.sub{font-size:13px;color:#5C6B5A;margin-bottom:1.5rem;}
+.field{margin-bottom:.875rem;}
+.field-label{font-size:11px;font-weight:600;color:#5C6B5A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+.inp{width:100%;padding:11px 13px;border:.5px solid #D5D0C8;border-radius:9px;font-size:14px;font-family:inherit;background:#FAFAF8;color:#1A1A18;}
+.inp:focus{outline:none;border-color:#2C7A3F;}
+.pw-row{position:relative;}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:15px;}
+.btn-primary{width:100%;padding:13px;background:#2C7A3F;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.error-msg{background:#FCEBEB;border:.5px solid #F9BABA;border-radius:9px;padding:.75rem;font-size:12px;color:#A32D2D;margin-bottom:.75rem;display:none;}
+.links{text-align:center;font-size:12px;color:#5C6B5A;margin-top:1rem;line-height:1.8;}
+.links a{color:#2C7A3F;font-weight:500;text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">🌿</div>
+  <div><div class="app-name">Nkɔsoɔ AI</div><div class="app-sub">Supplier Portal</div></div>
+</div>
+<div class="page">
+  <div class="card">
+    <h2>🌱 Supplier login</h2>
+    <p class="sub">Log in to manage your products and view your orders.</p>
+    <div id="errorMsg" class="error-msg"></div>
+    <div class="field">
+      <div class="field-label">Email address</div>
+      <input id="email" class="inp" type="email" placeholder="info@yourbusiness.com"/>
+    </div>
+    <div class="field">
+      <div class="field-label">Password</div>
+      <div class="pw-row">
+        <input id="password" class="inp" type="password" placeholder="Your password"/>
+        <button class="pw-toggle" onclick="const e=document.getElementById('password');e.type=e.type==='password'?'text':'password';" type="button">👁</button>
+      </div>
+      <div style="text-align:right;margin-top:4px;">
+        <a href="/supplier/forgot-password" style="font-size:11px;color:#2C7A3F;text-decoration:none;">Forgot password?</a>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Log in →</button>
+  </div>
+  <div class="links">
+    Not registered yet? <a href="/supplier/register">Register as a supplier →</a><br>
+    Back to the farmer app? <a href="/app">Nkɔsoɔ AI →</a>
+  </div>
+</div>
+<script>
+async function doLogin(){
+  const email=document.getElementById('email').value.trim();
+  const pw=document.getElementById('password').value;
+  const err=document.getElementById('errorMsg');
+  if(!email||!pw){err.textContent='Please enter your email and password.';err.style.display='block';return;}
+  const btn=document.querySelector('.btn-primary');
+  btn.textContent='Logging in...';btn.disabled=true;
+  try{
+    const r=await fetch('/api/supplier/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
+    const d=await r.json();
+    if(d.success){window.location.href=d.redirect||'/supplier';}
+    else{err.textContent=d.error||'Login failed.';err.style.display='block';btn.textContent='Log in →';btn.disabled=false;}
+  }catch(e){err.textContent='Connection error. Please try again.';err.style.display='block';btn.textContent='Log in →';btn.disabled=false;}
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+</script>
+</body>
+</html>
