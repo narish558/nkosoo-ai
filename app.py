@@ -1787,30 +1787,12 @@ DEFAULT_LENDERS = [
      "email":"info@arbapexbank.com","website":"www.arbapexbank.com"},
 ]
 
-def seed_default_lenders():
-    """Seed default lenders into DB if table is empty."""
-    try:
-        with get_db() as db:
-            count = db.execute("SELECT COUNT(*) FROM lenders WHERE active=1").fetchone()[0]
-            if count == 0:
-                for l in DEFAULT_LENDERS:
-                    db.execute("""INSERT OR IGNORE INTO lenders
-                        (name,phone,whatsapp,email,website,region,loan_min,loan_max,
-                         interest_rate,requirements,loan_types,verified,active)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,1,1)""",
-                        (l["name"],l["phone"],l["whatsapp"],l["email"],l["website"],
-                         l["region"],l["loan_min"],l["loan_max"],
-                         l["interest_rate"],l["requirements"],l["loan_types"]))
-                db.commit()
-                print("[lenders] Default lenders seeded into database")
-    except Exception as e:
-        print(f"[lenders seed error] {e}")
+# seed_default_lenders removed for pilot — lenders register via /register-lender
 
 @app.route("/api/credit/lenders", methods=["GET"])
 def api_get_lenders():
     """Get lenders directory — Phase B."""
     region = request.args.get("region","")
-    seed_default_lenders()
     with get_db() as db:
         if region:
             rows = db.execute(
@@ -2492,50 +2474,11 @@ def api_supplier_forgot_password():
 INPUTS_COMMISSION = 0.03  # 3% commission
 
 # Seed default suppliers and products for demo
-def seed_inputs_demo():
-    try:
-        with get_db() as db:
-            cnt = db.execute("SELECT COUNT(*) FROM inputs_suppliers").fetchone()[0]
-            if cnt > 0: return
-            suppliers = [
-                ("Agroline Ghana","Kofi Mensah","030 276 1400","info@agrolineghana.com","national","seeds,fertilizer","standard",1),
-                ("SeedMaster Ghana","Ama Asante","055 123 4567","info@seedmaster.com.gh","national","seeds","basic",1),
-                ("VetSupply Ghana","Dr. Kwame Boateng","024 987 6543","info@vetsupplygh.com","national","animal_feed,vet_products","standard",1),
-                ("FarmTools GH","Nana Kofi","020 456 7890","info@farmtoolsgh.com","national","tools,irrigation","basic",1),
-                ("Antiko Feeds","Samuel Antiko","032 234 5678","info@antikofeeds.com","national","animal_feed","standard",1),
-            ]
-            for s in suppliers:
-                db.execute("INSERT INTO inputs_suppliers (business_name,contact_name,phone,email,region,categories,tier,verified,active) VALUES (?,?,?,?,?,?,?,?,1)", s)
-            db.commit()
-            # Products
-            products = [
-                (1,"NPK 15-15-15 Fertilizer","fertilizer","50kg bag · Yara certified","bags",320,200,"maize,tomatoes,cassava","national"),
-                (1,"Urea Fertilizer 46%","fertilizer","50kg bag · nitrogen boost","bags",280,150,"maize,rice","national"),
-                (1,"Organic compost 25kg","fertilizer","CSIR approved · all crops","bags",95,300,"all","national"),
-                (2,"Maize seed — drought-tolerant hybrid","seeds","5kg pack · 90-day variety","packs",180,500,"maize","national"),
-                (2,"Tomato seed — Roma F1","seeds","10g sachet · disease resistant","sachets",45,1000,"tomatoes","national"),
-                (2,"Groundnut seed — Singa","seeds","5kg pack · high yield","packs",120,200,"groundnut","national"),
-                (2,"Pepper seed — Volta local","seeds","5g sachet","sachets",35,500,"pepper","national"),
-                (3,"Newcastle disease vaccine 100 doses","vet_products","La Sota strain · refrigerated","vials",75,200,"poultry","national"),
-                (3,"Cattle mineral lick block 10kg","animal_feed","Calcium + phosphorus","blocks",95,150,"cattle","national"),
-                (3,"Dewormer — cattle & sheep","vet_products","Albendazole 250ml","bottles",85,100,"cattle,goats,sheep","national"),
-                (4,"Knapsack sprayer 16L","tools","Manual pump · corrosion resistant","units",280,80,"all","national"),
-                (4,"Cutlass — hardened steel","tools","45cm blade","units",55,200,"all","national"),
-                (4,"Drip irrigation kit — 100m","irrigation","For 0.5 acre · includes fittings","kits",850,30,"all","national"),
-                (5,"Broiler starter feed 25kg","animal_feed","0-28 days · 22% protein","bags",145,300,"poultry","national"),
-                (5,"Broiler finisher feed 25kg","animal_feed","28-42 days · 19% protein","bags",135,300,"poultry","national"),
-                (5,"Layer mash 25kg","animal_feed","For laying hens · calcium enriched","bags",130,200,"poultry","national"),
-            ]
-            for p in products:
-                db.execute("INSERT INTO inputs_products (supplier_id,name,category,description,unit,price,stock_qty,recommended_for,region) VALUES (?,?,?,?,?,?,?,?,?)", p)
-            db.commit()
-    except Exception as e:
-        print(f"[inputs seed] {e}")
+# seed_inputs_demo removed for pilot — suppliers register via /supplier/register
 
 
 @app.route("/api/inputs/products", methods=["GET"])
 def inputs_get_products():
-    seed_inputs_demo()
     category = request.args.get("category","")
     search   = request.args.get("search","")
     sid      = get_sid()
