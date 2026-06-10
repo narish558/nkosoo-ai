@@ -72,12 +72,7 @@ nav.scrolled{box-shadow:0 2px 20px rgba(0,0,0,.08);}
 .btn-hero-p:hover{background:#fff;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2);}
 .btn-hero-s{background:transparent;color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.25);border-radius:10px;font-size:14px;padding:13px 28px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;display:inline-block;transition:border-color .15s,background .15s,transform .15s;}
 .btn-hero-s:hover{border-color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.08);transform:translateY(-2px);}
-.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:560px;margin:0 auto;position:relative;animation:fadeUp .9s .65s ease both;}
-.hst{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:.875rem .5rem;text-align:center;transition:background .2s,transform .2s;}
-.hst:hover{background:rgba(255,255,255,0.12);transform:translateY(-2px);}
-.hst-v{font-family:'Playfair Display',serif;font-size:22px;color:#fff;}
-.hst-l{font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;letter-spacing:.03em;}
-@media(max-width:480px){.hero-stats{grid-template-columns:repeat(2,1fr);}.hero{padding:3.5rem 1.25rem 3rem;}}
+@media(max-width:480px){.hero{padding:3.5rem 1.25rem 3rem;}}
 
 /* ── TICKER ── */
 .ticker-wrap{background:var(--g900);overflow:hidden;padding:10px 0;border-top:1px solid rgba(126,200,80,.15);}
@@ -127,34 +122,7 @@ nav.scrolled{box-shadow:0 2px 20px rgba(0,0,0,.08);}
 .feat-tab:hover{border-color:var(--g100);color:var(--g500);}
 .feat-tab.on{background:var(--g700);color:#fff;border-color:var(--g700);}
 
-/* ── COUNTERS ── */
-.counter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;}
-.counter-box{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:1.5rem;text-align:center;position:relative;overflow:hidden;transition:transform .25s,box-shadow .25s;}
-.counter-box::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--g50) 0%,transparent 70%);opacity:0;transition:opacity .3s;}
-.counter-box:hover::before{opacity:1;}
-.counter-box:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.07);}
-.counter-val{font-family:'Playfair Display',serif;font-size:2.5rem;color:var(--g700);font-weight:600;line-height:1;}
-.counter-val.amber{color:var(--a600);}
-.counter-val.blue{color:var(--b600);}
-.counter-label{font-size:12px;color:var(--ts);margin-top:.375rem;}
 
-/* ── REACH BARS ── */
-.reach-wrap{max-width:600px;}
-.rg{margin-bottom:1.25rem;}
-.rg-name{font-size:13px;font-weight:500;color:#1A1A18;margin-bottom:4px;}
-.rg-track{height:8px;background:var(--bd);border-radius:4px;overflow:hidden;margin-bottom:3px;}
-.rg-fill{height:8px;border-radius:4px;background:var(--g700);width:0;transition:width 1.4s cubic-bezier(.22,1,.36,1);}
-.rg-val{font-size:11px;color:var(--ts);}
-.rg-empty{border:1px dashed var(--bd);border-radius:12px;padding:1.25rem;text-align:center;font-size:13px;color:var(--tt);line-height:1.8;margin-top:1rem;}
-
-/* ── TRACTION ── */
-.traction-section{background:var(--g900);padding:4rem 2rem;text-align:center;position:relative;overflow:hidden;}
-.traction-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 80% at 50% 50%,rgba(59,109,17,0.2) 0%,transparent 70%);pointer-events:none;}
-.tr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;max-width:700px;margin:2.5rem auto 0;position:relative;}
-.tr{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:1.5rem 1rem;transition:background .25s,transform .25s;}
-.tr:hover{background:rgba(255,255,255,0.1);transform:translateY(-3px);}
-.tr-v{font-family:'Playfair Display',serif;font-size:2rem;color:#fff;line-height:1;}
-.tr-l{font-size:11px;color:rgba(255,255,255,.35);margin-top:5px;letter-spacing:.03em;}
 
 /* ── DIVIDER ── */
 .divider{height:1px;background:var(--bd);margin:0;}
@@ -224,7 +192,7 @@ footer{background:var(--dark);padding:2rem;text-align:center;display:flex;flex-d
   <div class="nav-links">
     <a href="#how" class="nav-a">How it works</a>
     <a href="#features" class="nav-a">Features</a>
-    <a href="#traction" class="nav-a">Traction</a>
+    
     <a href="#partners" class="nav-a">Partners</a>
   </div>
   <a href="/app" class="nav-cta">Open app →</a>
@@ -237,18 +205,13 @@ footer{background:var(--dark);padding:2rem;text-align:center;display:flex;flex-d
     <div class="live-dot"></div>
     Live · www.nkosooai.com
   </div>
-  <h1>Ghana's <em>Agricultural Ecosystem</em><br>powered by AI</h1>
+  <h1>Ghana's <em>agricultural ecosystem</em><br>powered by AI</h1>
   <p class="hero-sub">Crops · Livestock · Expert access · Market intelligence · Voice in 4 languages. Built for Ghana's 2 million+ smallholder farmers. Free to start.</p>
   <div class="hero-btns">
     <a href="/app" class="btn-hero-p">Start for free →</a>
     <a href="#how" class="btn-hero-s">See how it works</a>
   </div>
-  <div class="hero-stats">
-    <div class="hst"><div class="hst-v" id="heroSessions">0</div><div class="hst-l">Farming sessions</div></div>
-    <div class="hst"><div class="hst-v">13</div><div class="hst-l">Live features</div></div>
-    <div class="hst"><div class="hst-v">4</div><div class="hst-l">Languages</div></div>
-    <div class="hst"><div class="hst-v">GHS 0</div><div class="hst-l">Marketing spend</div></div>
-  </div>
+
 </div>
 
 <!-- TICKER -->
@@ -331,65 +294,6 @@ footer{background:var(--dark);padding:2rem;text-align:center;display:flex;flex-d
     <div class="fc reveal delay-2" data-cat="pro"><div class="fc-icon" style="background:#E6F1FB;">🎤</div><div class="fc-title">Voice interface</div><div class="fc-desc">English microphone input · Twi, Dagbani, Hausa type and hear answer · no literacy required</div><div class="fc-badge badge-pro">Pro</div></div>
     <div class="fc reveal delay-1" data-cat="market"><div class="fc-icon" style="background:#FAEEDA;">🛒</div><div class="fc-title">Produce marketplace</div><div class="fc-desc">Verified farmers list crops and livestock · buyers purchase directly · 48hr Paystack escrow · 5% commission</div><div class="fc-badge badge-free">Free account</div></div>
     <div class="fc reveal delay-2" data-cat="market"><div class="fc-icon" style="background:#E6F1FB;">🌱</div><div class="fc-title">Farm inputs marketplace</div><div class="fc-desc">Seeds · fertilizer · animal feed · vet products · tools · smart AI recommendations from your profile</div><div class="fc-badge badge-free">Free account</div></div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- LIVE COUNTERS -->
-<div class="section" style="background:var(--card);">
-  <div class="sec-label reveal">By the numbers</div>
-  <div class="sec-title reveal delay-1">Traction that speaks<br>for itself.</div>
-  <p class="sec-sub reveal delay-2">Built by one person. No funding. No paid marketing. No sales team. Just farmers finding it and coming back.</p>
-  <div class="counter-grid">
-    <div class="counter-box reveal delay-1"><div class="counter-val" data-target="1231" data-suffix="+">0</div><div class="counter-label">Total farming sessions</div></div>
-    <div class="counter-box reveal delay-2"><div class="counter-val" data-target="13">0</div><div class="counter-label">Live features</div></div>
-    <div class="counter-box reveal delay-3"><div class="counter-val amber" data-target="0" data-prefix="GHS ">0</div><div class="counter-label">Paid marketing spend</div></div>
-    <div class="counter-box reveal delay-4"><div class="counter-val blue" data-target="3">0</div><div class="counter-label">Ghana regions reached</div></div>
-    <div class="counter-box reveal delay-2"><div class="counter-val" data-target="16">0</div><div class="counter-label">Ghana regions supported</div></div>
-    <div class="counter-box reveal delay-3"><div class="counter-val" data-target="4">0</div><div class="counter-label">Languages</div></div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- REACH -->
-<div class="section" id="reach" style="background:var(--bg);">
-  <div class="sec-label reveal">Where farmers are finding us</div>
-  <div class="sec-title reveal delay-1">Organic reach across Ghana</div>
-  <p class="sec-sub reveal delay-2">1,231 farming sessions. Zero paid marketing. Growing purely by word of mouth from Greater Accra outward.</p>
-  <div class="reach-wrap reveal delay-2">
-    <div class="rg">
-      <div class="rg-name">Greater Accra (Accra)</div>
-      <div class="rg-track"><div class="rg-fill" data-width="100%"></div></div>
-      <div class="rg-val">1,229 sessions · our home base</div>
-    </div>
-    <div class="rg">
-      <div class="rg-name">Western (Takoradi)</div>
-      <div class="rg-track"><div class="rg-fill" data-width="2%"></div></div>
-      <div class="rg-val">1 session · first reach outside Accra</div>
-    </div>
-    <div class="rg">
-      <div class="rg-name">Volta (Ho)</div>
-      <div class="rg-track"><div class="rg-fill" data-width="2%"></div></div>
-      <div class="rg-val">1 session · first reach outside Accra</div>
-    </div>
-    <div class="rg-empty">
-      <p>13 more Ghana regions<br>waiting to be reached.<br><span style="color:var(--g500);font-size:11px;">Ashanti · Bono · Northern · Upper East · Volta and beyond.</span></p>
-    </div>
-  </div>
-</div>
-
-<!-- TRACTION DARK -->
-<div class="traction-section" id="traction">
-  <div class="sec-label reveal" style="color:var(--g300);justify-content:center;">Traction</div>
-  <div class="sec-title reveal delay-1" style="color:#fff;font-family:'Playfair Display',serif;text-align:center;">Growing because it works.</div>
-  <p style="font-size:14px;color:rgba(255,255,255,0.4);max-width:480px;margin:.5rem auto 0;text-align:center;line-height:1.7;" class="reveal delay-2">Built by one person. No funding. No paid marketing. Just farmers finding it and coming back.</p>
-  <div class="tr-grid">
-    <div class="tr reveal delay-1"><div class="tr-v">1,231+</div><div class="tr-l">Total sessions</div></div>
-    <div class="tr reveal delay-2"><div class="tr-v">13</div><div class="tr-l">Live features</div></div>
-    <div class="tr reveal delay-3"><div class="tr-v">GHS 0</div><div class="tr-l">Ad spend</div></div>
-    <div class="tr reveal delay-4"><div class="tr-v">3 regions</div><div class="tr-l">Reached so far</div></div>
   </div>
 </div>
 
@@ -525,26 +429,7 @@ window.addEventListener('scroll',()=>{
   draw();
 })();
 
-// ── HERO SESSION COUNTER ANIMATION ───────────────────────────
-(function(){
-  let done=false;
-  function animate(){
-    if(done) return;
-    const el=document.getElementById('heroSessions');
-    if(!el) return;
-    let start=0, end=1231, dur=1800, startTime=null;
-    function step(ts){
-      if(!startTime) startTime=ts;
-      const prog=Math.min((ts-startTime)/dur,1);
-      const ease=1-Math.pow(1-prog,4);
-      el.textContent=Math.floor(ease*end).toLocaleString()+'+';
-      if(prog<1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-    done=true;
-  }
-  setTimeout(animate,800);
-})();
+
 
 // ── SCROLL REVEAL ────────────────────────────────────────────
 (function(){
@@ -581,21 +466,7 @@ window.addEventListener('scroll',()=>{
   document.querySelectorAll('.counter-val[data-target]').forEach(el=>obs.observe(el));
 })();
 
-// ── REACH BAR ANIMATION ──────────────────────────────────────
-(function(){
-  const obs=new IntersectionObserver((entries)=>{
-    entries.forEach(e=>{
-      if(e.isIntersecting){
-        document.querySelectorAll('.rg-fill[data-width]').forEach(bar=>{
-          setTimeout(()=>{ bar.style.width=bar.dataset.width; },200);
-        });
-        obs.disconnect();
-      }
-    });
-  },{threshold:.2});
-  const wrap=document.querySelector('.reach-wrap');
-  if(wrap) obs.observe(wrap);
-})();
+
 
 // ── FEATURE FILTER TABS ──────────────────────────────────────
 function filterFeats(cat, btn){
