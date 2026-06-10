@@ -1764,28 +1764,7 @@ def api_check_phone():
     return jsonify({"exists":bool(u)})
 
 
-DEFAULT_LENDERS = [
-    {"name":"Opportunity International Ghana","phone":"030 276 1400",
-     "whatsapp":"0302761400","region":"national","loan_min":500,"loan_max":5000,
-     "interest_rate":"2.5% per month","requirements":"Ghana Card + farm proof",
-     "loan_types":"Agricultural loan, Group loan",
-     "email":"info@opportunityghana.com","website":"www.opportunityghana.com"},
-    {"name":"Sinapi Aba Savings & Loans","phone":"032 209 5000",
-     "whatsapp":"0322095000","region":"national","loan_min":200,"loan_max":2000,
-     "interest_rate":"3% per month","requirements":"Group guarantee of 5 members",
-     "loan_types":"Smallholder agri loan, Group solidarity loan",
-     "email":"info@sinapiaba.com","website":"www.sinapiaba.com"},
-    {"name":"Advans Ghana","phone":"030 270 5200",
-     "whatsapp":"0302705200","region":"national","loan_min":1000,"loan_max":10000,
-     "interest_rate":"2.8% per month","requirements":"Ghana Card + 6 months trading history",
-     "loan_types":"Agri-business loan, Asset financing",
-     "email":"contact@advansghana.com","website":"www.advansghana.com"},
-    {"name":"ARB Apex Bank","phone":"030 242 3380",
-     "whatsapp":"","region":"national","loan_min":500,"loan_max":20000,
-     "interest_rate":"Negotiated","requirements":"Ghana Card + farm collateral",
-     "loan_types":"Rural agricultural loan, Cooperative loan",
-     "email":"info@arbapexbank.com","website":"www.arbapexbank.com"},
-]
+# DEFAULT_LENDERS removed for pilot
 
 # seed_default_lenders removed for pilot — lenders register via /register-lender
 
@@ -1806,13 +1785,6 @@ def api_get_lenders():
                 """SELECT * FROM lenders WHERE active=1 AND verified=1
                    ORDER BY verified DESC, name""").fetchall()
         lenders = [dict(r) for r in rows]
-    if not lenders:
-        # Final fallback — return defaults with region filter applied
-        if region:
-            lenders = [dict(l,id=i+1,verified=1) for i,l in enumerate(DEFAULT_LENDERS)
-                      if l["region"]=="national" or l["region"]==region]
-        else:
-            lenders = [dict(l,id=i+1,verified=1) for i,l in enumerate(DEFAULT_LENDERS)]
     return jsonify({"success":True,"lenders":lenders})
 
 @app.route("/api/credit/apply", methods=["POST"])
