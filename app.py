@@ -501,7 +501,7 @@ def is_registered():
         pass
     return False
 
-def get_or_create_user(sid):
+def get_or_create_user(sid, create=False):
     with get_db() as db:
         u = db.execute("SELECT * FROM users WHERE session_id=?",(sid,)).fetchone()
         if not u:
@@ -858,12 +858,12 @@ def landing():
 def index():
     try:
         sid  = get_sid()
-        user = get_or_create_user(sid)
+        user = get_or_create_user(sid, create=False)  # don't create on page load
         prices_data = get_prices()
         user_registered = session.get("registered", False) is True
         user_name = session.get("user_name", "")
         return render_template("index.html",
-            weather          = get_weather(user["region"] if user and user["region"] else "greater_accra"),
+            weather          = get_weather((user["region"] if user and user.get("region") else None) or "greater_accra"),
             prices           = prices_data.get("crops", PRICE_FALLBACK_CROPS),
             livestock_prices = prices_data.get("livestock", PRICE_FALLBACK_LIVESTOCK),
             prices_updated   = prices_data.get("updated",""),
@@ -917,7 +917,7 @@ def api_weather():
 # ---------------------------------------------------------------------------
 @app.route("/api/chat", methods=["POST"])
 def api_chat():
-    sid=get_sid(); user=get_or_create_user(sid)
+    sid=get_sid(); user=get_or_create_user(sid, create=True)
     data=request.get_json(); messages=data.get("messages",[]); lang=data.get("lang","en")
     if not messages: return jsonify({"error":"No messages"}),400
     if not client.api_key: return jsonify({"error":"ANTHROPIC_API_KEY not set"}),500
@@ -951,7 +951,7 @@ def api_chat():
 # ---------------------------------------------------------------------------
 @app.route("/api/diagnose", methods=["POST"])
 def api_diagnose():
-    sid=get_sid(); user=get_or_create_user(sid)
+    sid=get_sid(); user=get_or_create_user(sid, create=True)
     if not client.api_key: return jsonify({"error":"ANTHROPIC_API_KEY not set"}),500
     if not is_pro(user):
         return jsonify({"error":"pro_required","gate":"upgrade",
@@ -1150,7 +1150,7 @@ def api_delete_livestock(livestock_id):
 # ---------------------------------------------------------------------------
 @app.route("/api/usage")
 def api_usage():
-    sid=get_sid(); user=get_or_create_user(sid)
+    sid=get_sid(); user=get_or_create_user(sid, create=True)
     return jsonify({"plan":user["plan"],"used_today":get_usage_today(sid),
                     "used_diagnose":get_diagnose_month(sid),
                     "free_limit":FREE_DAILY_LIMIT,"diagnose_limit":FREE_DIAGNOSE_LIMIT})
