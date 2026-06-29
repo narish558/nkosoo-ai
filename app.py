@@ -750,7 +750,7 @@ Adjust prices realistically for {season}. During rainy season tomatoes are cheap
 
     try:
         resp = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=1500,
             messages=[{"role":"user","content":prompt}]
         )
@@ -939,7 +939,7 @@ def api_chat():
     log_usage(sid,"chat",messages[-1].get("content",""))
     system=SYSTEM_TW if lang=="tw" else SYSTEM_EN
     def generate():
-        with client.messages.stream(model="claude-sonnet-4-20250514",max_tokens=1024,
+        with client.messages.stream(model="claude-sonnet-4-6",max_tokens=1024,
                 system=system,messages=messages) as stream:
             for text in stream.text_stream:
                 yield f"data: {json.dumps({'text':text})}\n\n"
@@ -966,7 +966,7 @@ def api_diagnose():
     else:
         prompt=DISEASE_CROP_TW if lang=="tw" else DISEASE_CROP_EN
     def generate():
-        with client.messages.stream(model="claude-sonnet-4-20250514",max_tokens=1024,
+        with client.messages.stream(model="claude-sonnet-4-6",max_tokens=1024,
                 messages=[{"role":"user","content":[
                     {"type":"image","source":{"type":"base64","media_type":media_type,"data":image_b64}},
                     {"type":"text","text":prompt}
