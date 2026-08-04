@@ -18,13 +18,17 @@ Features:
 
 Environment variables:
   ANTHROPIC_API_KEY
+  GROQ_API_KEY (fallback)
   PAYSTACK_SECRET_KEY
   PAYSTACK_PUBLIC_KEY
   ADMIN_PASSWORD
   SECRET_KEY
 """
 
-import os, json, time, re, sqlite3, requests, anthropic, csv, io, hashlib
+import os, json, time, re, requests, csv, io, hashlib, anthropic
+import psycopg2, psycopg2.extras
+from psycopg2.pool import SimpleConnectionPool
+from groq import Groq
 from flask import (Flask, render_template, request, jsonify,
                    stream_with_context, Response, session, redirect, make_response)
 
@@ -32,6 +36,10 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "nkosoo-secret-2024")
 
 client          = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY",""))
+groq_client     = Groq(api_key=os.environ.get("GROQ_API_KEY",""))
+CLAUDE_MODEL    = "claude-sonnet-4-6"
+GROQ_TEXT_MODEL = "llama-3.3-70b-versatile"
+GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 PAYSTACK_SECRET = os.environ.get("PAYSTACK_SECRET_KEY","")
 PAYSTACK_PUBLIC = os.environ.get("PAYSTACK_PUBLIC_KEY","")
 ADMIN_PASSWORD  = os.environ.get("ADMIN_PASSWORD","nkosoo2024")
@@ -46,18 +54,57 @@ FREE_VOICE_LIMIT    = 0   # voice — Pro only
 # ---------------------------------------------------------------------------
 # Use persistent disk if available, otherwise local
 _data_dir = "/var/data" if os.path.isdir("/var/data") else os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(_data_dir, "nkosoo.db")
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+if DATABASE_URL.startswith("postgres://"):
+    # Railway/Heroku-style URLs use postgres:// — psycopg2 needs postgresql://
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL is not set. Add a PostgreSQL database in Railway "
+        "(New → Database → PostgreSQL) — Railway will inject DATABASE_URL "
+        "automatically into this service's environment variables."
+    )
+_pg_pool = SimpleConnectionPool(1, 10, dsn=DATABASE_URL)
+
+class _PGConn:
+    """Drop-in replacement for sqlite3.Connection — same .execute()/.commit()/
+    context-manager interface, backed by a pooled Postgres connection.
+    Rows support both row['col'] and row[0] access, like sqlite3.Row."""
+    def __init__(self):
+        self._conn = _pg_pool.getconn()
+        self._conn.autocommit = False
+    def execute(self, sql, params=()):
+        cur = self._conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(sql.replace("?", "%s"), params)
+        return cur
+    def executescript(self, script):
+        cur = self._conn.cursor()
+        cur.execute(script)
+        return cur
+    def commit(self):
+        self._conn.commit()
+    def rollback(self):
+        self._conn.rollback()
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc, tb):
+        try:
+            if exc_type is None:
+                self._conn.commit()
+            else:
+                self._conn.rollback()
+        finally:
+            _pg_pool.putconn(self._conn)
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return _PGConn()
 
 def init_db():
     with get_db() as db:
         db.executescript("""
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             session_id TEXT UNIQUE NOT NULL,
             name TEXT, phone TEXT, email TEXT,
             password_hash TEXT,
@@ -65,22 +112,22 @@ def init_db():
             region TEXT DEFAULT 'greater_accra',
             lang TEXT DEFAULT 'en',
             registered INTEGER DEFAULT 0,
-            created_at TEXT DEFAULT (datetime('now')),
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS')),
             pro_since TEXT, paystack_ref TEXT
         );
         CREATE TABLE IF NOT EXISTS usage (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             session_id TEXT NOT NULL, type TEXT NOT NULL,
-            question TEXT, created_at TEXT DEFAULT (datetime('now'))
+            question TEXT, created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS payments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             session_id TEXT NOT NULL, reference TEXT UNIQUE NOT NULL,
             amount INTEGER, status TEXT DEFAULT 'pending',
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS farm_profiles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             session_id TEXT UNIQUE NOT NULL,
             farmer_name TEXT, phone TEXT,
             farm_size TEXT, farm_unit TEXT, crops TEXT,
@@ -90,11 +137,11 @@ def init_db():
             region TEXT, email TEXT,
             latitude REAL, longitude REAL,
             gps_accuracy REAL, gps_address TEXT,
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS')),
+            updated_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS livestock_profiles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             session_id TEXT NOT NULL,
             farmer_name TEXT, phone TEXT,
             ghana_card TEXT, ghana_card_valid INTEGER DEFAULT 0,
@@ -107,27 +154,27 @@ def init_db():
             nearest_vet TEXT, notes TEXT,
             latitude REAL, longitude REAL,
             gps_accuracy REAL, gps_address TEXT,
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS')),
+            updated_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS farmer_dashboard_notes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             session_id TEXT NOT NULL,
             note_type TEXT,
             note_text TEXT,
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS health_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             session_id TEXT NOT NULL,
             animal_type TEXT,
             title TEXT, description TEXT,
             ai_tip TEXT, log_date TEXT,
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
 
         CREATE TABLE IF NOT EXISTS marketplace_training (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             session_id TEXT UNIQUE NOT NULL,
             module1_done INTEGER DEFAULT 0,
             module2_done INTEGER DEFAULT 0,
@@ -135,11 +182,11 @@ def init_db():
             module4_done INTEGER DEFAULT 0,
             terms_agreed INTEGER DEFAULT 0,
             seller_active INTEGER DEFAULT 0,
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS')),
+            updated_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS marketplace_listings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             session_id TEXT NOT NULL,
             farmer_name TEXT,
             ghana_card TEXT,
@@ -154,11 +201,11 @@ def init_db():
             region TEXT,
             status TEXT DEFAULT 'active',
             views INTEGER DEFAULT 0,
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS')),
+            updated_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS marketplace_orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             listing_id INTEGER NOT NULL,
             seller_session_id TEXT NOT NULL,
             buyer_name TEXT,
@@ -178,21 +225,21 @@ def init_db():
             instant_fee REAL DEFAULT 0,
             delivery_confirmed INTEGER DEFAULT 0,
             release_at TEXT,
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS')),
+            updated_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS marketplace_notifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             listing_id INTEGER NOT NULL,
             buyer_phone TEXT,
             buyer_email TEXT,
             notified INTEGER DEFAULT 0,
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
 
 
         CREATE TABLE IF NOT EXISTS inputs_supplier_accounts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             supplier_id INTEGER UNIQUE,
             business_name TEXT NOT NULL,
             contact_name TEXT NOT NULL,
@@ -207,11 +254,11 @@ def init_db():
             delivery_regions TEXT DEFAULT 'national',
             status TEXT DEFAULT 'pending',
             rejection_reason TEXT,
-            created_at TEXT DEFAULT (datetime('now')),
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS')),
             last_login TEXT
         );
         CREATE TABLE IF NOT EXISTS inputs_suppliers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             business_name TEXT NOT NULL,
             contact_name TEXT,
             phone TEXT,
@@ -223,10 +270,10 @@ def init_db():
             business_reg TEXT,
             verified INTEGER DEFAULT 0,
             active INTEGER DEFAULT 0,
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS inputs_products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             supplier_id INTEGER NOT NULL,
             name TEXT NOT NULL,
             category TEXT NOT NULL,
@@ -237,10 +284,10 @@ def init_db():
             status TEXT DEFAULT 'active',
             recommended_for TEXT,
             region TEXT DEFAULT 'national',
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS inputs_orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             session_id TEXT,
             buyer_name TEXT,
             buyer_phone TEXT,
@@ -252,15 +299,15 @@ def init_db():
             payment_ref TEXT,
             payment_method TEXT DEFAULT 'paystack',
             status TEXT DEFAULT 'pending',
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS price_cache (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             data TEXT NOT NULL,
-            updated_at TEXT DEFAULT (datetime('now'))
+            updated_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS agronomists (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             phone TEXT NOT NULL,
             speciality TEXT,
@@ -274,10 +321,10 @@ def init_db():
             consult_count INTEGER DEFAULT 0,
             verified INTEGER DEFAULT 0,
             active INTEGER DEFAULT 1,
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS lenders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             phone TEXT NOT NULL,
             email TEXT,
@@ -291,182 +338,21 @@ def init_db():
             whatsapp TEXT,
             verified INTEGER DEFAULT 0,
             active INTEGER DEFAULT 1,
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         CREATE TABLE IF NOT EXISTS credit_applications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             session_id TEXT NOT NULL,
             lender_id INTEGER,
             lender_name TEXT,
             amount_requested REAL,
             purpose TEXT,
             status TEXT DEFAULT 'submitted',
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (to_char(now(),'YYYY-MM-DD HH24:MI:SS'))
         );
         """)
-        # Migrate users table — add new columns if missing
-        u_cols = [r[1] for r in db.execute("PRAGMA table_info(users)").fetchall()]
-        for col, defn in [
-            ("name","TEXT"), ("phone","TEXT"),
-            ("password_hash","TEXT"), ("registered","INTEGER DEFAULT 0"),
-        ]:
-            if col not in u_cols:
-                try: db.execute(f"ALTER TABLE users ADD COLUMN {col} {defn}")
-                except: pass
-
-        # Migrate farm_profiles — add GPS columns if missing
-        fp_cols = [r[1] for r in db.execute("PRAGMA table_info(farm_profiles)").fetchall()]
-        for col, defn in [
-            ("latitude","REAL"), ("longitude","REAL"),
-            ("gps_accuracy","REAL"), ("gps_address","TEXT"),
-        ]:
-            if col not in fp_cols:
-                try: db.execute(f"ALTER TABLE farm_profiles ADD COLUMN {col} {defn}")
-                except: pass
-
-        # Migrate livestock_profiles — remove UNIQUE(session_id) to support multiple animal types
-        lp_info = db.execute("PRAGMA table_info(livestock_profiles)").fetchall()
-        lp_cols = [r[1] for r in lp_info]
-        # Check if UNIQUE constraint exists (old schema had session_id UNIQUE)
-        lp_index = db.execute("PRAGMA index_list(livestock_profiles)").fetchall()
-        has_unique = any('unique' in str(i).lower() for i in lp_index)
-        if has_unique or 'id' not in lp_cols:
-            try:
-                db.execute("""CREATE TABLE IF NOT EXISTS livestock_profiles_v2 (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    session_id TEXT NOT NULL,
-                    farmer_name TEXT, phone TEXT,
-                    ghana_card TEXT, ghana_card_valid INTEGER DEFAULT 0,
-                    region TEXT, email TEXT,
-                    animal_type TEXT NOT NULL DEFAULT 'poultry',
-                    total_count INTEGER DEFAULT 0, sick_count INTEGER DEFAULT 0,
-                    housing_type TEXT, purpose TEXT,
-                    feed_source TEXT, water_source TEXT,
-                    nearest_vet TEXT, notes TEXT,
-                    latitude REAL, longitude REAL,
-                    gps_accuracy REAL, gps_address TEXT,
-                    created_at TEXT DEFAULT (datetime('now')),
-                    updated_at TEXT DEFAULT (datetime('now'))
-                )""")
-                db.execute("""INSERT OR IGNORE INTO livestock_profiles_v2
-                    (session_id,farmer_name,phone,ghana_card,ghana_card_valid,
-                     region,email,animal_type,total_count,sick_count,
-                     housing_type,purpose,feed_source,water_source,nearest_vet,notes)
-                    SELECT session_id,farmer_name,phone,ghana_card,ghana_card_valid,
-                     region,email,COALESCE(animal_type,'poultry'),total_count,sick_count,
-                     housing_type,purpose,feed_source,water_source,nearest_vet,notes
-                    FROM livestock_profiles""")
-                db.execute("DROP TABLE livestock_profiles")
-                db.execute("ALTER TABLE livestock_profiles_v2 RENAME TO livestock_profiles")
-                db.commit()
-            except Exception as e:
-                print(f"[livestock migration] {e}")
-        # Add GPS columns if missing
-        lp_cols2 = [r[1] for r in db.execute("PRAGMA table_info(livestock_profiles)").fetchall()]
-        for col,defn in [("latitude","REAL"),("longitude","REAL"),("gps_accuracy","REAL"),("gps_address","TEXT")]:
-            if col not in lp_cols2:
-                try: db.execute(f"ALTER TABLE livestock_profiles ADD COLUMN {col} {defn}")
-                except: pass
-
-        db.commit()
-        fp_cols = [r[1] for r in db.execute("PRAGMA table_info(farm_profiles)").fetchall()]
-        old_fp_cols = ['farm_name', 'farming_type', 'nearest_market', 'latitude', 'longitude', 'farm_address']
-        has_old_fp = any(c in fp_cols for c in old_fp_cols)
-        missing_fp = any(c not in fp_cols for c in ['farm_unit','crop_type','region','email'])
-        if has_old_fp or missing_fp:
-            # Build INSERT only from columns that exist in the old table
-            safe_cols = [c for c in ['session_id','farmer_name','phone','farm_size','crops','ghana_card','ghana_card_valid','soil_type','water_source'] if c in fp_cols]
-            cols_str  = ','.join(safe_cols)
-            db.executescript(f"""
-                CREATE TABLE IF NOT EXISTS farm_profiles_new (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    session_id TEXT UNIQUE NOT NULL,
-                    farmer_name TEXT, phone TEXT,
-                    farm_size TEXT, farm_unit TEXT, crops TEXT,
-                    crop_type TEXT, ghana_card TEXT,
-                    ghana_card_valid INTEGER DEFAULT 0,
-                    soil_type TEXT, water_source TEXT,
-                    region TEXT, email TEXT,
-                    latitude REAL, longitude REAL,
-                    gps_accuracy REAL, gps_address TEXT,
-                    created_at TEXT DEFAULT (datetime('now')),
-                    updated_at TEXT DEFAULT (datetime('now'))
-                );
-                INSERT OR IGNORE INTO farm_profiles_new ({cols_str})
-                SELECT {cols_str} FROM farm_profiles;
-                DROP TABLE farm_profiles;
-                ALTER TABLE farm_profiles_new RENAME TO farm_profiles;
-            """)
-        else:
-            for col, defn in [
-                ("farm_unit","TEXT"),("crop_type","TEXT"),
-                ("region","TEXT"),("email","TEXT"),
-                ("latitude","REAL"),("longitude","REAL"),
-                ("gps_accuracy","REAL"),("gps_address","TEXT"),
-            ]:
-                if col not in fp_cols:
-                    try: db.execute(f"ALTER TABLE farm_profiles ADD COLUMN {col} {defn}")
-                    except: pass
-        # Always ensure GPS columns exist after any migration path
-        fp_cols_final = [r[1] for r in db.execute("PRAGMA table_info(farm_profiles)").fetchall()]
-        for col, defn in [("latitude","REAL"),("longitude","REAL"),("gps_accuracy","REAL"),("gps_address","TEXT")]:
-            if col not in fp_cols_final:
-                try: db.execute(f"ALTER TABLE farm_profiles ADD COLUMN {col} {defn}")
-                except: pass
-
-        # Migrate livestock_profiles — check if old UNIQUE(session_id,animal_type) exists
-        # If so, recreate with UNIQUE(session_id) only
-        live_info = db.execute("PRAGMA index_list(livestock_profiles)").fetchall()
-        live_cols = [r[1] for r in db.execute("PRAGMA table_info(livestock_profiles)").fetchall()]
-        has_old_unique = any('animal_type' in str(i) for i in live_info)
-        # Also check if new columns exist
-        needs_new_cols = any(c not in live_cols for c in ['farmer_name','region','email'])
-        if has_old_unique or needs_new_cols:
-            # Recreate table with correct schema
-            db.executescript("""
-                CREATE TABLE IF NOT EXISTS livestock_profiles_new (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    session_id TEXT UNIQUE NOT NULL,
-                    farmer_name TEXT, phone TEXT,
-                    ghana_card TEXT, ghana_card_valid INTEGER DEFAULT 0,
-                    region TEXT, email TEXT,
-                    animal_type TEXT,
-                    total_count INTEGER DEFAULT 0,
-                    sick_count INTEGER DEFAULT 0,
-                    housing_type TEXT, purpose TEXT,
-                    feed_source TEXT, water_source TEXT,
-                    nearest_vet TEXT, notes TEXT,
-                    latitude REAL, longitude REAL,
-                    gps_accuracy REAL, gps_address TEXT,
-                    created_at TEXT DEFAULT (datetime('now')),
-                    updated_at TEXT DEFAULT (datetime('now'))
-                );
-                INSERT OR IGNORE INTO livestock_profiles_new
-                    (session_id,animal_type,total_count,sick_count,
-                     housing_type,purpose,feed_source,water_source,nearest_vet,notes)
-                SELECT session_id,animal_type,total_count,sick_count,
-                       housing_type,purpose,feed_source,water_source,nearest_vet,notes
-                FROM livestock_profiles;
-                DROP TABLE livestock_profiles;
-                ALTER TABLE livestock_profiles_new RENAME TO livestock_profiles;
-            """)
-        else:
-            for col, defn in [
-                ("farmer_name","TEXT"),("phone","TEXT"),
-                ("ghana_card","TEXT"),("ghana_card_valid","INTEGER DEFAULT 0"),
-                ("region","TEXT"),("email","TEXT"),
-                ("latitude","REAL"),("longitude","REAL"),
-                ("gps_accuracy","REAL"),("gps_address","TEXT"),
-            ]:
-                if col not in live_cols:
-                    try: db.execute(f"ALTER TABLE livestock_profiles ADD COLUMN {col} {defn}")
-                    except: pass
-        # Always ensure GPS columns exist on livestock after any migration path
-        lp_cols_final = [r[1] for r in db.execute("PRAGMA table_info(livestock_profiles)").fetchall()]
-        for col, defn in [("latitude","REAL"),("longitude","REAL"),("gps_accuracy","REAL"),("gps_address","TEXT")]:
-            if col not in lp_cols_final:
-                try: db.execute(f"ALTER TABLE livestock_profiles ADD COLUMN {col} {defn}")
-                except: pass
+        # Fresh Postgres schema already has all current columns —
+        # no legacy column-migration needed.
         db.commit()
 
 
@@ -512,13 +398,13 @@ def get_or_create_user(sid, create=False):
 def get_usage_today(sid):
     with get_db() as db:
         return db.execute(
-            "SELECT COUNT(*) FROM usage WHERE session_id=? AND type='chat' AND date(created_at)=date('now')",(sid,)
+            "SELECT COUNT(*) FROM usage WHERE session_id=? AND type='chat' AND created_at::date=CURRENT_DATE",(sid,)
         ).fetchone()[0]
 
 def get_diagnose_month(sid):
     with get_db() as db:
         return db.execute(
-            "SELECT COUNT(*) FROM usage WHERE session_id=? AND type='diagnose' AND strftime('%Y-%m',created_at)=strftime('%Y-%m','now')",(sid,)
+            "SELECT COUNT(*) FROM usage WHERE session_id=? AND type='diagnose' AND to_char(created_at::timestamp,'YYYY-MM')=to_char(now(),'YYYY-MM')",(sid,)
         ).fetchone()[0]
 
 def log_usage(sid, type_, question=None):
@@ -748,19 +634,33 @@ Format exactly:
 
 Adjust prices realistically for {season}. During rainy season tomatoes are cheaper, maize more expensive. Change is % change from last week. Trend: up/down/stable."""
 
+    text = None
     try:
         resp = client.messages.create(
-            model="claude-sonnet-4-6",
+            model=CLAUDE_MODEL,
             max_tokens=1500,
             messages=[{"role":"user","content":prompt}]
         )
         text = resp.content[0].text.strip()
+    except Exception as e:
+        print(f"[Price fetch — Claude failed, falling back to Groq] {e}")
+        try:
+            resp = groq_client.chat.completions.create(
+                model=GROQ_TEXT_MODEL,
+                max_tokens=1500,
+                messages=[{"role":"user","content":prompt}]
+            )
+            text = resp.choices[0].message.content.strip()
+        except Exception as e2:
+            print(f"[Price fetch — Groq fallback also failed] {e2}")
+            return None
+    try:
         # Clean any markdown fences
         text = text.replace("```json","").replace("```","").strip()
         data = json.loads(text)
         return data
     except Exception as e:
-        print(f"[Price fetch error] {e}")
+        print(f"[Price fetch — parse error] {e}")
         return None
 
 def get_prices():
@@ -789,7 +689,7 @@ def get_prices():
         _price_cache = {"ts": time.time(), "data": data}
         try:
             with get_db() as db:
-                db.execute("INSERT INTO price_cache (data, updated_at) VALUES (?, datetime('now'))",(json.dumps(data),))
+                db.execute("INSERT INTO price_cache (data, updated_at) VALUES (?, to_char(now(),'YYYY-MM-DD HH24:MI:SS'))",(json.dumps(data),))
                 db.commit()
         except Exception as e:
             print(f"[Price cache save error] {e}")
@@ -880,7 +780,7 @@ def index():
             used_diagnose    = get_diagnose_month(sid),
             free_limit       = FREE_DAILY_LIMIT,
             diagnose_limit   = FREE_DIAGNOSE_LIMIT,
-            api_ready        = bool(client.api_key),
+            api_ready        = bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("GROQ_API_KEY")),
             paystack_public  = PAYSTACK_PUBLIC,
         )
     except Exception as e:
@@ -920,7 +820,7 @@ def api_chat():
     sid=get_sid(); user=get_or_create_user(sid, create=True)
     data=request.get_json(); messages=data.get("messages",[]); lang=data.get("lang","en")
     if not messages: return jsonify({"error":"No messages"}),400
-    if not client.api_key: return jsonify({"error":"ANTHROPIC_API_KEY not set"}),500
+    if not os.environ.get("ANTHROPIC_API_KEY") and not os.environ.get("GROQ_API_KEY"): return jsonify({"error":"No AI provider configured"}),500
     if not is_pro(user):
         used = get_usage_today(sid)
         registered = is_registered()
@@ -939,10 +839,28 @@ def api_chat():
     log_usage(sid,"chat",messages[-1].get("content",""))
     system=SYSTEM_TW if lang=="tw" else SYSTEM_EN
     def generate():
-        with client.messages.stream(model="claude-sonnet-4-6",max_tokens=1024,
-                system=system,messages=messages) as stream:
-            for text in stream.text_stream:
-                yield f"data: {json.dumps({'text':text})}\n\n"
+        try:
+            with client.messages.stream(model=CLAUDE_MODEL,max_tokens=1024,
+                    system=system,messages=messages) as stream:
+                for text in stream.text_stream:
+                    yield f"data: {json.dumps({'text':text})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+        except Exception as e:
+            print(f"[Chat — Claude failed, falling back to Groq] {e}")
+        # Groq fallback
+        try:
+            groq_messages=[{"role":"system","content":system}]+messages
+            stream = groq_client.chat.completions.create(
+                model=GROQ_TEXT_MODEL, max_tokens=1024,
+                messages=groq_messages, stream=True)
+            for chunk in stream:
+                text = chunk.choices[0].delta.content
+                if text:
+                    yield f"data: {json.dumps({'text':text})}\n\n"
+        except Exception as e2:
+            print(f"[Chat — Groq fallback also failed] {e2}")
+            yield f"data: {json.dumps({'text':'Sorry, our AI assistant is temporarily unavailable. Please try again shortly.'})}\n\n"
         yield "data: [DONE]\n\n"
     return Response(stream_with_context(generate()),mimetype="text/event-stream")
 
@@ -952,7 +870,7 @@ def api_chat():
 @app.route("/api/diagnose", methods=["POST"])
 def api_diagnose():
     sid=get_sid(); user=get_or_create_user(sid, create=True)
-    if not client.api_key: return jsonify({"error":"ANTHROPIC_API_KEY not set"}),500
+    if not os.environ.get("ANTHROPIC_API_KEY") and not os.environ.get("GROQ_API_KEY"): return jsonify({"error":"No AI provider configured"}),500
     if not is_pro(user):
         return jsonify({"error":"pro_required","gate":"upgrade",
             "message":"Photo diagnosis is a Pro feature. Upgrade to Pro for GHS 30/month to diagnose crop and animal diseases with AI."}),429
@@ -966,13 +884,33 @@ def api_diagnose():
     else:
         prompt=DISEASE_CROP_TW if lang=="tw" else DISEASE_CROP_EN
     def generate():
-        with client.messages.stream(model="claude-sonnet-4-6",max_tokens=1024,
+        try:
+            with client.messages.stream(model=CLAUDE_MODEL,max_tokens=1024,
+                    messages=[{"role":"user","content":[
+                        {"type":"image","source":{"type":"base64","media_type":media_type,"data":image_b64}},
+                        {"type":"text","text":prompt}
+                    ]}]) as stream:
+                for text in stream.text_stream:
+                    yield f"data: {json.dumps({'text':text})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+        except Exception as e:
+            print(f"[Diagnose — Claude failed, falling back to Groq] {e}")
+        # Groq fallback (vision)
+        try:
+            stream = groq_client.chat.completions.create(
+                model=GROQ_VISION_MODEL, max_tokens=1024,
                 messages=[{"role":"user","content":[
-                    {"type":"image","source":{"type":"base64","media_type":media_type,"data":image_b64}},
-                    {"type":"text","text":prompt}
-                ]}]) as stream:
-            for text in stream.text_stream:
-                yield f"data: {json.dumps({'text':text})}\n\n"
+                    {"type":"text","text":prompt},
+                    {"type":"image_url","image_url":{"url":f"data:{media_type};base64,{image_b64}"}}
+                ]}], stream=True)
+            for chunk in stream:
+                text = chunk.choices[0].delta.content
+                if text:
+                    yield f"data: {json.dumps({'text':text})}\n\n"
+        except Exception as e2:
+            print(f"[Diagnose — Groq fallback also failed] {e2}")
+            yield f"data: {json.dumps({'text':'Sorry, photo diagnosis is temporarily unavailable. Please try again shortly.'})}\n\n"
         yield "data: [DONE]\n\n"
     return Response(stream_with_context(generate()),mimetype="text/event-stream")
 
@@ -1035,7 +973,7 @@ def api_save_profile():
                         farmer_name=?,phone=?,farm_size=?,farm_unit=?,crops=?,crop_type=?,
                         ghana_card=?,ghana_card_valid=?,soil_type=?,water_source=?,
                         region=?,email=?,latitude=?,longitude=?,gps_accuracy=?,gps_address=?,
-                        updated_at=datetime('now')
+                        updated_at=to_char(now(),'YYYY-MM-DD HH24:MI:SS')
                     WHERE session_id=?
                 """,(data.get("farmer_name",""),data.get("phone",""),
                      data.get("farm_size",""),data.get("farm_unit","acres"),
@@ -1100,7 +1038,7 @@ def api_save_livestock():
                         region=?,email=?,total_count=?,sick_count=?,
                         housing_type=?,purpose=?,feed_source=?,water_source=?,
                         nearest_vet=?,notes=?,latitude=?,longitude=?,
-                        gps_accuracy=?,gps_address=?,updated_at=datetime('now')
+                        gps_accuracy=?,gps_address=?,updated_at=to_char(now(),'YYYY-MM-DD HH24:MI:SS')
                     WHERE session_id=? AND animal_type=?
                 """,(data.get("farmer_name",""),data.get("phone",""),
                      ghana_card,ghana_card_valid,
@@ -1189,7 +1127,7 @@ def pay_verify():
         sid=result["data"].get("metadata",{}).get("session_id",get_sid())
         with get_db() as db:
             db.execute("UPDATE payments SET status='success' WHERE reference=?",(ref,))
-            db.execute("UPDATE users SET plan='pro',pro_since=datetime('now'),paystack_ref=? WHERE session_id=?",(ref,sid))
+            db.execute("UPDATE users SET plan='pro',pro_since=to_char(now(),'YYYY-MM-DD HH24:MI:SS'),paystack_ref=? WHERE session_id=?",(ref,sid))
             db.commit()
         session["sid"]=sid; return redirect("/?payment=success")
     return redirect("/?payment=failed")
@@ -1208,9 +1146,9 @@ def admin():
             total        = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
             registered   = db.execute("SELECT COUNT(*) FROM users WHERE registered=1").fetchone()[0]
             pro          = db.execute("SELECT COUNT(*) FROM users WHERE plan='pro'").fetchone()[0]
-            q_today      = db.execute("SELECT COUNT(*) FROM usage WHERE type='chat' AND date(created_at)=date('now')").fetchone()[0]
-            d_today      = db.execute("SELECT COUNT(*) FROM usage WHERE type='diagnose' AND date(created_at)=date('now')").fetchone()[0]
-            voice_today  = db.execute("SELECT COUNT(*) FROM usage WHERE type='voice' AND date(created_at)=date('now')").fetchone()[0]
+            q_today      = db.execute("SELECT COUNT(*) FROM usage WHERE type='chat' AND created_at::date=CURRENT_DATE").fetchone()[0]
+            d_today      = db.execute("SELECT COUNT(*) FROM usage WHERE type='diagnose' AND created_at::date=CURRENT_DATE").fetchone()[0]
+            voice_today  = db.execute("SELECT COUNT(*) FROM usage WHERE type='voice' AND created_at::date=CURRENT_DATE").fetchone()[0]
             top_q        = db.execute("SELECT question,COUNT(*) cnt FROM usage WHERE type='chat' AND question IS NOT NULL GROUP BY question ORDER BY cnt DESC LIMIT 10").fetchall()
             users        = db.execute("SELECT * FROM users ORDER BY created_at DESC LIMIT 20").fetchall()
             region_stats = db.execute("SELECT region,COUNT(*) cnt FROM users GROUP BY region ORDER BY cnt DESC").fetchall()
@@ -1247,7 +1185,7 @@ def admin():
             # Credit stats
             try:
                 credit_apps      = db.execute("SELECT COUNT(*) FROM credit_applications").fetchone()[0]
-                credit_apps_week = db.execute("SELECT COUNT(*) FROM credit_applications WHERE date(created_at)>=date('now','-7 days')").fetchone()[0]
+                credit_apps_week = db.execute("SELECT COUNT(*) FROM credit_applications WHERE created_at::date >= (CURRENT_DATE - INTERVAL '7 days')").fetchone()[0]
                 top_lender       = db.execute("SELECT lender_name,COUNT(*) cnt FROM credit_applications GROUP BY lender_name ORDER BY cnt DESC LIMIT 1").fetchone()
                 total_requested  = db.execute("SELECT SUM(amount_requested) FROM credit_applications WHERE amount_requested>0").fetchone()[0] or 0
                 lender_count     = db.execute("SELECT COUNT(*) FROM lenders WHERE active=1").fetchone()[0]
@@ -1824,7 +1762,7 @@ def api_save_diary():
     with get_db() as db:
         db.execute("""INSERT INTO health_logs
             (session_id,animal_type,title,description,ai_tip,log_date)
-            VALUES (?,?,?,?,?,date('now'))""",
+            VALUES (?,?,?,?,?,CURRENT_DATE)""",
             (sid, animal_type or entry_type, title, description, ai_tip))
         db.commit()
     return jsonify({"success":True})
@@ -2100,7 +2038,8 @@ def export_all_farmers():
 if __name__ == "__main__":
     print("\n🌿 Nkɔsoɔ AI v2.0 starting...")
     print("   Crops + Livestock + Aquaculture")
-    print("   API key:", bool(client.api_key))
+    print("   Claude key:", bool(os.environ.get("ANTHROPIC_API_KEY")))
+    print("   Groq key (fallback):", bool(os.environ.get("GROQ_API_KEY")))
     print("   Open: http://localhost:5000\n")
     app.run(debug=True, port=5000)
 
@@ -2135,7 +2074,7 @@ def mkt_save_training():
         existing = db.execute("SELECT * FROM marketplace_training WHERE session_id=?",(sid,)).fetchone()
         if existing:
             if module:
-                db.execute(f"UPDATE marketplace_training SET module{module}_done=1, updated_at=datetime('now') WHERE session_id=?",(sid,))
+                db.execute(f"UPDATE marketplace_training SET module{module}_done=1, updated_at=to_char(now(),'YYYY-MM-DD HH24:MI:SS') WHERE session_id=?",(sid,))
             db.commit()
         else:
             db.execute("INSERT INTO marketplace_training (session_id,module1_done,module2_done,module3_done,module4_done) VALUES (?,?,?,?,?)",
@@ -2151,7 +2090,7 @@ def mkt_agree_terms():
     with get_db() as db:
         existing = db.execute("SELECT * FROM marketplace_training WHERE session_id=?",(sid,)).fetchone()
         if existing:
-            db.execute("UPDATE marketplace_training SET terms_agreed=1, seller_active=1, updated_at=datetime('now') WHERE session_id=?",(sid,))
+            db.execute("UPDATE marketplace_training SET terms_agreed=1, seller_active=1, updated_at=to_char(now(),'YYYY-MM-DD HH24:MI:SS') WHERE session_id=?",(sid,))
         else:
             db.execute("INSERT INTO marketplace_training (session_id,terms_agreed,seller_active) VALUES (?,1,1)",(sid,))
         db.commit()
@@ -2169,7 +2108,7 @@ def mkt_get_listings():
         if region:
             q += " AND region=?"; params.append(region)
         if search:
-            q += " AND (produce_type LIKE ? OR description LIKE ?)"; params += [f"%{search}%",f"%{search}%"]
+            q += " AND (produce_type ILIKE ? OR description ILIKE ?)"; params += [f"%{search}%",f"%{search}%"]
         q += " ORDER BY created_at DESC"
         rows = db.execute(q, params).fetchall()
     return jsonify({"success":True,"listings":[dict(r) for r in rows]})
@@ -2230,7 +2169,7 @@ def mkt_update_listing_status(lid):
     data = request.get_json() or {}
     status = data.get("status","active")
     with get_db() as db:
-        db.execute("UPDATE marketplace_listings SET status=?,updated_at=datetime('now') WHERE id=? AND session_id=?",(status,lid,sid))
+        db.execute("UPDATE marketplace_listings SET status=?,updated_at=to_char(now(),'YYYY-MM-DD HH24:MI:SS') WHERE id=? AND session_id=?",(status,lid,sid))
         db.commit()
     return jsonify({"success":True})
 
@@ -2280,11 +2219,11 @@ def mkt_my_orders():
     period = request.args.get("period","month")
     with get_db() as db:
         if period == "today":
-            rows = db.execute("SELECT * FROM marketplace_orders WHERE seller_session_id=? AND date(created_at)=date('now') ORDER BY created_at DESC",(sid,)).fetchall()
+            rows = db.execute("SELECT * FROM marketplace_orders WHERE seller_session_id=? AND created_at::date=CURRENT_DATE ORDER BY created_at DESC",(sid,)).fetchall()
         elif period == "all":
             rows = db.execute("SELECT * FROM marketplace_orders WHERE seller_session_id=? ORDER BY created_at DESC",(sid,)).fetchall()
         else:
-            rows = db.execute("SELECT * FROM marketplace_orders WHERE seller_session_id=? AND strftime('%Y-%m',created_at)=strftime('%Y-%m','now') ORDER BY created_at DESC",(sid,)).fetchall()
+            rows = db.execute("SELECT * FROM marketplace_orders WHERE seller_session_id=? AND to_char(created_at::timestamp,'YYYY-MM')=to_char(now(),'YYYY-MM') ORDER BY created_at DESC",(sid,)).fetchall()
         orders = [dict(r) for r in rows]
     total_rev  = sum(o["seller_amount"] for o in orders)
     total_comm = sum(o["commission_amount"] for o in orders)
@@ -2307,7 +2246,7 @@ def mkt_release_order(oid):
         payout = round(o["seller_amount"] - instant_fee, 2)
         db.execute("""UPDATE marketplace_orders SET
             escrow_status='released',instant_release=?,instant_fee=?,
-            updated_at=datetime('now') WHERE id=?""",
+            updated_at=to_char(now(),'YYYY-MM-DD HH24:MI:SS') WHERE id=?""",
             (1 if instant else 0, instant_fee, oid))
         db.commit()
     return jsonify({"success":True,"payout":payout,"instant_fee":instant_fee})
@@ -2391,7 +2330,7 @@ def mkt_pay_verify():
             amount_ghs = result["data"]["amount"] / 100
             with get_db() as db:
                 db.execute(
-                    "UPDATE marketplace_orders SET status='confirmed',escrow_status='held',total_amount=?,updated_at=datetime('now') WHERE payment_ref=?",
+                    "UPDATE marketplace_orders SET status='confirmed',escrow_status='held',total_amount=?,updated_at=to_char(now(),'YYYY-MM-DD HH24:MI:SS') WHERE payment_ref=?",
                     (amount_ghs,ref))
                 db.commit()
             return redirect(f"/app?mkt_payment=success&ref={ref}&amount={amount_ghs:.2f}&type={order_type}#marketplace")
@@ -2472,7 +2411,7 @@ def inputs_get_products():
         if category:
             q += " AND p.category=?"; params.append(category)
         if search:
-            q += " AND (p.name LIKE ? OR p.description LIKE ? OR p.recommended_for LIKE ?)"; params += [f"%{search}%"]*3
+            q += " AND (p.name ILIKE ? OR p.description ILIKE ? OR p.recommended_for ILIKE ?)"; params += [f"%{search}%"]*3
         q += " ORDER BY s.tier DESC, p.price ASC"
         rows = db.execute(q, params).fetchall()
     products = [dict(r) for r in rows]
@@ -2672,7 +2611,7 @@ def api_supplier_login():
                 reason = sup["rejection_reason"] or "Your application was not approved."
                 return jsonify({"success":False,"error":f"Application not approved: {reason}"}), 403
             # Log in
-            db.execute("UPDATE inputs_supplier_accounts SET last_login=datetime('now') WHERE id=?", (sup["id"],))
+            db.execute("UPDATE inputs_supplier_accounts SET last_login=to_char(now(),'YYYY-MM-DD HH24:MI:SS') WHERE id=?", (sup["id"],))
             db.commit()
         session["supplier_id"]   = sup["id"]
         session["supplier_name"] = sup["business_name"]
@@ -2822,12 +2761,12 @@ def admin_approve_supplier(sid):
                 sup_id = existing_sup["id"]
                 db.execute("UPDATE inputs_suppliers SET verified=1,active=1 WHERE id=?",(sup_id,))
             else:
-                db.execute("""INSERT INTO inputs_suppliers
+                new_sup = db.execute("""INSERT INTO inputs_suppliers
                     (business_name,contact_name,phone,email,region,categories,tier,verified,active)
-                    VALUES (?,?,?,?,?,?,?,1,1)""",
+                    VALUES (?,?,?,?,?,?,?,1,1) RETURNING id""",
                     (acc["business_name"],acc["contact_name"],acc["phone"],
-                     acc["email"],acc["region"],acc["categories"],acc["tier"]))
-                sup_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+                     acc["email"],acc["region"],acc["categories"],acc["tier"])).fetchone()
+                sup_id = new_sup["id"]
             db.execute("UPDATE inputs_supplier_accounts SET status='approved',supplier_id=? WHERE id=?",(sup_id,sid))
             db.commit()
         return jsonify({"success":True})
