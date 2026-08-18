@@ -38,7 +38,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "nkosoo-secret-2024")
 client          = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY",""))
 groq_client     = Groq(api_key=os.environ.get("GROQ_API_KEY",""))
 CLAUDE_MODEL    = "claude-sonnet-4-6"
-GROQ_TEXT_MODEL = "llama-3.3-70b-versatile"
+GROQ_TEXT_MODEL = "openai/gpt-oss-20b"
 GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 PAYSTACK_SECRET = os.environ.get("PAYSTACK_SECRET_KEY","")
 PAYSTACK_PUBLIC = os.environ.get("PAYSTACK_PUBLIC_KEY","")
