@@ -2837,3 +2837,30 @@ def admin_get_suppliers():
         rows = db.execute("SELECT * FROM inputs_supplier_accounts ORDER BY created_at DESC").fetchall()
     return jsonify({"success":True,"suppliers":[dict(r) for r in rows]})
 
+# ── ADMIN: Ghana Card  APPROVAL ────────────────────────────────────
+@app.route("/api/admin/pending-ids", methods=["GET"])
+def api_admin_pending_ids():
+    if not session.get("is_admin"):
+        return jsonify({"error":"Unauthorized"}), 401
+    with get_db() as db:
+        rows = db.execute("""SELECT session_id, farmer_name, phone, ghana_card,
+                                     id_photo_front, id_photo_back, id_verification_status
+                              FROM farm_profiles
+                              WHERE id_verification_status='pending' AND id_photo_front IS NOT NULL""").fetchall()
+    return jsonify({"success":True, "pending":[dict(r) for r in rows]})
+
+@app.route("/api/admin/verify-id/<session_id>", methods=["POST"])
+def api_admin_verify_id(session_id):
+    if not session.get("is_admin"):
+        return jsonify({"error":"Unauthorized"}), 401
+    data = request.get_json() or {}
+    status = data.get("status")  # "approved" or "rejected"
+    if status not in ("approved","rejected"):
+        return jsonify({"error":"Invalid status"}), 400
+    with get_db() as db:
+        db.execute("UPDATE farm_profiles SET id_verification_status=? WHERE session_id=?",(status,session_id))
+        db.execute("UPDATE livestock_profiles SET id_verification_status=? WHERE session_id=?",(status,session_id))
+        db.commit()
+    return jsonify({"success":True})
+
+
