@@ -133,6 +133,9 @@ def init_db():
             farm_size TEXT, farm_unit TEXT, crops TEXT,
             crop_type TEXT, ghana_card TEXT,
             ghana_card_valid INTEGER DEFAULT 0,
+            id_photo_front TEXT,
+            id_photo_back TEXT,
+            id_verification_status TEXT DEFAULT 'pending',
             soil_type TEXT, water_source TEXT,
             region TEXT, email TEXT,
             latitude REAL, longitude REAL,
@@ -145,6 +148,9 @@ def init_db():
             session_id TEXT NOT NULL,
             farmer_name TEXT, phone TEXT,
             ghana_card TEXT, ghana_card_valid INTEGER DEFAULT 0,
+            id_photo_front TEXT,
+            id_photo_back TEXT,
+            id_verification_status TEXT DEFAULT 'pending',
             region TEXT, email TEXT,
             animal_type TEXT NOT NULL,
             total_count INTEGER DEFAULT 0,
@@ -948,6 +954,41 @@ def api_farmer_identity():
             if lp["region"] and not identity["region"]: identity["region"] = lp["region"]
     return jsonify({"success":True,"identity":identity})
 
+
+@app.route("/api/upload-id", methods=["POST"])
+def api_upload_id():
+    if not is_registered():
+        return jsonify({"error":"Please create a free account first."}), 401
+    sid = get_sid()
+    data = request.get_json() or {}
+    front_b64 = data.get("id_photo_front","")
+    back_b64  = data.get("id_photo_back","")
+
+    # Basic size guard — reject anything absurdly large (rough base64 size check, ~5MB cap)
+    MAX_B64_LEN = 7_000_000  # ~5MB after base64 overhead
+    if len(front_b64) > MAX_B64_LEN or len(back_b64) > MAX_B64_LEN:
+        return jsonify({"error":"Image too large. Please upload a photo under 5MB."}), 400
+
+    if not front_b64 or not back_b64:
+        return jsonify({"error":"Please upload both front and back of your Ghana Card."}), 400
+
+    try:
+        with get_db() as db:
+            db.execute("""UPDATE farm_profiles
+                SET id_photo_front=?, id_photo_back=?, id_verification_status='pending'
+                WHERE session_id=?""",
+                (front_b64, back_b64, sid))
+            db.execute("""UPDATE livestock_profiles
+                SET id_photo_front=?, id_photo_back=?, id_verification_status='pending'
+                WHERE session_id=?""",
+                (front_b64, back_b64, sid))
+            db.commit()
+        return jsonify({"success":True, "message":"ID uploaded. Pending manual verification."})
+    except Exception as e:
+        print(f"[upload-id error] {e}")
+        return jsonify({"error":"Upload failed. Please try again."}), 500
+
+
 @app.route("/api/profile", methods=["GET"])
 def api_get_profile():
     sid=get_sid()
@@ -961,7 +1002,7 @@ def api_save_profile():
         return jsonify({"success":False,"error":"Please create a free account to save your farm profile.","gate":"register"}), 401
     sid=get_sid(); data=request.get_json()
     ghana_card=data.get("ghana_card","").strip().upper()
-    ghana_card_valid=1 if (ghana_card and re.match(r'^GHA-\d{9}-\d$',ghana_card)) else 0
+    ghana_card_valid=1 if (ghana_card and re.match(r'^(GHA|NLD)-\d{9}-\d$',ghana_card)) else 0
     lat = data.get("latitude"); lon = data.get("longitude")
     acc = data.get("gps_accuracy"); addr = data.get("gps_address","")
     try:
