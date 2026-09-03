@@ -1442,12 +1442,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
           <div class="fg"><div class="lbl">Phone number</div><input class="inp" type="tel" id="cFarmerPhone" placeholder="e.g. 0244123456"/></div>
         </div>
         <div class="fg" style="margin-bottom:.75rem;">
-          <div class="lbl">🇬🇭 Ghana Card number</div>
-          <input class="inp" type="text" id="cGhanaCard" placeholder="GHA-XXXXXXXXX-X" maxlength="15" oninput="validateGC(this,'cGCStatus','g')"/>
-          <div id="cGCStatus" class="gc-status" style="display:none;"></div>
-          <div class="hint">Format: GHA-123456789-0 · Stored securely and encrypted</div>
+        <div class="lbl">🇬🇭 Ghana Card number</div>
+        <input class="inp" type="text" id="cGhanaCard" placeholder="GHA-XXXXXXXXX-X" maxlength="15" oninput="validateGC(this,'cGCStatus','g')"/>
+        <div id="cGCStatus" class="gc-status" style="display:none;"></div>
+        <div class="hint">GHA-123456789-0 (citizens) or NLD-123456789-0 (non-citizens) · Stored securely and encrypted</div>
         </div>
-        <div class="form-row">
+        <div class="field">
+        <div class="field-label">Ghana Card — front</div>
+       <input id="idFront" type="file" accept="image/*" capture="environment"/>
+       </div>
+      <div class="field">
+      <div class="field-label">Ghana Card — back</div>
+      <input id="idBack" type="file" accept="image/*" capture="environment"/>
+       </div>
+         <div class="form-row">
           <div class="fg">
             <div class="lbl">Region</div>
             <select class="sel" id="cRegion">{% for key,r in regions.items() %}<option value="{{ key }}">{{ r.name }}</option>{% endfor %}</select>
@@ -1562,10 +1570,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
           <div class="fg"><div class="lbl">Phone number</div><input class="inp" type="tel" id="lFarmerPhone" placeholder="e.g. 0244123456"/></div>
         </div>
         <div class="fg" style="margin-bottom:.75rem;">
-          <div class="lbl">🇬🇭 Ghana Card number</div>
-          <input class="inp" type="text" id="lGhanaCard" placeholder="GHA-XXXXXXXXX-X" maxlength="15" oninput="validateGC(this,'lGCStatus','a')"/>
-          <div id="lGCStatus" class="gc-status" style="display:none;"></div>
-          <div class="hint">Format: GHA-123456789-0 · Linked to livestock ownership</div>
+        <div class="lbl">🇬🇭 Ghana Card number</div>
+        <input class="inp" type="text" id="cGhanaCard" placeholder="GHA-XXXXXXXXX-X" maxlength="15" oninput="validateGC(this,'cGCStatus','g')"/>
+        <div id="cGCStatus" class="gc-status" style="display:none;"></div>
+        <div class="hint">GHA-123456789-0 (citizens) or NLD-123456789-0 (non-citizens) · Stored securely and encrypted</div>
+        </div>
+        <div class="field">
+        <div class="field-label">Ghana Card — front</div>
+        <input id="idFront" type="file" accept="image/*" capture="environment"/>
+        </div>
+        <div class="field">
+        <div class="field-label">Ghana Card — back</div>
+        <input id="idBack" type="file" accept="image/*" capture="environment"/>
         </div>
         <div class="form-row">
           <div class="fg"><div class="lbl">Region</div><select class="sel" id="lRegion">{% for key,r in regions.items() %}<option value="{{ key }}">{{ r.name }}</option>{% endfor %}</select></div>
@@ -2699,7 +2715,7 @@ function validateGC(input,statusId,theme){
   const status=document.getElementById(statusId);
   let clean=val.replace(/[^A-Z0-9]/g,'');
   if(clean.startsWith('GHA')){let f='GHA';if(clean.length>3)f+='-'+clean.slice(3,12);if(clean.length>12)f+='-'+clean.slice(12,13);if(f!==val)input.value=f;}
-  const valid=/^GHA-\d{9}-\d$/.test(input.value);
+  const valid=/^(GHA|NLD)-\d{9}-\d$/.test(input.value);
   if(input.value.length<3){status.style.display='none';input.classList.remove('ok-g','ok-a','err');return;}
   status.style.display='block';
   if(valid){input.classList.add('ok-'+theme);input.classList.remove('err');status.innerHTML=`<span class="gc-ok-${theme}">✅ Valid Ghana Card format</span>`;}
@@ -3944,6 +3960,38 @@ async function inpPlaceOrder(){
   }
 }
 
+// upload & validate image
+  function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadGhanaCardPhotos(){
+  const frontFile = document.getElementById('idFront').files[0];
+  const backFile  = document.getElementById('idBack').files[0];
+  if(!frontFile || !backFile){
+    alert('Please select both front and back photos.');
+    return;
+  }
+  const front_b64 = await fileToBase64(frontFile);
+  const back_b64  = await fileToBase64(backFile);
+
+  const r = await fetch('/api/upload-id', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id_photo_front: front_b64, id_photo_back: back_b64 })
+  });
+  const d = await r.json();
+  if(d.success){
+    alert('ID uploaded! Pending verification.');
+  } else {
+    alert(d.error || 'Upload failed.');
+  }
+}
 
 </script>
 {% endraw %}
