@@ -247,6 +247,46 @@ footer a{color:#2C7A3F;text-decoration:none;}
   <button onclick="loadSupplierApps()" style="padding:8px 16px;background:#2C7A3F;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:1rem;">Load supplier applications</button>
 </div>
 
+<div class="card">
+  <h3>🇬🇭 Pending Ghana Card Verifications</h3>
+  <button onclick="loadPendingIDs()">Load pending approvals</button>
+  <div id="pendingIdsList"></div>
+</div>
+
+<script>
+async function loadPendingIDs(){
+  const r = await fetch('/api/admin/pending-ids');
+  const d = await r.json();
+  const box = document.getElementById('pendingIdsList');
+  if(!d.success || d.pending.length === 0){
+    box.innerHTML = '<p>No pending verifications.</p>';
+    return;
+  }
+  box.innerHTML = d.pending.map(p => `
+    <div style="border:1px solid #ddd;border-radius:10px;padding:12px;margin-top:12px;">
+      <p><strong>${p.farmer_name || 'Unnamed'}</strong> — ${p.phone || ''}</p>
+      <p>Ghana Card: ${p.ghana_card}</p>
+      <div style="display:flex;gap:10px;margin:10px 0;">
+        <img src="data:image/jpeg;base64,${p.id_photo_front}" style="width:200px;border-radius:6px;" />
+        <img src="data:image/jpeg;base64,${p.id_photo_back}" style="width:200px;border-radius:6px;" />
+      </div>
+      <button onclick="verifyID('${p.session_id}','approved')" style="background:#2C7A3F;color:#fff;padding:8px 16px;border:none;border-radius:6px;">Approve</button>
+      <button onclick="verifyID('${p.session_id}','rejected')" style="background:#A32D2D;color:#fff;padding:8px 16px;border:none;border-radius:6px;">Reject</button>
+    </div>
+  `).join('');
+}
+
+async function verifyID(sessionId, status){
+  const r = await fetch(`/api/admin/verify-id/${sessionId}`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({status})
+  });
+  const d = await r.json();
+  if(d.success){ loadPendingIDs(); } else { alert(d.error || 'Failed'); }
+}
+</script>
+
 <script>
 async function loadSupplierApps(){
   const el = document.getElementById('supplierApps');
