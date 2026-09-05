@@ -1152,7 +1152,8 @@ def pay_init():
     if result.get("status"):
         ref=result["data"]["reference"]
         with get_db() as db:
-            db.execute("INSERT OR REPLACE INTO payments (session_id,reference,amount,status) VALUES (?,?,3000,'pending')",(sid,ref))
+            db.execute("DELETE FROM payments WHERE session_id=?",(sid,))
+            db.execute("INSERT INTO payments (session_id,reference,amount,status) VALUES (?,?,3000,'pending')",(sid,ref))
             db.commit()
         return jsonify({"authorization_url":result["data"]["authorization_url"],"reference":ref})
     return jsonify({"error":result.get("message","Failed")}),400
