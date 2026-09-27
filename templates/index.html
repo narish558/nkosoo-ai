@@ -3270,12 +3270,12 @@ async function submitAgroRegistration(){
   try{
     const resp=await fetch('/api/agronomists',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const data=await resp.json();
-   if(data.success){
-  showSaved('cropSaved','g');
-  if(typeof gtag!=='undefined') trackSave('crop');
-  await uploadGhanaCardPhotos();
-  const sel=document.getElementById('cDiaryCrop');
-  sel.innerHTML='<option value="all">All crops</option>'+selectedCrops.map(c=>`<option value="${c}">${c}</option>`).join('');
+    if(data.success){
+      const s=document.getElementById('agroRegSaved');
+      s.classList.add('show');
+      setTimeout(()=>{s.classList.remove('show');hideAgroRegister();loadAgronomists();},4000);
+    } else {alert('Error: '+(data.error||'Please try again.'));}
+  }catch(e){alert('Connection error. Please try again.');}
 }
 
 
@@ -3994,9 +3994,10 @@ async function uploadGhanaCardPhotos(){
     alert(d.error || 'Upload failed.');
   }
 }
+
 </script>
 {% endraw %}
-
+</script>
 
   <!-- ══ FARMER DASHBOARD ══ -->
 
