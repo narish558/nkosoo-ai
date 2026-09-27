@@ -2765,6 +2765,7 @@ async function saveCropProfile(){
     if(data.success){
       showSaved('cropSaved','g');
       if(typeof gtag!=='undefined') trackSave('crop');
+      await uploadGhanaCardPhotos();
       const sel=document.getElementById('cDiaryCrop');
       sel.innerHTML='<option value="all">All crops</option>'+selectedCrops.map(c=>`<option value="${c}">${c}</option>`).join('');
     } else if(data.gate==='register'){
@@ -2795,6 +2796,7 @@ async function saveLivestockProfile(){
     if(data.success){
       showSaved('liveProfileSaved','a');
       if(typeof gtag!=='undefined') trackSave('livestock');
+      await uploadGhanaCardPhotos();
       loadLivestockAnimals();
     } else if(data.gate==='register'){
       if(!USER_REGISTERED) handleLiveSave();
@@ -3268,12 +3270,12 @@ async function submitAgroRegistration(){
   try{
     const resp=await fetch('/api/agronomists',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const data=await resp.json();
-    if(data.success){
-      const s=document.getElementById('agroRegSaved');
-      s.classList.add('show');
-      setTimeout(()=>{s.classList.remove('show');hideAgroRegister();loadAgronomists();},4000);
-    } else {alert('Error: '+(data.error||'Please try again.'));}
-  }catch(e){alert('Connection error. Please try again.');}
+   if(data.success){
+  showSaved('cropSaved','g');
+  if(typeof gtag!=='undefined') trackSave('crop');
+  await uploadGhanaCardPhotos();
+  const sel=document.getElementById('cDiaryCrop');
+  sel.innerHTML='<option value="all">All crops</option>'+selectedCrops.map(c=>`<option value="${c}">${c}</option>`).join('');
 }
 
 
